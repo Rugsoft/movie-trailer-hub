@@ -1,0 +1,7 @@
+.agents/
+.gemini/
+mcp_config.json
+skills-lock.json
+node_modules/
+.vscode/
+.DS_Store
