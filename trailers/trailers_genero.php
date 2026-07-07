@@ -3,14 +3,22 @@ include "../config/conexion.php";
 define('BASE_PATH', '../');
 
 // Obtener todos los géneros disponibles
-$sqlGeneros = "SELECT DISTINCT genero FROM trailers ORDER BY genero ASC";
+$sqlGeneros = "SELECT nombre FROM generos ORDER BY nombre ASC";
 $resGeneros = mysqli_query($conexion, $sqlGeneros);
 
 $genero_seleccionado = trim($_GET["genero"] ?? "");
 $resultado = null;
 
 if ($genero_seleccionado !== "") {
-    $sql = "SELECT * FROM trailers WHERE genero = ? ORDER BY release_date DESC";
+    $sql = "SELECT t.*, GROUP_CONCAT(g2.nombre SEPARATOR ', ') as genero
+            FROM trailers t
+            JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
+            JOIN generos g ON tg.id_genero = g.id_genero
+            LEFT JOIN trailers_generos tg2 ON t.id_trailer = tg2.id_trailer
+            LEFT JOIN generos g2 ON tg2.id_genero = g2.id_genero
+            WHERE g.nombre = ?
+            GROUP BY t.id_trailer
+            ORDER BY t.release_date DESC";
     $stmt = mysqli_prepare($conexion, $sql);
     mysqli_stmt_bind_param($stmt, "s", $genero_seleccionado);
     mysqli_stmt_execute($stmt);
@@ -43,8 +51,8 @@ if ($genero_seleccionado !== "") {
         <select id="genero" name="genero" required onchange="this.form.submit()">
             <option value="">-- Elige un género --</option>
             <?php while ($g = mysqli_fetch_assoc($resGeneros)) { ?>
-                <option value="<?php echo htmlspecialchars($g['genero']); ?>" <?php echo ($genero_seleccionado === $g['genero']) ? 'selected' : ''; ?>>
-                    <?php echo htmlspecialchars($g['genero']); ?>
+                <option value="<?php echo htmlspecialchars($g['nombre']); ?>" <?php echo ($genero_seleccionado === $g['nombre']) ? 'selected' : ''; ?>>
+                    <?php echo htmlspecialchars($g['nombre']); ?>
                 </option>
             <?php } ?>
         </select>

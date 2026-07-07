@@ -12,6 +12,9 @@
 <?php
 require_once "../config/conexion.php";
 define('BASE_PATH', '../');
+
+$sqlGeneros = "SELECT * FROM generos ORDER BY nombre ASC";
+$resGeneros = mysqli_query($conexion, $sqlGeneros);
 ?>
     <h1>Añadir Nuevo Trailer</h1>
     <p>Formulario para registrar una nueva película y su trailer en la base de datos.</p>
@@ -26,8 +29,18 @@ define('BASE_PATH', '../');
         <label for="release_date">Fecha de Estreno *</label>
         <input type="date" id="release_date" name="release_date" required>
 
-        <label for="genero">Género *</label>
-        <input type="text" id="genero" name="genero" required placeholder="Ej: Sci-Fi, Acción, Drama...">
+        <label>Género(s) (Selecciona al menos uno) *</label>
+        <div class="genres-checkbox-group" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-bottom: 18px; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); max-height: 150px; overflow-y: auto; background-color: var(--bg-surface-lowest, #1e293b);">
+            <?php while ($g = mysqli_fetch_assoc($resGeneros)) { ?>
+                <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; cursor: pointer; margin: 0;">
+                    <input type="checkbox" name="generos[]" value="<?php echo $g['id_genero']; ?>" style="width: auto; height: auto; cursor: pointer; transform: scale(1.1); accent-color: var(--primary);">
+                    <?php echo htmlspecialchars($g['nombre']); ?>
+                </label>
+            <?php } ?>
+        </div>
+
+        <label for="nuevo_genero">¿Añadir otro género nuevo?</label>
+        <input type="text" id="nuevo_genero" name="nuevo_genero" placeholder="Ej: Musical, Romance...">
 
         <label for="duracion">Duración (minutos) *</label>
         <input type="number" id="duracion" name="duracion" required min="1" placeholder="Ej: 169">

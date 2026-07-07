@@ -2,7 +2,12 @@
 include "../config/conexion.php";
 define('BASE_PATH', '../');
 
-$sql = "SELECT * FROM trailers ORDER BY id_trailer DESC";
+$sql = "SELECT t.*, GROUP_CONCAT(g.nombre SEPARATOR ', ') as genero
+        FROM trailers t
+        LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
+        LEFT JOIN generos g ON tg.id_genero = g.id_genero
+        GROUP BY t.id_trailer
+        ORDER BY t.id_trailer DESC";
 $stmt = mysqli_prepare($conexion, $sql);
 mysqli_stmt_execute($stmt);
 $resultado = mysqli_stmt_get_result($stmt);

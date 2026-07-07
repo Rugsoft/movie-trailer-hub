@@ -4,7 +4,13 @@ define('BASE_PATH', '../');
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-$sql = "SELECT * FROM trailers WHERE id_trailer = ? LIMIT 1";
+$sql = "SELECT t.*, GROUP_CONCAT(g.nombre SEPARATOR ', ') as genero
+        FROM trailers t
+        LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
+        LEFT JOIN generos g ON tg.id_genero = g.id_genero
+        WHERE t.id_trailer = ?
+        GROUP BY t.id_trailer
+        LIMIT 1";
 $stmt = mysqli_prepare($conexion, $sql);
 mysqli_stmt_bind_param($stmt, "i", $id);
 mysqli_stmt_execute($stmt);

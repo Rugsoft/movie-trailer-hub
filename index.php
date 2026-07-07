@@ -7,8 +7,13 @@ $successMsg = $_SESSION['success'] ?? null;
 $errorMsg = $_SESSION['error'] ?? null;
 unset($_SESSION['success'], $_SESSION['error']);
 
-// Consultar todos los trailers
-$sql = "SELECT * FROM trailers ORDER BY id_trailer DESC";
+// Consultar todos los trailers con sus géneros
+$sql = "SELECT t.*, GROUP_CONCAT(g.nombre SEPARATOR ', ') as genero
+        FROM trailers t
+        LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
+        LEFT JOIN generos g ON tg.id_genero = g.id_genero
+        GROUP BY t.id_trailer
+        ORDER BY t.id_trailer DESC";
 $res = mysqli_query($conexion, $sql);
 $trailers = [];
 while ($row = mysqli_fetch_assoc($res)) {
@@ -16,12 +21,12 @@ while ($row = mysqli_fetch_assoc($res)) {
 }
 mysqli_free_result($res);
 
-// Consultar géneros únicos
-$sqlGenres = "SELECT DISTINCT genero FROM trailers WHERE genero IS NOT NULL AND genero != '' ORDER BY genero ASC";
+// Consultar géneros de la tabla generos
+$sqlGenres = "SELECT nombre FROM generos ORDER BY nombre ASC";
 $resGenres = mysqli_query($conexion, $sqlGenres);
 $genres = [];
 while ($row = mysqli_fetch_assoc($resGenres)) {
-    $genres[] = $row['genero'];
+    $genres[] = $row['nombre'];
 }
 mysqli_free_result($resGenres);
 mysqli_close($conexion);
@@ -304,7 +309,7 @@ $featured = !empty($trailers) ? $trailers[0] : null;
                                           synopsis.includes(searchQuery) || 
                                           director.includes(searchQuery);
                                           
-                    const matchesGenre = activeGenre === 'Todos' || genre === activeGenre;
+                    const matchesGenre = activeGenre === 'Todos' || (genre && genre.split(', ').map(g => g.trim()).includes(activeGenre));
                     
                     let matchesDate = true;
                     if (activeStartDate && releaseDate < activeStartDate) {

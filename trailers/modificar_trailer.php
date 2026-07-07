@@ -10,11 +10,28 @@ mysqli_stmt_bind_param($stmt, "i", $id);
 mysqli_stmt_execute($stmt);
 $resultado = mysqli_stmt_get_result($stmt);
 $trailer = mysqli_fetch_assoc($resultado);
+mysqli_stmt_close($stmt);
 
 if (!$trailer) {
     echo "<h1>Trailer no encontrado</h1>";
     exit;
 }
+
+// Obtener todos los géneros disponibles
+$sqlGeneros = "SELECT * FROM generos ORDER BY nombre ASC";
+$resGeneros = mysqli_query($conexion, $sqlGeneros);
+
+// Obtener los IDs de los géneros asociados a este trailer
+$sqlSelected = "SELECT id_genero FROM trailers_generos WHERE id_trailer = ?";
+$stmtSelected = mysqli_prepare($conexion, $sqlSelected);
+mysqli_stmt_bind_param($stmtSelected, "i", $id);
+mysqli_stmt_execute($stmtSelected);
+$resSelected = mysqli_stmt_get_result($stmtSelected);
+$selectedGenres = [];
+while ($row = mysqli_fetch_assoc($resSelected)) {
+    $selectedGenres[] = (int)$row['id_genero'];
+}
+mysqli_stmt_close($stmtSelected);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -42,8 +59,20 @@ if (!$trailer) {
         <label for="release_date">Fecha de Estreno *</label>
         <input type="date" id="release_date" name="release_date" required value="<?php echo htmlspecialchars($trailer['release_date']); ?>">
 
-        <label for="genero">Género *</label>
-        <input type="text" id="genero" name="genero" required value="<?php echo htmlspecialchars($trailer['genero']); ?>">
+        <label>Género(s) (Selecciona al menos uno) *</label>
+        <div class="genres-checkbox-group" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-bottom: 18px; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); max-height: 150px; overflow-y: auto; background-color: var(--bg-surface-lowest, #1e293b);">
+            <?php while ($g = mysqli_fetch_assoc($resGeneros)) { 
+                $isChecked = in_array((int)$g['id_genero'], $selectedGenres) ? 'checked' : '';
+            ?>
+                <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; cursor: pointer; margin: 0;">
+                    <input type="checkbox" name="generos[]" value="<?php echo $g['id_genero']; ?>" <?php echo $isChecked; ?> style="width: auto; height: auto; cursor: pointer; transform: scale(1.1); accent-color: var(--primary);">
+                    <?php echo htmlspecialchars($g['nombre']); ?>
+                </label>
+            <?php } ?>
+        </div>
+
+        <label for="nuevo_genero">¿Añadir otro género nuevo?</label>
+        <input type="text" id="nuevo_genero" name="nuevo_genero" placeholder="Ej: Musical, Romance...">
 
         <label for="duracion">Duración (minutos) *</label>
         <input type="number" id="duracion" name="duracion" required min="1" value="<?php echo htmlspecialchars((string)$trailer['duracion']); ?>">
@@ -69,6 +98,5 @@ if (!$trailer) {
 
 </html>
 <?php
-mysqli_stmt_close($stmt);
 mysqli_close($conexion);
 ?>
