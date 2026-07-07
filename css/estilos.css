@@ -665,6 +665,8 @@ input[type="text"],
 input[type="number"],
 input[type="url"],
 input[type="date"],
+input[type="email"],
+input[type="password"],
 select,
 textarea {
     flex: 1;
@@ -684,6 +686,8 @@ input[type="text"]:focus,
 input[type="number"]:focus,
 input[type="url"]:focus,
 input[type="date"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
 select:focus,
 textarea:focus {
     border-color: var(--primary);
@@ -862,4 +866,94 @@ textarea {
         margin-left: 0 !important;
         margin-top: 6px;
     }
+}
+
+/* ==========================================================================
+   Toast Notifications (Bottom Right)
+   ========================================================================== */
+.toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none;
+}
+
+.toast {
+    pointer-events: auto;
+    min-width: 300px;
+    max-width: 400px;
+    background-color: var(--bg-surface-elevated, #182232);
+    border: 1px solid var(--border-color, #2d3b50);
+    border-left: 4px solid var(--primary, #f59e0b);
+    border-radius: var(--radius-md, 8px);
+    box-shadow: var(--shadow-lg, 0 10px 25px rgba(0,0,0,0.5));
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #ffffff;
+    font-size: 14px;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.toast.hide {
+    transform: translateY(20px);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.toast-success {
+    border-left-color: #10b981; /* Green */
+}
+
+.toast-error {
+    border-left-color: #ef4444; /* Red */
+}
+
+.toast-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.toast-success .toast-icon {
+    color: #10b981;
+}
+
+.toast-error .toast-icon {
+    color: #ef4444;
+}
+
+.toast-message {
+    flex-grow: 1;
+    font-weight: 500;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    color: var(--text-muted, #94a3b8);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+}
+
+.toast-close:hover {
+    color: #ffffff;
 }

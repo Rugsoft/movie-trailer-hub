@@ -1,5 +1,10 @@
 <?php
 require_once "../config/conexion.php";
+if (!isset($_SESSION['rol']) || $_SESSION['rol'] !== 'admin') {
+    $_SESSION['error'] = "Acceso denegado. Se requieren permisos de administrador.";
+    header("Location: ../index.php");
+    exit;
+}
 define('BASE_PATH', '../');
 
 $id_trailer = isset($_POST["id_trailer"]) ? (int)$_POST["id_trailer"] : 0;

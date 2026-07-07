@@ -2,6 +2,10 @@
 require_once "../config/conexion.php";
 define('BASE_PATH', '../');
 
+$successMsg = $_SESSION['success'] ?? null;
+$errorMsg = $_SESSION['error'] ?? null;
+unset($_SESSION['success'], $_SESSION['error']);
+
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 $sql = "SELECT t.*, GROUP_CONCAT(g.nombre SEPARATOR ', ') as genero
@@ -57,6 +61,18 @@ while ($row = mysqli_fetch_assoc($resReparto)) {
     $reparto[] = $row;
 }
 mysqli_stmt_close($stmtReparto);
+
+$isTrailerFavorito = false;
+if (isset($_SESSION['usuario_id'])) {
+    $id_usuario = $_SESSION['usuario_id'];
+    $sqlFav = "SELECT 1 FROM favoritos WHERE id_usuario = ? AND id_trailer = ? LIMIT 1";
+    $stmtFav = mysqli_prepare($conexion, $sqlFav);
+    mysqli_stmt_bind_param($stmtFav, "ii", $id_usuario, $id);
+    mysqli_stmt_execute($stmtFav);
+    $resFav = mysqli_stmt_get_result($stmtFav);
+    $isTrailerFavorito = mysqli_num_rows($resFav) > 0;
+    mysqli_stmt_close($stmtFav);
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -125,8 +141,53 @@ mysqli_stmt_close($stmtReparto);
     </style>
 </head>
 <body>
-    <h1>Reproductor de Trailers</h1>
-    <p>Disfruta del trailer oficial de la película seleccionada.</p>
+    <!-- Navegación principal -->
+    <header class="navbar">
+        <div class="app-container navbar-content">
+            <a href="../index.php" class="brand">
+                <i class="fa-solid fa-clapperboard brand-icon"></i>
+                <h1 class="brand-name">Movie Trailer Hub</h1>
+            </a>
+            <div class="nav-actions">
+                <?php if (isset($_SESSION['usuario_id'])): ?>
+                    <span class="user-greeting" style="font-size: 14px; font-weight: 600; color: #ffffff; margin-right: 8px;">
+                        <i class="fa-solid fa-circle-user" style="color: var(--primary); margin-right: 5px;"></i>Hola, <?= htmlspecialchars($_SESSION['username']) ?>
+                    </span>
+                    
+                    <a href="favoritos.php" class="btn btn-secondary" style="border-color: rgba(220, 38, 38, 0.3); color: var(--secondary);">
+                        <i class="fa-solid fa-heart"></i> Mis Favoritos
+                    </a>
+
+                    <?php if ($_SESSION['rol'] === 'admin'): ?>
+                        <a href="añadir_reparto.php" class="btn btn-secondary">
+                            <i class="fa-solid fa-user-plus"></i> Añadir Actor
+                        </a>
+                        <a href="listar_trailers.php" class="btn btn-secondary">
+                            <i class="fa-solid fa-list"></i> Administrar
+                        </a>
+                        <a href="añadir_trailer.php" class="btn btn-primary">
+                            <i class="fa-solid fa-plus"></i> Añadir
+                        </a>
+                    <?php endif; ?>
+                    
+                    <a href="../auth/logout.php" class="btn btn-secondary">
+                        <i class="fa-solid fa-right-from-bracket"></i> Salir
+                    </a>
+                <?php else: ?>
+                    <a href="../auth/login.php" class="btn btn-secondary">
+                        <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión
+                    </a>
+                    <a href="../auth/registro.php" class="btn btn-primary">
+                        <i class="fa-solid fa-user-plus"></i> Registrarse
+                    </a>
+                <?php endif; ?>
+            </div>
+        </div>
+    </header>
+
+    <main class="app-container" style="margin-top: 30px;">
+        <h1>Reproductor de Trailers</h1>
+        <p>Disfruta del trailer oficial de la película seleccionada.</p>
 
     <div class="player-wrapper">
         <div class="video-container">
@@ -142,6 +203,21 @@ mysqli_stmt_close($stmtReparto);
                 <span>Duración: <strong><?php echo htmlspecialchars((string)$trailer['duracion']); ?> min</strong></span>
                 <span>Valoración: <strong>⭐ <?php echo htmlspecialchars((string)$trailer['valoracion']); ?>/10</strong></span>
             </div>
+            
+            <?php if (isset($_SESSION['usuario_id'])): ?>
+                <div style="margin-bottom: 20px;">
+                    <?php if ($isTrailerFavorito): ?>
+                        <a href="toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" class="btn btn-secondary" style="border-color: rgba(220, 38, 38, 0.3); color: var(--secondary); display: inline-flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-heart"></i> Quitar de Favoritos
+                        </a>
+                    <?php else: ?>
+                        <a href="toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 8px;">
+                            <i class="fa-regular fa-heart"></i> Añadir a Favoritos
+                        </a>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+
             <div class="info-synopsis">
                 <p><?php echo htmlspecialchars($trailer['sinopsis'] ?? 'Sin sinopsis o descripción disponible.'); ?></p>
             </div>
@@ -165,7 +241,57 @@ mysqli_stmt_close($stmtReparto);
         </div>
     </div>
 
-    <a class="volver" href="listar_trailers.php">← Volver al catálogo</a>
+    </main>
+
+    <a class="volver" href="../index.php">← Volver al catálogo</a>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toastContainer">
+        <?php if ($successMsg): ?>
+            <div class="toast toast-success" id="successToast">
+                <i class="fa-solid fa-circle-check toast-icon"></i>
+                <div class="toast-message"><?= htmlspecialchars($successMsg) ?></div>
+                <button class="toast-close" onclick="closeToast('successToast')">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        <?php endif; ?>
+        <?php if ($errorMsg): ?>
+            <div class="toast toast-error" id="errorToast">
+                <i class="fa-solid fa-circle-exclamation toast-icon"></i>
+                <div class="toast-message"><?= htmlspecialchars($errorMsg) ?></div>
+                <button class="toast-close" onclick="closeToast('errorToast')">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <script>
+        function closeToast(id) {
+            const toast = document.getElementById(id);
+            if (toast) {
+                toast.classList.remove('show');
+                toast.classList.add('hide');
+                setTimeout(() => {
+                    toast.remove();
+                }, 400);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const toasts = document.querySelectorAll('.toast');
+            toasts.forEach((toast) => {
+                setTimeout(() => {
+                    toast.classList.add('show');
+                }, 100);
+
+                setTimeout(() => {
+                    closeToast(toast.id);
+                }, 4000);
+            });
+        });
+    </script>
 </body>
 </html>
 <?php

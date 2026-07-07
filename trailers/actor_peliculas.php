@@ -177,8 +177,53 @@ mysqli_close($conexion);
     </style>
 </head>
 <body>
-    <h1>Perfil Artístico</h1>
-    <p>Conoce la trayectoria de este miembro del elenco en nuestra plataforma.</p>
+    <!-- Navegación principal -->
+    <header class="navbar">
+        <div class="app-container navbar-content">
+            <a href="../index.php" class="brand">
+                <i class="fa-solid fa-clapperboard brand-icon"></i>
+                <h1 class="brand-name">Movie Trailer Hub</h1>
+            </a>
+            <div class="nav-actions">
+                <?php if (isset($_SESSION['usuario_id'])): ?>
+                    <span class="user-greeting" style="font-size: 14px; font-weight: 600; color: #ffffff; margin-right: 8px;">
+                        <i class="fa-solid fa-circle-user" style="color: var(--primary); margin-right: 5px;"></i>Hola, <?= htmlspecialchars($_SESSION['username']) ?>
+                    </span>
+                    
+                    <a href="favoritos.php" class="btn btn-secondary" style="border-color: rgba(220, 38, 38, 0.3); color: var(--secondary);">
+                        <i class="fa-solid fa-heart"></i> Mis Favoritos
+                    </a>
+
+                    <?php if ($_SESSION['rol'] === 'admin'): ?>
+                        <a href="añadir_reparto.php" class="btn btn-secondary">
+                            <i class="fa-solid fa-user-plus"></i> Añadir Actor
+                        </a>
+                        <a href="listar_trailers.php" class="btn btn-secondary">
+                            <i class="fa-solid fa-list"></i> Administrar
+                        </a>
+                        <a href="añadir_trailer.php" class="btn btn-primary">
+                            <i class="fa-solid fa-plus"></i> Añadir
+                        </a>
+                    <?php endif; ?>
+                    
+                    <a href="../auth/logout.php" class="btn btn-secondary">
+                        <i class="fa-solid fa-right-from-bracket"></i> Salir
+                    </a>
+                <?php else: ?>
+                    <a href="../auth/login.php" class="btn btn-secondary">
+                        <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión
+                    </a>
+                    <a href="../auth/registro.php" class="btn btn-primary">
+                        <i class="fa-solid fa-user-plus"></i> Registrarse
+                    </a>
+                <?php endif; ?>
+            </div>
+        </div>
+    </header>
+
+    <main class="app-container" style="margin-top: 30px;">
+        <h1>Perfil Artístico</h1>
+        <p>Conoce la trayectoria de este miembro del elenco en nuestra plataforma.</p>
 
     <div class="actor-profile-card">
         <img src="<?php echo htmlspecialchars($actor['foto_url'] ?? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200'); ?>" alt="<?php echo htmlspecialchars($actor['nombre']); ?>" class="actor-avatar">
@@ -219,6 +264,8 @@ mysqli_close($conexion);
             </div>
         <?php endif; ?>
     </div>
+
+    </main>
 
     <a class="volver" href="../index.php">← Volver al inicio</a>
 </body>

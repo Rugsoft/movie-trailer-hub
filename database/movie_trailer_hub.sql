@@ -166,6 +166,17 @@ CREATE TABLE `reparto_trailers` (
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `favoritos`
+--
+
+CREATE TABLE `favoritos` (
+  `id_usuario` int(11) NOT NULL,
+  `id_trailer` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `visualizaciones`
 --
 
@@ -201,6 +212,12 @@ ALTER TABLE `reparto_trailers`
   ADD PRIMARY KEY (`id_reparto_trailer`),
   ADD KEY `id_trailer` (`id_trailer`),
   ADD KEY `id_reparto` (`id_reparto`);
+--
+-- Indices de la tabla `favoritos`
+--
+ALTER TABLE `favoritos`
+  ADD PRIMARY KEY (`id_usuario`,`id_trailer`),
+  ADD KEY `id_trailer` (`id_trailer`);
 
 --
 -- Indices de la tabla `usuarios`
@@ -268,6 +285,12 @@ ALTER TABLE `reparto_trailers`
 ALTER TABLE `trailers_generos`
   ADD CONSTRAINT `fk_trailers_generos_generos` FOREIGN KEY (`id_genero`) REFERENCES `generos` (`id_genero`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_trailers_generos_trailers` FOREIGN KEY (`id_trailer`) REFERENCES `trailers` (`id_trailer`) ON DELETE CASCADE ON UPDATE CASCADE;
+--
+-- Filtros para la tabla `favoritos`
+--
+ALTER TABLE `favoritos`
+  ADD CONSTRAINT `fk_favoritos_trailers` FOREIGN KEY (`id_trailer`) REFERENCES `trailers` (`id_trailer`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_favoritos_usuarios` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Filtros para la tabla `visualizaciones`

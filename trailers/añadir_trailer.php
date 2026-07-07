@@ -11,6 +11,11 @@
 <body>
 <?php
 require_once "../config/conexion.php";
+if (!isset($_SESSION['rol']) || $_SESSION['rol'] !== 'admin') {
+    $_SESSION['error'] = "Acceso denegado. Se requieren permisos de administrador.";
+    header("Location: ../index.php");
+    exit;
+}
 define('BASE_PATH', '../');
 
 $sqlGeneros = "SELECT * FROM generos ORDER BY nombre ASC";
