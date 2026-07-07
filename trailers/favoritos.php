@@ -70,6 +70,9 @@ mysqli_close($conexion);
                 <h1 class="brand-name">Movie Trailer Hub</h1>
             </a>
             <div class="nav-actions">
+                <a href="estadisticas.php" class="btn btn-secondary">
+                    <i class="fa-solid fa-chart-simple"></i> Estadísticas
+                </a>
                 <a href="../index.php" class="btn btn-secondary">
                     <i class="fa-solid fa-house"></i> Inicio
                 </a>

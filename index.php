@@ -45,10 +45,42 @@ if (isset($_SESSION['usuario_id'])) {
     mysqli_stmt_close($stmtFavs);
 }
 
-mysqli_close($conexion);
+// 1. Intentar traer los 5 trailers más próximos a estrenarse (fecha >= hoy)
+$sqlFeatured = "SELECT t.*, GROUP_CONCAT(g.nombre SEPARATOR ', ') as genero
+                FROM trailers t
+                LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
+                LEFT JOIN generos g ON tg.id_genero = g.id_genero
+                WHERE t.release_date >= CURDATE()
+                GROUP BY t.id_trailer
+                ORDER BY t.release_date ASC
+                LIMIT 5";
+$resFeatured = mysqli_query($conexion, $sqlFeatured);
+$featuredTrailers = [];
+while ($row = mysqli_fetch_assoc($resFeatured)) {
+    $featuredTrailers[] = $row;
+}
+mysqli_free_result($resFeatured);
 
-// Destacado: primer trailer
-$featured = !empty($trailers) ? $trailers[0] : null;
+// 2. Si no hay suficientes próximos a estrenarse, rellenar con los últimos agregados
+if (count($featuredTrailers) < 5) {
+    $needed = 5 - count($featuredTrailers);
+    $excludeIds = !empty($featuredTrailers) ? implode(',', array_column($featuredTrailers, 'id_trailer')) : '0';
+    $sqlFallback = "SELECT t.*, GROUP_CONCAT(g.nombre SEPARATOR ', ') as genero
+                    FROM trailers t
+                    LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
+                    LEFT JOIN generos g ON tg.id_genero = g.id_genero
+                    WHERE t.id_trailer NOT IN ($excludeIds)
+                    GROUP BY t.id_trailer
+                    ORDER BY t.id_trailer DESC
+                    LIMIT $needed";
+    $resFallback = mysqli_query($conexion, $sqlFallback);
+    while ($row = mysqli_fetch_assoc($resFallback)) {
+        $featuredTrailers[] = $row;
+    }
+    mysqli_free_result($resFallback);
+}
+
+mysqli_close($conexion);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -72,6 +104,9 @@ $featured = !empty($trailers) ? $trailers[0] : null;
                 <h1 class="brand-name">Movie Trailer Hub</h1>
             </a>
             <div class="nav-actions">
+                <a href="trailers/estadisticas.php" class="btn btn-secondary">
+                    <i class="fa-solid fa-chart-simple"></i> Estadísticas
+                </a>
                 <?php if (isset($_SESSION['usuario_id'])): ?>
                     <span class="user-greeting" style="font-size: 14px; font-weight: 600; color: #ffffff; margin-right: 8px;">
                         <i class="fa-solid fa-circle-user" style="color: var(--primary); margin-right: 5px;"></i>Hola, <?= htmlspecialchars($_SESSION['username']) ?>
@@ -112,25 +147,48 @@ $featured = !empty($trailers) ? $trailers[0] : null;
 
         <!-- Notificaciones eliminadas de aquí (ahora se renderizan como Toasts abajo a la derecha) -->
 
-        <!-- Banner Destacado (Hero) -->
-        <?php if ($featured): ?>
+        <!-- Banner Destacado (Hero) / Carrusel -->
+        <?php if (!empty($featuredTrailers)): ?>
             <section class="hero">
-                <img src="<?= htmlspecialchars($featured['poster_url'] ?? 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600') ?>" alt="Banner destacado" class="hero-banner">
-                <div class="hero-overlay">
-                    <span class="hero-tag">Destacado</span>
-                    <h2 class="hero-title"><?= htmlspecialchars($featured['titulo']) ?></h2>
-                    <p class="hero-desc"><?= htmlspecialchars($featured['sinopsis'] ?? 'Sin descripción disponible.') ?></p>
-                    <div class="hero-meta">
-                        <span><i class="fa-solid fa-film"></i> <?= htmlspecialchars($featured['genero']) ?></span>
-                        <span><i class="fa-solid fa-calendar"></i> <?= date('d/m/Y', strtotime($featured['release_date'])) ?></span>
-                        <span><i class="fa-solid fa-star"></i> <?= htmlspecialchars((string)$featured['valoracion']) ?>/10</span>
-                        <span><i class="fa-solid fa-clock"></i> <?= htmlspecialchars((string)$featured['duracion']) ?> min</span>
+                <div class="carousel-container" id="heroCarousel">
+                    <div class="carousel-track">
+                        <?php foreach ($featuredTrailers as $index => $item): ?>
+                            <div class="carousel-slide <?php echo $index === 0 ? 'active' : ''; ?>" data-slide-index="<?php echo $index; ?>">
+                                <img src="<?= htmlspecialchars($item['poster_url'] ?? 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600') ?>" alt="<?= htmlspecialchars($item['titulo']) ?>" class="hero-banner">
+                                <div class="hero-overlay">
+                                    <span class="hero-tag">Estreno Próximo</span>
+                                    <h2 class="hero-title"><?= htmlspecialchars($item['titulo']) ?></h2>
+                                    <p class="hero-desc"><?= htmlspecialchars($item['sinopsis'] ?? 'Sin descripción disponible.') ?></p>
+                                    <div class="hero-meta">
+                                        <span><i class="fa-solid fa-film"></i> <?= htmlspecialchars($item['genero']) ?></span>
+                                        <span><i class="fa-solid fa-calendar"></i> <?= date('d/m/Y', strtotime($item['release_date'])) ?></span>
+                                        <span><i class="fa-solid fa-star"></i> <?= htmlspecialchars((string)$item['valoracion']) ?>/10</span>
+                                        <span><i class="fa-solid fa-clock"></i> <?= htmlspecialchars((string)$item['duracion']) ?> min</span>
+                                    </div>
+                                    <div>
+                                        <a href="trailers/reproducir_trailer.php?id=<?= $item['id_trailer'] ?>" class="btn btn-primary">
+                                            <i class="fa-solid fa-play"></i> Reproducir Trailer
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
                     </div>
-                    <div>
-                        <a href="trailers/reproducir_trailer.php?id=<?= $featured['id_trailer'] ?>" class="btn btn-primary">
-                            <i class="fa-solid fa-play"></i> Reproducir Trailer
-                        </a>
+                    
+                    <!-- Carousel Indicators / Dots -->
+                    <div class="carousel-dots">
+                        <?php foreach ($featuredTrailers as $index => $item): ?>
+                            <button class="carousel-dot <?php echo $index === 0 ? 'active' : ''; ?>" data-dot-index="<?php echo $index; ?>" aria-label="Diapositiva <?php echo $index + 1; ?>"></button>
+                        <?php endforeach; ?>
                     </div>
+
+                    <!-- Carousel Nav Arrows -->
+                    <button type="button" class="carousel-control prev" id="carouselPrevBtn" aria-label="Anterior">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <button type="button" class="carousel-control next" id="carouselNextBtn" aria-label="Siguiente">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
                 </div>
             </section>
         <?php else: ?>
@@ -377,6 +435,98 @@ $featured = !empty($trailers) ? $trailers[0] : null;
                 } else {
                     emptyState.style.display = 'none';
                 }
+            }
+
+            // --- Lógica del Carrusel del Hero ---
+            const carousel = document.getElementById('heroCarousel');
+            if (carousel) {
+                const slides = carousel.querySelectorAll('.carousel-slide');
+                const dots = carousel.querySelectorAll('.carousel-dot');
+                const prevBtn = document.getElementById('carouselPrevBtn');
+                const nextBtn = document.getElementById('carouselNextBtn');
+                let currentIndex = 0;
+                let autoplayTimer = null;
+
+                function showSlide(index) {
+                    if (slides.length === 0) return;
+                    
+                    // Asegurar límites circulares
+                    if (index >= slides.length) {
+                        currentIndex = 0;
+                    } else if (index < 0) {
+                        currentIndex = slides.length - 1;
+                    } else {
+                        currentIndex = index;
+                    }
+
+                    // Actualizar clases active en slides y dots
+                    slides.forEach((slide, i) => {
+                        if (i === currentIndex) {
+                            slide.classList.add('active');
+                        } else {
+                            slide.classList.remove('active');
+                        }
+                    });
+
+                    dots.forEach((dot, i) => {
+                        if (i === currentIndex) {
+                            dot.classList.add('active');
+                        } else {
+                            dot.classList.remove('active');
+                        }
+                    });
+                }
+
+                function nextSlide() {
+                    showSlide(currentIndex + 1);
+                }
+
+                function prevSlide() {
+                    showSlide(currentIndex - 1);
+                }
+
+                function startAutoplay() {
+                    stopAutoplay();
+                    autoplayTimer = setInterval(nextSlide, 5000); // Rotar cada 5 segundos
+                }
+
+                function stopAutoplay() {
+                    if (autoplayTimer) {
+                        clearInterval(autoplayTimer);
+                        autoplayTimer = null;
+                    }
+                }
+
+                // Eventos de botones
+                if (nextBtn) {
+                    nextBtn.addEventListener('click', () => {
+                        nextSlide();
+                        startAutoplay(); // Resetear temporizador al interactuar
+                    });
+                }
+
+                if (prevBtn) {
+                    prevBtn.addEventListener('click', () => {
+                        prevSlide();
+                        startAutoplay(); // Resetear temporizador al interactuar
+                    });
+                }
+
+                // Eventos de indicadores (dots)
+                dots.forEach(dot => {
+                    dot.addEventListener('click', () => {
+                        const index = parseInt(dot.getAttribute('data-dot-index'));
+                        showSlide(index);
+                        startAutoplay(); // Resetear temporizador al interactuar
+                    });
+                });
+
+                // Pausar autoplay al pasar el ratón por encima del carrusel
+                carousel.addEventListener('mouseenter', stopAutoplay);
+                carousel.addEventListener('mouseleave', startAutoplay);
+
+                // Inicializar autoplay
+                startAutoplay();
             }
         });
 

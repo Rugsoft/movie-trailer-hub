@@ -26,6 +26,17 @@ if (!$trailer) {
     exit;
 }
 
+// Registrar la visualización en la base de datos
+$id_usuario_view = isset($_SESSION['usuario_id']) ? (int)$_SESSION['usuario_id'] : null;
+$ip_direccion = $_SERVER['REMOTE_ADDR'] ?? null;
+$dispositivo = isset($_SERVER['HTTP_USER_AGENT']) ? substr($_SERVER['HTTP_USER_AGENT'], 0, 100) : null;
+
+$sqlView = "INSERT INTO visualizaciones (id_trailer, id_usuario, ip_direccion, dispositivo) VALUES (?, ?, ?, ?)";
+$stmtView = mysqli_prepare($conexion, $sqlView);
+mysqli_stmt_bind_param($stmtView, "iiss", $id, $id_usuario_view, $ip_direccion, $dispositivo);
+mysqli_stmt_execute($stmtView);
+mysqli_stmt_close($stmtView);
+
 // Convertir URL a embed
 function getEmbedUrl(string $url): string {
     // YouTube
@@ -80,6 +91,7 @@ if (isset($_SESSION['usuario_id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reproduciendo: <?php echo htmlspecialchars($trailer['titulo']); ?></title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../css/estilos.css">
     <style>
         .player-wrapper {
@@ -116,12 +128,13 @@ if (isset($_SESSION['usuario_id'])) {
             font-family: 'Montserrat', sans-serif;
             color: #ffffff;
             margin-bottom: 8px;
-            text-align: left;
+            text-align: center;
             font-size: 1.8rem;
             font-weight: 800;
         }
         .info-meta {
             display: flex;
+            justify-content: center;
             flex-wrap: wrap;
             gap: 16px;
             font-size: 0.95rem;
@@ -149,6 +162,9 @@ if (isset($_SESSION['usuario_id'])) {
                 <h1 class="brand-name">Movie Trailer Hub</h1>
             </a>
             <div class="nav-actions">
+                <a href="estadisticas.php" class="btn btn-secondary">
+                    <i class="fa-solid fa-chart-simple"></i> Estadísticas
+                </a>
                 <?php if (isset($_SESSION['usuario_id'])): ?>
                     <span class="user-greeting" style="font-size: 14px; font-weight: 600; color: #ffffff; margin-right: 8px;">
                         <i class="fa-solid fa-circle-user" style="color: var(--primary); margin-right: 5px;"></i>Hola, <?= htmlspecialchars($_SESSION['username']) ?>
@@ -186,8 +202,10 @@ if (isset($_SESSION['usuario_id'])) {
     </header>
 
     <main class="app-container" style="margin-top: 30px;">
-        <h1>Reproductor de Trailers</h1>
-        <p>Disfruta del trailer oficial de la película seleccionada.</p>
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="margin-bottom: 8px;">Reproductor de Trailers</h1>
+            <p style="color: var(--text-muted); margin: 0;">Disfruta del trailer oficial de la película seleccionada.</p>
+        </div>
 
     <div class="player-wrapper">
         <div class="video-container">
@@ -205,7 +223,7 @@ if (isset($_SESSION['usuario_id'])) {
             </div>
             
             <?php if (isset($_SESSION['usuario_id'])): ?>
-                <div style="margin-bottom: 20px;">
+                <div style="margin-bottom: 20px; text-align: center;">
                     <?php if ($isTrailerFavorito): ?>
                         <a href="toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" class="btn btn-secondary" style="border-color: rgba(220, 38, 38, 0.3); color: var(--secondary); display: inline-flex; align-items: center; gap: 8px;">
                             <i class="fa-solid fa-heart"></i> Quitar de Favoritos

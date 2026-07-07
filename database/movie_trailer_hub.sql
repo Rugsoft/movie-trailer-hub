@@ -183,7 +183,7 @@ CREATE TABLE `favoritos` (
 CREATE TABLE `visualizaciones` (
   `id_visualizacion` int(11) NOT NULL,
   `id_trailer` int(11) NOT NULL,
-  `id_usuario` int(11) NOT NULL,
+  `id_usuario` int(11) DEFAULT NULL,
   `fecha_visualizacion` datetime NOT NULL DEFAULT current_timestamp(),
   `ip_direccion` varchar(45) DEFAULT NULL,
   `dispositivo` varchar(100) DEFAULT NULL
