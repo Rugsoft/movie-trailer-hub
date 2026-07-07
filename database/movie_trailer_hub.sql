@@ -83,6 +83,30 @@ CREATE TABLE `usuarios` (
 INSERT INTO `usuarios` (`id_usuario`, `username`, `password_hash`, `nombre`, `apellidos`, `email`, `telefono`, `rol`, `fecha_alta`) VALUES
 (1, 'admin', '$2y$10$iXQf/UkaKu2YnVMQ3pO8X.7o7fCmnnGnQarS3gxfFiCR3bWfmhCe6', 'Administrador', 'del Sistema', 'admin@email.com', '600111222', 'admin', '2026-07-06'),
 (2, 'user', '$2y$10$iXQf/UkaKu2YnVMQ3pO8X.7o7fCmnnGnQarS3gxfFiCR3bWfmhCe6', 'Usuario', 'Invitado', 'usuario@email.com', '600333444', 'lector', '2026-07-06');
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `reparto`
+--
+
+CREATE TABLE `reparto` (
+  `id_reparto` int(11) NOT NULL,
+  `nombre` varchar(100) NOT NULL,
+  `apellidos` varchar(150) NOT NULL,
+  `edad` int(3) DEFAULT NULL,
+  `pais` varchar(100) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `reparto_trailers`
+--
+
+CREATE TABLE `reparto_trailers` (
+  `id_trailer` int(11) NOT NULL,
+  `id_reparto` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -108,6 +132,19 @@ CREATE TABLE `visualizaciones` (
 --
 ALTER TABLE `trailers`
   ADD PRIMARY KEY (`id_trailer`);
+
+--
+-- Indices de la tabla `reparto`
+--
+ALTER TABLE `reparto`
+  ADD PRIMARY KEY (`id_reparto`);
+
+--
+-- Indices de la tabla `reparto_trailers`
+--
+ALTER TABLE `reparto_trailers`
+  ADD PRIMARY KEY (`id_trailer`,`id_reparto`),
+  ADD KEY `id_reparto` (`id_reparto`);
 
 --
 -- Indices de la tabla `usuarios`
@@ -142,6 +179,12 @@ ALTER TABLE `usuarios`
   MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
+-- AUTO_INCREMENT de la tabla `reparto`
+--
+ALTER TABLE `reparto`
+  MODIFY `id_reparto` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT de la tabla `visualizaciones`
 --
 ALTER TABLE `visualizaciones`
@@ -150,6 +193,13 @@ ALTER TABLE `visualizaciones`
 --
 -- Restricciones para tablas volcadas
 --
+
+--
+-- Filtros para la tabla `reparto_trailers`
+--
+ALTER TABLE `reparto_trailers`
+  ADD CONSTRAINT `fk_reparto_trailers_reparto` FOREIGN KEY (`id_reparto`) REFERENCES `reparto` (`id_reparto`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_reparto_trailers_trailers` FOREIGN KEY (`id_trailer`) REFERENCES `trailers` (`id_trailer`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Filtros para la tabla `visualizaciones`
