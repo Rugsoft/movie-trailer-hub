@@ -15,6 +15,9 @@ define('BASE_PATH', '../');
 
 $sqlGeneros = "SELECT * FROM generos ORDER BY nombre ASC";
 $resGeneros = mysqli_query($conexion, $sqlGeneros);
+
+$sqlReparto = "SELECT * FROM reparto ORDER BY nombre ASC, apellidos ASC";
+$resReparto = mysqli_query($conexion, $sqlReparto);
 ?>
     <h1>Añadir Nuevo Trailer</h1>
     <p>Formulario para registrar una nueva película y su trailer en la base de datos.</p>
@@ -53,6 +56,24 @@ $resGeneros = mysqli_query($conexion, $sqlGeneros);
 
         <label for="valoracion">Valoración (0 a 10) *</label>
         <input type="number" id="valoracion" name="valoracion" required step="0.1" min="0" max="10" placeholder="Ej: 8.7">
+
+        <label>Reparto (Selecciona los actores que participan y asigna su personaje)</label>
+        <div class="reparto-selection-group" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); max-height: 250px; overflow-y: auto; background-color: var(--bg-surface-lowest, #1e293b);">
+            <?php if (mysqli_num_rows($resReparto) > 0) {
+                while ($actor = mysqli_fetch_assoc($resReparto)) { ?>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 6px 0; border-bottom: 1px dashed rgba(216, 195, 173, 0.05);">
+                        <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; cursor: pointer; margin: 0; flex: 1;">
+                            <input type="checkbox" name="actores[]" value="<?php echo $actor['id_reparto']; ?>" style="width: auto; height: auto; cursor: pointer; transform: scale(1.1); accent-color: var(--primary);">
+                            <img src="<?php echo htmlspecialchars($actor['foto_url'] ?? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200'); ?>" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover; margin-left: 5px; margin-right: 5px;">
+                            <span><?php echo htmlspecialchars($actor['nombre'] . ' ' . $actor['apellidos']); ?></span>
+                        </label>
+                        <input type="text" name="personajes[<?php echo $actor['id_reparto']; ?>]" placeholder="Nombre del personaje..." style="flex: 1; max-width: 250px; padding: 6px 12px; font-size: 13px; height: auto;">
+                    </div>
+                <?php }
+            } else { ?>
+                <p style="color: var(--text-muted); font-size: 13px; margin: 0; padding: 10px 0;">No hay actores registrados. <a href="añadir_reparto.php" style="color: var(--primary); text-decoration: underline;">Registra un actor primero</a>.</p>
+            <?php } ?>
+        </div>
 
         <label for="sinopsis">Sinopsis / Descripción:</label>
         <textarea id="sinopsis" name="sinopsis" rows="4" placeholder="Escribe un breve resumen de la película..."></textarea>

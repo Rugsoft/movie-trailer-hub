@@ -146,7 +146,8 @@ CREATE TABLE `reparto` (
   `nombre` varchar(100) NOT NULL,
   `apellidos` varchar(150) NOT NULL,
   `edad` int(3) DEFAULT NULL,
-  `pais` varchar(100) DEFAULT NULL
+  `pais` varchar(100) DEFAULT NULL,
+  `foto_url` varchar(500) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------

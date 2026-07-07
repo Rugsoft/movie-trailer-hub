@@ -12,6 +12,8 @@ $trailer_url = trim($_POST["trailer_url"] ?? "");
 $poster_url = trim($_POST["poster_url"] ?? "");
 $valoracion = trim($_POST["valoracion"] ?? "");
 $sinopsis = trim($_POST["sinopsis"] ?? "");
+$actores_post = $_POST["actores"] ?? [];
+$personajes_post = $_POST["personajes"] ?? [];
 
 // Procesar el nuevo género si se ha enviado
 if ($nuevo_genero !== "") {
@@ -83,7 +85,7 @@ if (empty($poster_url)) {
                 mysqli_stmt_close($stmtExiste);
                 $sqlInsertar = "INSERT INTO trailers (titulo, director, release_date, duracion, trailer_url, poster_url, valoracion, sinopsis) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
                 $stmtInsertar = mysqli_prepare($conexion, $sqlInsertar);
-                mysqli_stmt_bind_param($stmtInsertar, "ssssisds", $titulo, $director, $release_date, $duracion, $trailer_url, $poster_url, $valoracion, $sinopsis);
+                mysqli_stmt_bind_param($stmtInsertar, "sssissds", $titulo, $director, $release_date, $duracion, $trailer_url, $poster_url, $valoracion, $sinopsis);
                 
                 if (mysqli_stmt_execute($stmtInsertar)):
                     $id_trailer = mysqli_insert_id($conexion);
@@ -97,6 +99,18 @@ if (empty($poster_url)) {
                         mysqli_stmt_execute($stmtAssoc);
                     }
                     mysqli_stmt_close($stmtAssoc);
+                    
+                    // Insertar asociaciones de reparto en reparto_trailers
+                    if (!empty($actores_post)) {
+                        $sqlRepartoAssoc = "INSERT INTO reparto_trailers (id_trailer, id_reparto, personaje) VALUES (?, ?, ?)";
+                        $stmtReparto = mysqli_prepare($conexion, $sqlRepartoAssoc);
+                        foreach ($actores_post as $id_reparto) {
+                            $personaje = trim($personajes_post[$id_reparto] ?? "");
+                            mysqli_stmt_bind_param($stmtReparto, "iis", $id_trailer, $id_reparto, $personaje);
+                            mysqli_stmt_execute($stmtReparto);
+                        }
+                        mysqli_stmt_close($stmtReparto);
+                    }
                 ?>
                     <h1>¡Trailer Añadido!</h1>
                     <div class="alerta-exito">

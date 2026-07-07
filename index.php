@@ -56,6 +56,9 @@ $featured = !empty($trailers) ? $trailers[0] : null;
                 <h1 class="brand-name">Movie Trailer Hub</h1>
             </a>
             <div class="nav-actions">
+                <a href="trailers/añadir_reparto.php" class="btn btn-secondary">
+                    <i class="fa-solid fa-user-plus"></i> Añadir Actor
+                </a>
                 <a href="trailers/listar_trailers.php" class="btn btn-secondary">
                     <i class="fa-solid fa-list"></i> Administrar
                 </a>

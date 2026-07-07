@@ -42,6 +42,21 @@ function getEmbedUrl(string $url): string {
 }
 
 $embedUrl = getEmbedUrl($trailer['trailer_url']);
+
+// Consultar reparto asociado
+$sqlReparto = "SELECT r.*, rt.personaje 
+               FROM reparto_trailers rt 
+               JOIN reparto r ON rt.id_reparto = r.id_reparto 
+               WHERE rt.id_trailer = ?";
+$stmtReparto = mysqli_prepare($conexion, $sqlReparto);
+mysqli_stmt_bind_param($stmtReparto, "i", $id);
+mysqli_stmt_execute($stmtReparto);
+$resReparto = mysqli_stmt_get_result($stmtReparto);
+$reparto = [];
+while ($row = mysqli_fetch_assoc($resReparto)) {
+    $reparto[] = $row;
+}
+mysqli_stmt_close($stmtReparto);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -130,6 +145,23 @@ $embedUrl = getEmbedUrl($trailer['trailer_url']);
             <div class="info-synopsis">
                 <p><?php echo htmlspecialchars($trailer['sinopsis'] ?? 'Sin sinopsis o descripción disponible.'); ?></p>
             </div>
+
+            <?php if (!empty($reparto)): ?>
+                <div class="info-cast" style="border-top: 1px solid var(--border-color); padding-top: 20px; margin-top: 20px;">
+                    <h3 style="font-family: var(--font-headline); font-size: 1.2rem; font-weight: 700; color: #ffffff; margin-bottom: 12px;">Reparto / Elenco</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px;">
+                        <?php foreach ($reparto as $actor): ?>
+                            <a href="actor_peliculas.php?id=<?php echo $actor['id_reparto']; ?>" style="display: flex; align-items: center; gap: 10px; padding: 8px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-md); transition: var(--transition-smooth);" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border-color)'">
+                                <img src="<?php echo htmlspecialchars($actor['foto_url'] ?? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200'); ?>" alt="<?php echo htmlspecialchars($actor['nombre']); ?>" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.1);">
+                                <div style="display: flex; flex-direction: column; overflow: hidden;">
+                                    <span style="font-weight: 600; font-size: 13px; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><?php echo htmlspecialchars($actor['nombre'] . ' ' . $actor['apellidos']); ?></span>
+                                    <span style="font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><?php echo htmlspecialchars($actor['personaje'] !== '' ? $actor['personaje'] : 'N/A'); ?></span>
+                                </div>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 

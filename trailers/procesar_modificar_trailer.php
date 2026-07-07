@@ -13,6 +13,8 @@ $trailer_url = trim($_POST["trailer_url"] ?? "");
 $poster_url = trim($_POST["poster_url"] ?? "");
 $valoracion = trim($_POST["valoracion"] ?? "");
 $sinopsis = trim($_POST["sinopsis"] ?? "");
+$actores_post = $_POST["actores"] ?? [];
+$personajes_post = $_POST["personajes"] ?? [];
 
 // Procesar el nuevo género si se ha enviado
 if ($nuevo_genero !== "") {
@@ -65,7 +67,7 @@ if (empty($poster_url)) {
         <?php else:
             $sqlActualizar = "UPDATE trailers SET titulo = ?, director = ?, release_date = ?, duracion = ?, trailer_url = ?, poster_url = ?, valoracion = ?, sinopsis = ? WHERE id_trailer = ?";
             $stmtActualizar = mysqli_prepare($conexion, $sqlActualizar);
-            mysqli_stmt_bind_param($stmtActualizar, "ssssisdsi", $titulo, $director, $release_date, $duracion, $trailer_url, $poster_url, $valoracion, $sinopsis, $id_trailer);
+            mysqli_stmt_bind_param($stmtActualizar, "sssissdsi", $titulo, $director, $release_date, $duracion, $trailer_url, $poster_url, $valoracion, $sinopsis, $id_trailer);
             
             if (mysqli_stmt_execute($stmtActualizar)):
                 mysqli_stmt_close($stmtActualizar);
@@ -85,6 +87,25 @@ if (empty($poster_url)) {
                     mysqli_stmt_execute($stmtInsert);
                 }
                 mysqli_stmt_close($stmtInsert);
+                
+                // Eliminar asociaciones de reparto anteriores en reparto_trailers
+                $sqlDeleteReparto = "DELETE FROM reparto_trailers WHERE id_trailer = ?";
+                $stmtDeleteReparto = mysqli_prepare($conexion, $sqlDeleteReparto);
+                mysqli_stmt_bind_param($stmtDeleteReparto, "i", $id_trailer);
+                mysqli_stmt_execute($stmtDeleteReparto);
+                mysqli_stmt_close($stmtDeleteReparto);
+                
+                // Insertar las nuevas asociaciones en reparto_trailers
+                if (!empty($actores_post)) {
+                    $sqlInsertReparto = "INSERT INTO reparto_trailers (id_trailer, id_reparto, personaje) VALUES (?, ?, ?)";
+                    $stmtInsertReparto = mysqli_prepare($conexion, $sqlInsertReparto);
+                    foreach ($actores_post as $id_reparto) {
+                        $personaje = trim($personajes_post[$id_reparto] ?? "");
+                        mysqli_stmt_bind_param($stmtInsertReparto, "iis", $id_trailer, $id_reparto, $personaje);
+                        mysqli_stmt_execute($stmtInsertReparto);
+                    }
+                    mysqli_stmt_close($stmtInsertReparto);
+                }
             ?>
                 <h1>¡Trailer Actualizado!</h1>
                 <div class="alerta-exito">
