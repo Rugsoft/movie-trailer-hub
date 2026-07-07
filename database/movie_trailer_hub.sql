@@ -84,6 +84,21 @@ INSERT INTO `usuarios` (`id_usuario`, `username`, `password_hash`, `nombre`, `ap
 (1, 'admin', '$2y$10$iXQf/UkaKu2YnVMQ3pO8X.7o7fCmnnGnQarS3gxfFiCR3bWfmhCe6', 'Administrador', 'del Sistema', 'admin@email.com', '600111222', 'admin', '2026-07-06'),
 (2, 'user', '$2y$10$iXQf/UkaKu2YnVMQ3pO8X.7o7fCmnnGnQarS3gxfFiCR3bWfmhCe6', 'Usuario', 'Invitado', 'usuario@email.com', '600333444', 'lector', '2026-07-06');
 
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `visualizaciones`
+--
+
+CREATE TABLE `visualizaciones` (
+  `id_visualizacion` int(11) NOT NULL,
+  `id_trailer` int(11) NOT NULL,
+  `id_usuario` int(11) NOT NULL,
+  `fecha_visualizacion` datetime NOT NULL DEFAULT current_timestamp(),
+  `ip_direccion` varchar(45) DEFAULT NULL,
+  `dispositivo` varchar(100) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 --
 -- Índices para tablas volcadas
 --
@@ -103,6 +118,14 @@ ALTER TABLE `usuarios`
   ADD UNIQUE KEY `username` (`username`);
 
 --
+-- Indices de la tabla `visualizaciones`
+--
+ALTER TABLE `visualizaciones`
+  ADD PRIMARY KEY (`id_visualizacion`),
+  ADD KEY `id_trailer` (`id_trailer`),
+  ADD KEY `id_usuario` (`id_usuario`);
+
+--
 -- AUTO_INCREMENT de las tablas volcadas
 --
 
@@ -117,6 +140,23 @@ ALTER TABLE `trailers`
 --
 ALTER TABLE `usuarios`
   MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT de la tabla `visualizaciones`
+--
+ALTER TABLE `visualizaciones`
+  MODIFY `id_visualizacion` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- Restricciones para tablas volcadas
+--
+
+--
+-- Filtros para la tabla `visualizaciones`
+--
+ALTER TABLE `visualizaciones`
+  ADD CONSTRAINT `fk_visualizaciones_trailers` FOREIGN KEY (`id_trailer`) REFERENCES `trailers` (`id_trailer`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_visualizaciones_usuarios` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
