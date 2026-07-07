@@ -63,7 +63,12 @@ $resReparto = mysqli_query($conexion, $sqlReparto);
         <label for="valoracion">Valoración (0 a 10) *</label>
         <input type="number" id="valoracion" name="valoracion" required step="0.1" min="0" max="10" placeholder="Ej: 8.7">
 
-        <label>Reparto (Selecciona los actores que participan y asigna su personaje)</label>
+        <label style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+            <span>Reparto (Selecciona los actores que participan y asigna su personaje)</span>
+            <a href="añadir_reparto.php" target="_blank" style="font-size: 12px; font-weight: 600; color: var(--primary); text-decoration: none; display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border: 1px solid rgba(245,158,11,0.35); border-radius: 20px; background: rgba(245,158,11,0.08); transition: background 0.2s ease;" onmouseover="this.style.background='rgba(245,158,11,0.18)'" onmouseout="this.style.background='rgba(245,158,11,0.08)'">
+                <i class="fa-solid fa-user-plus" style="font-size: 11px;"></i> Añadir nuevo actor
+            </a>
+        </label>
         <div class="reparto-selection-group" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); max-height: 250px; overflow-y: auto; background-color: var(--bg-surface-lowest, #1e293b);">
             <?php if (mysqli_num_rows($resReparto) > 0) {
                 while ($actor = mysqli_fetch_assoc($resReparto)) { ?>
