@@ -109,15 +109,22 @@ mysqli_close($conexion);
                     </a>
 
                     <?php if ($_SESSION['rol'] === 'admin'): ?>
-                        <a href="añadir_reparto.php" class="btn btn-secondary">
-                            <i class="fa-solid fa-user-plus"></i> Añadir Actor
-                        </a>
-                        <a href="listar_trailers.php" class="btn btn-secondary">
-                            <i class="fa-solid fa-list"></i> Administrar
-                        </a>
-                        <a href="añadir_trailer.php" class="btn btn-primary">
-                            <i class="fa-solid fa-plus"></i> Añadir
-                        </a>
+                        <div class="dropdown">
+                            <button class="btn btn-secondary dropdown-toggle">
+                                <i class="fa-solid fa-gear"></i> Gestión
+                            </button>
+                            <div class="dropdown-menu">
+                                <a href="listar_trailers.php" class="dropdown-item">
+                                    <i class="fa-solid fa-list"></i> Administrar Trailers
+                                </a>
+                                <a href="añadir_trailer.php" class="dropdown-item">
+                                    <i class="fa-solid fa-plus"></i> Añadir Trailer
+                                </a>
+                                <a href="añadir_reparto.php" class="dropdown-item">
+                                    <i class="fa-solid fa-user-plus"></i> Añadir Actor
+                                </a>
+                            </div>
+                        </div>
                     <?php endif; ?>
                     
                     <a href="../auth/logout.php" class="btn btn-secondary">
