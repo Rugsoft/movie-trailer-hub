@@ -251,6 +251,19 @@ body > p {
     border-color: var(--secondary);
 }
 
+.btn-devolver {
+    background: var(--bg-surface-lowest);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.15);
+}
+
+.btn-devolver:hover {
+    background: #10b981;
+    color: #000000;
+    border-color: #10b981;
+    cursor: pointer;
+}
+
 /* Enlace Volver */
 .volver {
     display: inline-flex;
@@ -2235,4 +2248,21 @@ main.app-container {
         flex-direction: column;
         text-align: center;
     }
+}
+
+.actor-table-thumb {
+    border-radius: 50% !important;
+    width: 45px !important;
+    height: 45px !important;
+    object-fit: cover !important;
+}
+
+.table-compact-container {
+    max-width: 900px !important;
+    margin: 40px auto !important;
+}
+
+.table-compact-container h1,
+.table-compact-container p {
+    text-align: center;
 }

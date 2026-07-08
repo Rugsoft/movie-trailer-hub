@@ -39,6 +39,9 @@
                                 <a href="<?php echo $rootPath; ?>trailers/listar_trailers.php" class="dropdown-item">
                                     <i class="fa-solid fa-list"></i> Administrar Trailers
                                 </a>
+                                <a href="<?php echo $rootPath; ?>trailers/listar_reparto.php" class="dropdown-item">
+                                    <i class="fa-solid fa-users-gear"></i> Administrar Actores
+                                </a>
                                 <a href="<?php echo $rootPath; ?>trailers/añadir_trailer.php" class="dropdown-item">
                                     <i class="fa-solid fa-plus"></i> Añadir Trailer
                                 </a>
