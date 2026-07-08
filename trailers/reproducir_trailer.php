@@ -250,13 +250,13 @@ if (isset($_SESSION['usuario_id'])) {
             <?php if (!empty($reparto)): ?>
                 <div class="info-cast" style="border-top: 1px solid var(--border-color); padding-top: 20px; margin-top: 20px;">
                     <h3 style="font-family: var(--font-headline); font-size: 1.2rem; font-weight: 700; color: #ffffff; margin-bottom: 12px;">Reparto / Elenco</h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px;">
+                    <div class="cast-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px;">
                         <?php foreach ($reparto as $actor): ?>
-                            <a href="actor_peliculas.php?id=<?php echo $actor['id_reparto']; ?>" style="display: flex; align-items: center; gap: 10px; padding: 8px; background: var(--bg-surface-elevated); border: 1px solid var(--border-color); border-radius: var(--radius-md); transition: var(--transition-smooth);" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border-color)'">
-                                <img src="<?php echo htmlspecialchars($actor['foto_url'] ?? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200'); ?>" alt="<?php echo htmlspecialchars($actor['nombre']); ?>" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.1);">
-                                <div style="display: flex; flex-direction: column; overflow: hidden;">
-                                    <span style="font-weight: 600; font-size: 13px; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><?php echo htmlspecialchars($actor['nombre'] . ' ' . $actor['apellidos']); ?></span>
-                                    <span style="font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><?php echo htmlspecialchars($actor['personaje'] !== '' ? $actor['personaje'] : 'N/A'); ?></span>
+                            <a href="actor_peliculas.php?id=<?php echo $actor['id_reparto']; ?>" class="actor-card">
+                                <img src="<?php echo htmlspecialchars($actor['foto_url'] ?? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200'); ?>" alt="<?php echo htmlspecialchars($actor['nombre']); ?>">
+                                <div class="actor-card-info">
+                                    <span class="actor-card-name"><?php echo htmlspecialchars($actor['nombre'] . ' ' . $actor['apellidos']); ?></span>
+                                    <span class="actor-card-role"><?php echo htmlspecialchars($actor['personaje'] !== '' ? $actor['personaje'] : 'N/A'); ?></span>
                                 </div>
                             </a>
                         <?php endforeach; ?>
