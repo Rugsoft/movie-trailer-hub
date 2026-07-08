@@ -12,16 +12,12 @@ $stmt = mysqli_prepare($conexion, $sql);
 mysqli_stmt_execute($stmt);
 $resultado = mysqli_stmt_get_result($stmt);
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ranking de Trailers</title>
-    <link rel="icon" type="image/png" href="../images/logo movie trailer hub (1) (1).png">
-    <link rel="stylesheet" href="../css/estilos.css">
-</head>
-<body>
+<?php
+$pageTitle = "Ranking de Trailers";
+$showNavbar = false;
+$rootPath = "../";
+require_once $rootPath . 'includes/navbar.php';
+?>
     <h1>Ranking de Popularidad</h1>
     <p>Los 10 trailers mejor valorados por nuestros usuarios en la plataforma.</p>
     

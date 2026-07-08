@@ -34,17 +34,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 }
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión - Movie Trailer Hub</title>
-    <link rel="icon" type="image/png" href="../images/logo movie trailer hub (1) (1).png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../css/estilos.css">
-</head>
-<body>
+<?php
+$pageTitle = "Iniciar Sesión - Movie Trailer Hub";
+$showNavbar = false;
+$rootPath = "../";
+require_once $rootPath . 'includes/navbar.php';
+?>
     <h1>Iniciar Sesión</h1>
     <p>Accede a tu cuenta para guardar tus trailers favoritos.</p>
 

@@ -25,16 +25,12 @@ if ($genero_seleccionado !== "") {
     $resultado = mysqli_stmt_get_result($stmt);
 }
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trailers por Género</title>
-    <link rel="icon" type="image/png" href="../images/logo movie trailer hub (1) (1).png">
-    <link rel="stylesheet" href="../css/estilos.css">
-</head>
-<body>
+<?php
+$pageTitle = "Trailers por Género";
+$showNavbar = false;
+$rootPath = "../";
+require_once $rootPath . 'includes/navbar.php';
+?>
     <h1>Trailers por Género</h1>
     <p>Filtra los trailers disponibles por su género cinematográfico.</p>
 

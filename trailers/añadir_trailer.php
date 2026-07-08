@@ -1,16 +1,9 @@
-<!DOCTYPE html>
-<html lang="es">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Añadir Nuevo Trailer</title>
-    <link rel="icon" type="image/png" href="../images/logo movie trailer hub (1) (1).png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../css/estilos.css">
-</head>
-
-<body>
+<?php
+$pageTitle = "Añadir Nuevo Trailer";
+$showNavbar = false;
+$rootPath = "../";
+require_once $rootPath . 'includes/navbar.php';
+?>
 <?php
 require_once "../config/conexion.php";
 if (!isset($_SESSION['rol']) || $_SESSION['rol'] !== 'admin') {

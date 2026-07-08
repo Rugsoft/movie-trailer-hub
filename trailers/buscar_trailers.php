@@ -20,16 +20,12 @@ if ($buscar !== "") {
     $resultado = mysqli_stmt_get_result($stmt);
 }
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buscar Trailers</title>
-    <link rel="icon" type="image/png" href="../images/logo movie trailer hub (1) (1).png">
-    <link rel="stylesheet" href="../css/estilos.css">
-</head>
-<body>
+<?php
+$pageTitle = "Buscar Trailers";
+$showNavbar = false;
+$rootPath = "../";
+require_once $rootPath . 'includes/navbar.php';
+?>
     <h1>Buscar Trailers</h1>
     <p>Encuentra tus trailers favoritos buscando por título o director.</p>
 

@@ -56,19 +56,12 @@ while ($row = mysqli_fetch_assoc($resSelectedReparto)) {
 }
 mysqli_stmt_close($stmtSelectedReparto);
 ?>
-<!DOCTYPE html>
-<html lang="es">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modificar Trailer</title>
-    <link rel="icon" type="image/png" href="../images/logo movie trailer hub (1) (1).png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../css/estilos.css">
-</head>
-
-<body>
+<?php
+$pageTitle = "Modificar Trailer";
+$showNavbar = false;
+$rootPath = "../";
+require_once $rootPath . 'includes/navbar.php';
+?>
     <h1>Modificar Trailer</h1>
     <p>Actualizar la ficha de "<strong><?php echo htmlspecialchars($trailer['titulo']); ?></strong>" en el catálogo.</p>
 

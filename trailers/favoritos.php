@@ -33,38 +33,11 @@ while ($row = mysqli_fetch_assoc($res)) {
 mysqli_stmt_close($stmt);
 mysqli_close($conexion);
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mis Favoritos - Movie Trailer Hub</title>
-    <link rel="icon" type="image/png" href="../images/logo movie trailer hub (1) (1).png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../css/estilos.css">
-</head>
-<body>
-    
-    <!-- Navegación principal -->
-    <header class="navbar">
-        <div class="app-container navbar-content">
-            <a href="../index.php" class="brand">
-                <img src="../images/logo movie trailer hub (1) (1).png" alt="Logo" class="brand-icon">
-                <h1 class="brand-name">Movie Trailer Hub</h1>
-            </a>
-            <div class="nav-actions">
-                <a href="estadisticas.php" class="btn btn-secondary">
-                    <i class="fa-solid fa-chart-simple"></i> Estadísticas
-                </a>
-                <a href="../index.php" class="btn btn-secondary">
-                    <i class="fa-solid fa-house"></i> Inicio
-                </a>
-                <a href="../auth/logout.php" class="btn btn-secondary">
-                    <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
-                </a>
-            </div>
-        </div>
-    </header>
+<?php
+$pageTitle = "Mis Favoritos - Movie Trailer Hub";
+$rootPath = "../";
+require_once $rootPath . 'includes/navbar.php';
+?>
 
     <main class="app-container">
         
