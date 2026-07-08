@@ -6,11 +6,13 @@ $buscar = trim($_GET["buscar"] ?? "");
 $resultado = null;
 
 if ($buscar !== "") {
-    $sql = "SELECT t.*, GROUP_CONCAT(g.nombre SEPARATOR ', ') as genero
+    $sql = "SELECT t.*, GROUP_CONCAT(g.nombre SEPARATOR ', ') as genero,
+                   CONCAT(d.nombre, ' ', d.apellidos) as director
             FROM trailers t
             LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
             LEFT JOIN generos g ON tg.id_genero = g.id_genero
-            WHERE t.titulo LIKE ? OR t.director LIKE ?
+            LEFT JOIN directores d ON t.id_director = d.id_director
+            WHERE t.titulo LIKE ? OR CONCAT(d.nombre, ' ', d.apellidos) LIKE ?
             GROUP BY t.id_trailer
             ORDER BY t.id_trailer DESC";
     $stmt = mysqli_prepare($conexion, $sql);

@@ -2266,3 +2266,40 @@ main.app-container {
 .table-compact-container p {
     text-align: center;
 }
+
+.director-link {
+    color: var(--primary);
+    text-decoration: none;
+    transition: var(--transition-smooth);
+}
+
+.director-link:hover {
+    color: #ffffff;
+    text-decoration: underline;
+}
+
+.director-avatar-placeholder {
+    width: 120px;
+    height: 120px;
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    font-size: 40px;
+    box-shadow: var(--shadow-md);
+}
+
+.select-action-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.select-action-row select {
+    flex: 1;
+    margin-bottom: 0 !important;
+}

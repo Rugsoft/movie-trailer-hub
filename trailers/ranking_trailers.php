@@ -2,10 +2,12 @@
 include "../config/conexion.php";
 define('BASE_PATH', '../');
 
-$sql = "SELECT t.*, GROUP_CONCAT(g.nombre SEPARATOR ', ') as genero
+$sql = "SELECT t.*, GROUP_CONCAT(g.nombre SEPARATOR ', ') as genero,
+               CONCAT(d.nombre, ' ', d.apellidos) as director
         FROM trailers t
         LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
         LEFT JOIN generos g ON tg.id_genero = g.id_genero
+        LEFT JOIN directores d ON t.id_director = d.id_director
         GROUP BY t.id_trailer
         ORDER BY t.valoracion DESC, t.titulo ASC LIMIT 10";
 $stmt = mysqli_prepare($conexion, $sql);

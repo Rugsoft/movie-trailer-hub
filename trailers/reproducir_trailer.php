@@ -8,10 +8,12 @@ unset($_SESSION['success'], $_SESSION['error']);
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-$sql = "SELECT t.*, GROUP_CONCAT(g.nombre SEPARATOR ', ') as genero
+$sql = "SELECT t.*, GROUP_CONCAT(g.nombre SEPARATOR ', ') as genero,
+               d.nombre as director_nombre, d.apellidos as director_apellidos, d.id_director
         FROM trailers t
         LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
         LEFT JOIN generos g ON tg.id_genero = g.id_genero
+        LEFT JOIN directores d ON t.id_director = d.id_director
         WHERE t.id_trailer = ?
         GROUP BY t.id_trailer
         LIMIT 1";
@@ -105,7 +107,15 @@ require_once $rootPath . 'includes/navbar.php';
         <div class="info-container">
             <h2><?php echo htmlspecialchars($trailer['titulo']); ?></h2>
             <div class="info-meta">
-                <span>Director: <strong><?php echo htmlspecialchars($trailer['director'] ?? 'N/A'); ?></strong></span>
+                <span>Director: <strong>
+                    <?php if (isset($trailer['id_director'])): ?>
+                        <a href="director_peliculas.php?id=<?= $trailer['id_director'] ?>" class="director-link">
+                            <?= htmlspecialchars($trailer['director_nombre'] . ' ' . $trailer['director_apellidos']); ?>
+                        </a>
+                    <?php else: ?>
+                        No especificado
+                    <?php endif; ?>
+                </strong></span>
                 <span>Fecha de Estreno: <strong><?php echo date('d/m/Y', strtotime($trailer['release_date'])); ?></strong></span>
                 <span>Género: <strong><?php echo htmlspecialchars($trailer['genero']); ?></strong></span>
                 <span>Duración: <strong><?php echo htmlspecialchars((string)$trailer['duracion']); ?> min</strong></span>

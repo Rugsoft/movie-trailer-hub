@@ -18,6 +18,9 @@ $resGeneros = mysqli_query($conexion, $sqlGeneros);
 
 $sqlReparto = "SELECT * FROM reparto ORDER BY nombre ASC, apellidos ASC";
 $resReparto = mysqli_query($conexion, $sqlReparto);
+
+$sqlDirectores = "SELECT * FROM directores ORDER BY nombre ASC, apellidos ASC";
+$resDirectores = mysqli_query($conexion, $sqlDirectores);
 ?>
     <h1>Añadir Nuevo Trailer</h1>
     <p>Formulario para registrar una nueva película y su trailer en la base de datos.</p>
@@ -26,8 +29,20 @@ $resReparto = mysqli_query($conexion, $sqlReparto);
         <label for="titulo">Título de la Película *</label>
         <input type="text" id="titulo" name="titulo" required placeholder="Ej: Interstellar">
 
-        <label for="director">Director:</label>
-        <input type="text" id="director" name="director" placeholder="Ej: Christopher Nolan">
+        <label for="id_director">Director:</label>
+        <div class="select-action-row">
+            <select id="id_director" name="id_director">
+                <option value="">-- No especificado --</option>
+                <?php while ($d = mysqli_fetch_assoc($resDirectores)) { ?>
+                    <option value="<?php echo $d['id_director']; ?>">
+                        <?php echo htmlspecialchars($d['nombre'] . ' ' . $d['apellidos']); ?>
+                    </option>
+                <?php } ?>
+            </select>
+            <a href="añadir_director.php" target="_blank" class="btn btn-secondary btn-inline-flex" title="Registrar nuevo director">
+                <i class="fa-solid fa-user-plus"></i> Nuevo
+            </a>
+        </div>
 
         <label for="release_date">Fecha de Estreno *</label>
         <input type="date" id="release_date" name="release_date" required>

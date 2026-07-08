@@ -10,12 +10,14 @@ $genero_seleccionado = trim($_GET["genero"] ?? "");
 $resultado = null;
 
 if ($genero_seleccionado !== "") {
-    $sql = "SELECT t.*, GROUP_CONCAT(g2.nombre SEPARATOR ', ') as genero
+    $sql = "SELECT t.*, GROUP_CONCAT(g2.nombre SEPARATOR ', ') as genero,
+                   CONCAT(d.nombre, ' ', d.apellidos) as director
             FROM trailers t
             JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
             JOIN generos g ON tg.id_genero = g.id_genero
             LEFT JOIN trailers_generos tg2 ON t.id_trailer = tg2.id_trailer
             LEFT JOIN generos g2 ON tg2.id_genero = g2.id_genero
+            LEFT JOIN directores d ON t.id_director = d.id_director
             WHERE g.nombre = ?
             GROUP BY t.id_trailer
             ORDER BY t.release_date DESC";

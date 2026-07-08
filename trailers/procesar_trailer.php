@@ -8,14 +8,14 @@ if (!isset($_SESSION['rol']) || $_SESSION['rol'] !== 'admin') {
 define('BASE_PATH', '../');
 
 $titulo = trim($_POST["titulo"] ?? "");
-$director = trim($_POST["director"] ?? "");
+$id_director = isset($_POST["id_director"]) && $_POST["id_director"] !== "" ? (int)$_POST["id_director"] : null;
 $release_date = trim($_POST["release_date"] ?? "");
 $generos_post = $_POST["generos"] ?? [];
 $nuevo_genero = trim($_POST["nuevo_genero"] ?? "");
-$duracion = trim($_POST["duracion"] ?? "");
+$duracion = isset($_POST["duracion"]) && $_POST["duracion"] !== "" ? (int)$_POST["duracion"] : 0;
 $trailer_url = trim($_POST["trailer_url"] ?? "");
 $poster_url = trim($_POST["poster_url"] ?? "");
-$valoracion = trim($_POST["valoracion"] ?? "");
+$valoracion = isset($_POST["valoracion"]) && $_POST["valoracion"] !== "" ? (float)$_POST["valoracion"] : 0.0;
 $sinopsis = trim($_POST["sinopsis"] ?? "");
 $actores_post = $_POST["actores"] ?? [];
 $personajes_post = $_POST["personajes"] ?? [];
@@ -88,9 +88,9 @@ if (empty($poster_url)) {
 
             <?php else:
                 mysqli_stmt_close($stmtExiste);
-                $sqlInsertar = "INSERT INTO trailers (titulo, director, release_date, duracion, trailer_url, poster_url, valoracion, sinopsis) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                $sqlInsertar = "INSERT INTO trailers (titulo, id_director, release_date, duracion, trailer_url, poster_url, valoracion, sinopsis) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
                 $stmtInsertar = mysqli_prepare($conexion, $sqlInsertar);
-                mysqli_stmt_bind_param($stmtInsertar, "sssissds", $titulo, $director, $release_date, $duracion, $trailer_url, $poster_url, $valoracion, $sinopsis);
+                mysqli_stmt_bind_param($stmtInsertar, "sisissds", $titulo, $id_director, $release_date, $duracion, $trailer_url, $poster_url, $valoracion, $sinopsis);
                 
                 if (mysqli_stmt_execute($stmtInsertar)):
                     $id_trailer = mysqli_insert_id($conexion);

@@ -9,14 +9,14 @@ define('BASE_PATH', '../');
 
 $id_trailer = isset($_POST["id_trailer"]) ? (int)$_POST["id_trailer"] : 0;
 $titulo = trim($_POST["titulo"] ?? "");
-$director = trim($_POST["director"] ?? "");
+$id_director = isset($_POST["id_director"]) && $_POST["id_director"] !== "" ? (int)$_POST["id_director"] : null;
 $release_date = trim($_POST["release_date"] ?? "");
 $generos_post = $_POST["generos"] ?? [];
 $nuevo_genero = trim($_POST["nuevo_genero"] ?? "");
-$duracion = trim($_POST["duracion"] ?? "");
+$duracion = isset($_POST["duracion"]) && $_POST["duracion"] !== "" ? (int)$_POST["duracion"] : 0;
 $trailer_url = trim($_POST["trailer_url"] ?? "");
 $poster_url = trim($_POST["poster_url"] ?? "");
-$valoracion = trim($_POST["valoracion"] ?? "");
+$valoracion = isset($_POST["valoracion"]) && $_POST["valoracion"] !== "" ? (float)$_POST["valoracion"] : 0.0;
 $sinopsis = trim($_POST["sinopsis"] ?? "");
 $actores_post = $_POST["actores"] ?? [];
 $personajes_post = $_POST["personajes"] ?? [];
@@ -70,9 +70,9 @@ if (empty($poster_url)) {
             <a class="boton" href="listar_trailers.php">Volver al catálogo</a>
 
         <?php else:
-            $sqlActualizar = "UPDATE trailers SET titulo = ?, director = ?, release_date = ?, duracion = ?, trailer_url = ?, poster_url = ?, valoracion = ?, sinopsis = ? WHERE id_trailer = ?";
+            $sqlActualizar = "UPDATE trailers SET titulo = ?, id_director = ?, release_date = ?, duracion = ?, trailer_url = ?, poster_url = ?, valoracion = ?, sinopsis = ? WHERE id_trailer = ?";
             $stmtActualizar = mysqli_prepare($conexion, $sqlActualizar);
-            mysqli_stmt_bind_param($stmtActualizar, "sssissdsi", $titulo, $director, $release_date, $duracion, $trailer_url, $poster_url, $valoracion, $sinopsis, $id_trailer);
+            mysqli_stmt_bind_param($stmtActualizar, "sisissds" . "i", $titulo, $id_director, $release_date, $duracion, $trailer_url, $poster_url, $valoracion, $sinopsis, $id_trailer);
             
             if (mysqli_stmt_execute($stmtActualizar)):
                 mysqli_stmt_close($stmtActualizar);

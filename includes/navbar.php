@@ -42,11 +42,17 @@
                                 <a href="<?php echo $rootPath; ?>trailers/listar_reparto.php" class="dropdown-item">
                                     <i class="fa-solid fa-users-gear"></i> Administrar Actores
                                 </a>
+                                <a href="<?php echo $rootPath; ?>trailers/listar_directores.php" class="dropdown-item">
+                                    <i class="fa-solid fa-user-gear"></i> Administrar Directores
+                                </a>
                                 <a href="<?php echo $rootPath; ?>trailers/añadir_trailer.php" class="dropdown-item">
                                     <i class="fa-solid fa-plus"></i> Añadir Trailer
                                 </a>
                                 <a href="<?php echo $rootPath; ?>trailers/añadir_reparto.php" class="dropdown-item">
                                     <i class="fa-solid fa-user-plus"></i> Añadir Actor
+                                </a>
+                                <a href="<?php echo $rootPath; ?>trailers/añadir_director.php" class="dropdown-item">
+                                    <i class="fa-solid fa-user-plus"></i> Añadir Director
                                 </a>
                             </div>
                         </div>

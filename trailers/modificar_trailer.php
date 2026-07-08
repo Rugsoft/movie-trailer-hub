@@ -55,6 +55,10 @@ while ($row = mysqli_fetch_assoc($resSelectedReparto)) {
     $actorCharacters[(int)$row['id_reparto']] = $row['personaje'];
 }
 mysqli_stmt_close($stmtSelectedReparto);
+
+// Obtener todos los directores
+$sqlDirectores = "SELECT * FROM directores ORDER BY nombre ASC, apellidos ASC";
+$resDirectores = mysqli_query($conexion, $sqlDirectores);
 ?>
 <?php
 $pageTitle = "Modificar Trailer";
@@ -71,8 +75,24 @@ require_once $rootPath . 'includes/navbar.php';
         <label for="titulo">Título de la Película *</label>
         <input type="text" id="titulo" name="titulo" required value="<?php echo htmlspecialchars($trailer['titulo']); ?>">
 
-        <label for="director">Director:</label>
-        <input type="text" id="director" name="director" value="<?php echo htmlspecialchars($trailer['director'] ?? ''); ?>">
+        <label for="id_director">Director:</label>
+        <div class="select-action-row">
+            <select id="id_director" name="id_director">
+                <option value="">-- No especificado --</option>
+                <?php 
+                mysqli_data_seek($resDirectores, 0); // Reset pointer
+                while ($d = mysqli_fetch_assoc($resDirectores)) { 
+                    $isSelected = ($trailer['id_director'] == $d['id_director']) ? 'selected' : '';
+                ?>
+                    <option value="<?php echo $d['id_director']; ?>" <?php echo $isSelected; ?>>
+                        <?php echo htmlspecialchars($d['nombre'] . ' ' . $d['apellidos']); ?>
+                    </option>
+                <?php } ?>
+            </select>
+            <a href="añadir_director.php" target="_blank" class="btn btn-secondary btn-inline-flex" title="Registrar nuevo director">
+                <i class="fa-solid fa-user-plus"></i> Nuevo
+            </a>
+        </div>
 
         <label for="release_date">Fecha de Estreno *</label>
         <input type="date" id="release_date" name="release_date" required value="<?php echo htmlspecialchars($trailer['release_date']); ?>">
