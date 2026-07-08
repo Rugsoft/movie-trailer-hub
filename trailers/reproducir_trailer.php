@@ -166,10 +166,6 @@ if (isset($_SESSION['usuario_id'])) {
                     <i class="fa-solid fa-chart-simple"></i> Estadísticas
                 </a>
                 <?php if (isset($_SESSION['usuario_id'])): ?>
-                    <span class="user-greeting" style="font-size: 14px; font-weight: 600; color: #ffffff; margin-right: 8px;">
-                        <i class="fa-solid fa-circle-user" style="color: var(--primary); margin-right: 5px;"></i>Hola, <?= htmlspecialchars($_SESSION['username']) ?>
-                    </span>
-                    
                     <a href="favoritos.php" class="btn btn-secondary" style="border-color: rgba(220, 38, 38, 0.3); color: var(--secondary);">
                         <i class="fa-solid fa-heart"></i> Mis Favoritos
                     </a>
@@ -193,6 +189,10 @@ if (isset($_SESSION['usuario_id'])) {
                         </div>
                     <?php endif; ?>
                     
+                    <span class="user-greeting">
+                        <i class="fa-solid fa-circle-user"></i>Hola, <?= htmlspecialchars($_SESSION['username']) ?>
+                    </span>
+
                     <a href="../auth/logout.php" class="btn btn-secondary">
                         <i class="fa-solid fa-right-from-bracket"></i> Salir
                     </a>

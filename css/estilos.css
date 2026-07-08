@@ -100,6 +100,28 @@ a {
 .nav-actions {
     display: flex;
     gap: 14px;
+    align-items: center;
+}
+
+.user-greeting {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-headline);
+    font-size: 13px;
+    font-weight: 600;
+    color: #ffffff;
+    height: 38px;
+    box-sizing: border-box;
+}
+
+.user-greeting i {
+    color: var(--primary);
+    font-size: 15px;
 }
 
 /* Títulos de Sección */

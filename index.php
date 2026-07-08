@@ -84,16 +84,18 @@ mysqli_close($conexion);
 ?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Movie Trailer Hub - Stitch Edition</title>
-    
+
     <meta name="description" content="Guarda, organiza y disfruta de los mejores trailers de tus películas favoritas. Tu hub centralizado de cine.">
-    
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/estilos.css">
 </head>
+
 <body>
 
     <!-- Navegación principal -->
@@ -108,10 +110,6 @@ mysqli_close($conexion);
                     <i class="fa-solid fa-chart-simple"></i> Estadísticas
                 </a>
                 <?php if (isset($_SESSION['usuario_id'])): ?>
-                    <span class="user-greeting" style="font-size: 14px; font-weight: 600; color: #ffffff; margin-right: 8px;">
-                        <i class="fa-solid fa-circle-user" style="color: var(--primary); margin-right: 5px;"></i>Hola, <?= htmlspecialchars($_SESSION['username']) ?>
-                    </span>
-                    
                     <a href="trailers/favoritos.php" class="btn btn-secondary" style="border-color: rgba(220, 38, 38, 0.3); color: var(--secondary);">
                         <i class="fa-solid fa-heart"></i> Mis Favoritos
                     </a>
@@ -134,7 +132,11 @@ mysqli_close($conexion);
                             </div>
                         </div>
                     <?php endif; ?>
-                    
+
+                    <span class="user-greeting">
+                        <i class="fa-solid fa-circle-user"></i>Hola, <?= htmlspecialchars($_SESSION['username']) ?>
+                    </span>
+
                     <a href="auth/logout.php" class="btn btn-secondary">
                         <i class="fa-solid fa-right-from-bracket"></i> Salir
                     </a>
@@ -181,7 +183,7 @@ mysqli_close($conexion);
                             </div>
                         <?php endforeach; ?>
                     </div>
-                    
+
                     <!-- Carousel Indicators / Dots -->
                     <div class="carousel-dots">
                         <?php foreach ($featuredTrailers as $index => $item): ?>
@@ -224,7 +226,7 @@ mysqli_close($conexion);
                     <button type="button" id="clearDateBtn" class="btn btn-secondary" style="padding: 8px 12px; font-size: 11px; margin-left: auto;"><i class="fa-solid fa-xmark"></i> Limpiar</button>
                 </div>
             </div>
-            
+
             <div class="filters-container">
                 <span class="filter-label">Filtrar por género:</span>
                 <button class="genre-tag active" data-genre="Todos">Todos</button>
@@ -246,17 +248,17 @@ mysqli_close($conexion);
 
         <section class="trailers-grid" id="trailersGrid">
             <?php foreach ($trailers as $trailer): ?>
-                <article class="movie-card" 
-                         data-id="<?= htmlspecialchars((string)$trailer['id_trailer']) ?>"
-                         data-title="<?= htmlspecialchars($trailer['titulo']) ?>"
-                         data-synopsis="<?= htmlspecialchars($trailer['sinopsis'] ?? '') ?>"
-                         data-director="<?= htmlspecialchars($trailer['director'] ?? '') ?>"
-                         data-genre="<?= htmlspecialchars($trailer['genero']) ?>"
-                         data-release-date="<?= htmlspecialchars($trailer['release_date']) ?>">
-                    
+                <article class="movie-card"
+                    data-id="<?= htmlspecialchars((string)$trailer['id_trailer']) ?>"
+                    data-title="<?= htmlspecialchars($trailer['titulo']) ?>"
+                    data-synopsis="<?= htmlspecialchars($trailer['sinopsis'] ?? '') ?>"
+                    data-director="<?= htmlspecialchars($trailer['director'] ?? '') ?>"
+                    data-genre="<?= htmlspecialchars($trailer['genero']) ?>"
+                    data-release-date="<?= htmlspecialchars($trailer['release_date']) ?>">
+
                     <div class="movie-poster-container" onclick="location.href='trailers/reproducir_trailer.php?id=<?= $trailer['id_trailer'] ?>'" style="cursor: pointer;">
                         <img src="<?= htmlspecialchars($trailer['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=600') ?>" alt="<?= htmlspecialchars($trailer['titulo']) ?>" class="movie-poster">
-                        
+
                         <div class="card-play-overlay">
                             <div class="play-icon-circle">
                                 <i class="fa-solid fa-play"></i>
@@ -275,7 +277,7 @@ mysqli_close($conexion);
 
                     <div class="movie-info">
                         <h3 class="movie-title"><?= htmlspecialchars($trailer['titulo']) ?></h3>
-                        
+
                         <div class="movie-meta-row">
                             <span><i class="fa-regular fa-calendar"></i> <?= date('d/m/Y', strtotime($trailer['release_date'])) ?></span>
                             <span><i class="fa-regular fa-clock"></i> <?= htmlspecialchars((string)$trailer['duracion']) ?> min</span>
@@ -283,12 +285,12 @@ mysqli_close($conexion);
                         </div>
 
                         <p class="movie-description"><?= htmlspecialchars($trailer['sinopsis'] ?? 'Sin sinopsis.') ?></p>
-                        
+
                         <div class="movie-actions">
                             <a class="btn btn-secondary" href="trailers/reproducir_trailer.php?id=<?= $trailer['id_trailer'] ?>">
                                 <i class="fa-solid fa-play"></i> Ver
                             </a>
-                            
+
                             <?php if (isset($_SESSION['usuario_id'])): ?>
                                 <?php if (in_array((int)$trailer['id_trailer'], $userFavorites)): ?>
                                     <a class="btn btn-secondary" style="color: var(--secondary);" href="trailers/toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" title="Quitar de favoritos">
@@ -331,17 +333,17 @@ mysqli_close($conexion);
             const genreTags = document.querySelectorAll('.genre-tag');
             const movieCards = document.querySelectorAll('.movie-card');
             const emptyState = document.getElementById('emptyState');
-            
+
             const upcomingFilter = document.getElementById('upcomingFilter');
             const trailersGrid = document.getElementById('trailersGrid');
-            
+
             // Calcular hoy en formato YYYY-MM-DD
             const localDate = new Date();
             const year = localDate.getFullYear();
             const month = String(localDate.getMonth() + 1).padStart(2, '0');
             const day = String(localDate.getDate()).padStart(2, '0');
             const today = `${year}-${month}-${day}`;
-            
+
             let activeGenre = 'Todos';
             let searchQuery = '';
             let activeStartDate = '';
@@ -413,12 +415,12 @@ mysqli_close($conexion);
                     const genre = card.getAttribute('data-genre');
                     const releaseDate = card.getAttribute('data-release-date');
 
-                    const matchesSearch = title.includes(searchQuery) || 
-                                          synopsis.includes(searchQuery) || 
-                                          director.includes(searchQuery);
-                                          
+                    const matchesSearch = title.includes(searchQuery) ||
+                        synopsis.includes(searchQuery) ||
+                        director.includes(searchQuery);
+
                     const matchesGenre = activeGenre === 'Todos' || (genre && genre.split(', ').map(g => g.trim()).includes(activeGenre));
-                    
+
                     let matchesDate = true;
                     if (activeStartDate && releaseDate < activeStartDate) {
                         matchesDate = false;
@@ -456,7 +458,7 @@ mysqli_close($conexion);
 
                 function showSlide(index) {
                     if (slides.length === 0) return;
-                    
+
                     // Asegurar límites circulares
                     if (index >= slides.length) {
                         currentIndex = 0;
@@ -584,4 +586,5 @@ mysqli_close($conexion);
         <?php endif; ?>
     </div>
 </body>
+
 </html>
