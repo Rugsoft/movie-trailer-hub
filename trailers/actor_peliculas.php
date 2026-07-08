@@ -41,12 +41,12 @@ mysqli_close($conexion);
 <?php
 $pageTitle = "Filmografía: " . $actor['nombre'] . ' ' . $actor['apellidos'];
 $rootPath = "../";
-require_once $rootPath . 'includes/navbar.php';
+require $rootPath . 'includes/navbar.php';
 ?>
 
     <main class="app-container">
-        <h1>Perfil Artístico</h1>
-        <p>Conoce la trayectoria de este miembro del elenco en nuestra plataforma.</p>
+        <h1 style="text-align:center;">Perfil Artístico</h1>
+        <p style="text-align:center;">Conoce la trayectoria de este miembro del elenco en nuestra plataforma.</p>
 
     <div class="actor-profile-card">
         <img src="<?php echo htmlspecialchars($actor['foto_url'] ?? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200'); ?>" alt="<?php echo htmlspecialchars($actor['nombre']); ?>" class="actor-avatar">
@@ -92,5 +92,5 @@ require_once $rootPath . 'includes/navbar.php';
 
     <a class="volver" href="../index.php">← Volver al inicio</a>
 <?php
-require_once $rootPath . 'includes/footer.php';
+require $rootPath . 'includes/footer.php';
 ?>

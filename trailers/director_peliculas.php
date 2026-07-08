@@ -40,11 +40,11 @@ mysqli_close($conexion);
 <?php
 $pageTitle = "Director: " . $director['nombre'] . ' ' . $director['apellidos'];
 $rootPath = "../";
-require_once $rootPath . 'includes/navbar.php';
+require $rootPath . 'includes/navbar.php';
 ?>
     <main class="app-container">
-        <h1>Perfil del Director</h1>
-        <p>Conoce la trayectoria de este cineasta en nuestra plataforma.</p>
+        <h1 style="text-align:center;">Perfil del Director</h1>
+        <p style="text-align:center;">Conoce la trayectoria de este cineasta en nuestra plataforma.</p>
 
         <div class="actor-profile-card">
             <div class="director-avatar-placeholder">
@@ -91,5 +91,5 @@ require_once $rootPath . 'includes/navbar.php';
 
     <a class="volver" href="../index.php">← Volver al inicio</a>
 <?php
-require_once $rootPath . 'includes/footer.php';
+require $rootPath . 'includes/footer.php';
 ?>
