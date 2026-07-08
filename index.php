@@ -92,6 +92,7 @@ mysqli_close($conexion);
 
     <meta name="description" content="Guarda, organiza y disfruta de los mejores trailers de tus películas favoritas. Tu hub centralizado de cine.">
 
+    <link rel="icon" type="image/png" href="images/logo movie trailer hub (1) (1).png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/estilos.css">
 </head>
@@ -102,7 +103,7 @@ mysqli_close($conexion);
     <header class="navbar">
         <div class="app-container navbar-content">
             <a href="index.php" class="brand">
-                <i class="fa-solid fa-clapperboard brand-icon"></i>
+                <img src="images/logo movie trailer hub (1) (1).png" alt="Logo" class="brand-icon">
                 <h1 class="brand-name">Movie Trailer Hub</h1>
             </a>
             <div class="nav-actions">

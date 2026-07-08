@@ -18,6 +18,7 @@ $resultado = mysqli_stmt_get_result($stmt);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ranking de Trailers</title>
+    <link rel="icon" type="image/png" href="../images/logo movie trailer hub (1) (1).png">
     <link rel="stylesheet" href="../css/estilos.css">
     <style>
         .poster-mini {

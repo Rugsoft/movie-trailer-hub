@@ -91,6 +91,7 @@ if (isset($_SESSION['usuario_id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reproduciendo: <?php echo htmlspecialchars($trailer['titulo']); ?></title>
+    <link rel="icon" type="image/png" href="../images/logo movie trailer hub (1) (1).png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../css/estilos.css">
     <style>
@@ -158,7 +159,7 @@ if (isset($_SESSION['usuario_id'])) {
     <header class="navbar">
         <div class="app-container navbar-content">
             <a href="../index.php" class="brand">
-                <i class="fa-solid fa-clapperboard brand-icon"></i>
+                <img src="../images/logo movie trailer hub (1) (1).png" alt="Logo" class="brand-icon">
                 <h1 class="brand-name">Movie Trailer Hub</h1>
             </a>
             <div class="nav-actions">

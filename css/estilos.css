@@ -87,6 +87,14 @@ a {
     text-shadow: 0 0 10px var(--primary-glow);
 }
 
+img.brand-icon {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    box-shadow: 0 0 10px var(--primary-glow);
+    border-radius: 6px;
+}
+
 .brand-name {
     font-family: var(--font-headline);
     font-weight: 800;
