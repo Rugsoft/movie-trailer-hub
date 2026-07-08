@@ -36,5 +36,6 @@ require_once $rootPath . 'includes/navbar.php';
     </form>
 
     <a class="volver" href="../index.php">← Volver al inicio</a>
-</body>
-</html>
+<?php
+require_once $rootPath . 'includes/footer.php';
+?>

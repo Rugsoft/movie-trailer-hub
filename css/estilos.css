@@ -2048,3 +2048,191 @@ main.app-container {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 16px;
 }
+
+/* ==========================================================================
+   Main Footer (includes/footer.php)
+   ========================================================================== */
+.main-footer {
+    background-color: var(--bg-surface-elevated);
+    border-top: 1px solid var(--border-color);
+    padding: 60px 0 0 0;
+    margin-top: 80px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Ambient glow under the footer (subtle) */
+.main-footer::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 120px;
+    background: radial-gradient(circle, rgba(245, 158, 11, 0.05) 0%, transparent 80%);
+    filter: blur(50px);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.footer-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 40px;
+    padding-bottom: 50px;
+}
+
+.footer-col {
+    display: flex;
+    flex-direction: column;
+}
+
+.footer-title {
+    font-family: var(--font-headline);
+    font-size: 15px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 24px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+    display: inline-block;
+}
+
+.footer-title::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -8px;
+    width: 30px;
+    height: 2px;
+    background-color: var(--primary);
+    border-radius: 1px;
+}
+
+.footer-desc {
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.footer-links ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.footer-links ul li a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13.5px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: var(--transition-smooth);
+}
+
+.footer-links ul li a i {
+    font-size: 12px;
+    color: var(--primary);
+    width: 14px;
+    text-align: center;
+}
+
+.footer-links ul li a:hover {
+    color: #ffffff;
+    transform: translateX(4px);
+}
+
+.social-icons {
+    display: flex;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.social-icons a {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 16px;
+    text-decoration: none;
+    transition: var(--transition-smooth);
+}
+
+.social-icons a:hover {
+    background-color: rgba(245, 158, 11, 0.1);
+    border-color: var(--primary);
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(245, 158, 11, 0.15);
+}
+
+.footer-bottom {
+    background-color: rgba(4, 14, 31, 0.6);
+    border-top: 1px solid var(--border-color);
+    padding: 24px 0;
+}
+
+.footer-bottom-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.footer-bottom .copyright {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.legal-links {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.legal-links a {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: var(--transition-smooth);
+}
+
+.legal-links a:hover {
+    color: #ffffff;
+}
+
+.legal-links .separator {
+    color: rgba(255,255,255,0.15);
+    font-size: 10px;
+}
+
+@media (max-width: 768px) {
+    .footer-content {
+        grid-template-columns: 1fr;
+        gap: 36px;
+        padding-bottom: 40px;
+    }
+    .main-footer {
+        padding-top: 40px;
+        margin-top: 50px;
+    }
+    .footer-bottom-content {
+        flex-direction: column;
+        text-align: center;
+    }
+}

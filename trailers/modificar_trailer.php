@@ -133,10 +133,9 @@ require_once $rootPath . 'includes/navbar.php';
     </form>
 
     <a class="volver" href="listar_trailers.php">← Volver al catálogo</a>
-
-</body>
-
-</html>
+<?php
+require_once $rootPath . 'includes/footer.php';
+?>
 <?php
 mysqli_close($conexion);
 ?>

@@ -521,6 +521,6 @@ require_once $rootPath . 'includes/navbar.php';
             </div>
         <?php endif; ?>
     </div>
-</body>
-
-</html>
+<?php
+require_once $rootPath . 'includes/footer.php';
+?>
