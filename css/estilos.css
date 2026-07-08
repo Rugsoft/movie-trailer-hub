@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Montserrat:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&family=Montserrat:wght@400;500;600;700;800&display=swap');
 
 /* variables del Tema Cinematic Modern - Stitch */
 :root {
@@ -79,6 +79,7 @@ a {
     display: flex;
     align-items: center;
     gap: 10px;
+    line-height: 1;
 }
 
 .brand-icon {
@@ -96,13 +97,20 @@ img.brand-icon {
 }
 
 .brand-name {
-    font-family: var(--font-headline);
-    font-weight: 800;
-    font-size: 18px;
-    letter-spacing: -0.5px;
-    background: linear-gradient(135deg, #ffffff 0%, #b0c2de 100%);
+    font-family: 'Bebas Neue', 'Montserrat', sans-serif;
+    font-weight: 400;
+    font-size: 32px;
+    letter-spacing: 3px;
+    line-height: 1;
+    background: linear-gradient(135deg, #ffffff 0%, var(--primary) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-transform: uppercase;
+    margin: 0;
+    padding: 0;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 .nav-actions {
@@ -140,6 +148,13 @@ h1 {
     color: #ffffff;
     margin-bottom: 10px;
     letter-spacing: -0.5px;
+}
+
+.brand h1 {
+    margin: 0;
+    padding: 0;
+    font-size: inherit;
+    font-weight: inherit;
 }
 
 body > h1 {
