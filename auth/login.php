@@ -49,8 +49,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <p>Accede a tu cuenta para guardar tus trailers favoritos.</p>
 
     <?php if ($error): ?>
-        <div class="alert alert-error" style="max-width: 550px; margin: 0 auto 20px auto; display: flex; align-items: center; gap: 10px; padding: 12px 20px; background: rgba(220, 38, 38, 0.15); border: 1px solid rgba(220, 38, 38, 0.3); border-radius: var(--radius-md); color: #ffffff;">
-            <i class="fa-solid fa-circle-exclamation" style="color: var(--secondary);"></i>
+        <div class="alert alert-error">
+            <i class="fa-solid fa-circle-exclamation"></i>
             <span><?php echo htmlspecialchars($error); ?></span>
         </div>
     <?php endif; ?>
@@ -65,8 +65,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         <button type="submit">Iniciar Sesión</button>
     </form>
 
-    <div style="text-align: center; margin-top: 15px;">
-        <p style="font-size: 14px; color: var(--text-muted);">¿No tienes una cuenta? <a href="registro.php" style="color: var(--primary); text-decoration: underline;">Regístrate aquí</a></p>
+    <div class="auth-footer">
+        <p>¿No tienes una cuenta? <a href="registro.php">Regístrate aquí</a></p>
     </div>
 
     <a class="volver" href="../index.php">← Volver al inicio</a>

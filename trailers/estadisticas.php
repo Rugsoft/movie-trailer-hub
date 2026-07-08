@@ -101,7 +101,7 @@ mysqli_close($conexion);
             </a>
             <div class="nav-actions">
                 <?php if (isset($_SESSION['usuario_id'])): ?>
-                    <a href="favoritos.php" class="btn btn-secondary" style="border-color: rgba(220, 38, 38, 0.3); color: var(--secondary);">
+                    <a href="favoritos.php" class="btn btn-secondary btn-favoritos">
                         <i class="fa-solid fa-heart"></i> Mis Favoritos
                     </a>
 

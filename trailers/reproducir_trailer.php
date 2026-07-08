@@ -94,65 +94,6 @@ if (isset($_SESSION['usuario_id'])) {
     <link rel="icon" type="image/png" href="../images/logo movie trailer hub (1) (1).png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../css/estilos.css">
-    <style>
-        .player-wrapper {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-lg);
-            padding: 30px;
-            box-shadow: var(--shadow-md);
-            margin: 0 auto;
-            max-width: 900px;
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-        }
-        .video-container {
-            position: relative;
-            padding-bottom: 56.25%; /* 16:9 */
-            height: 0;
-            overflow: hidden;
-            border-radius: var(--radius-md);
-            background: #000;
-            box-shadow: var(--shadow-sm);
-            border: 1px solid var(--border-color);
-            margin-bottom: 24px;
-        }
-        .video-container iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-        .info-container h2 {
-            font-family: 'Montserrat', sans-serif;
-            color: #ffffff;
-            margin-bottom: 8px;
-            text-align: center;
-            font-size: 1.8rem;
-            font-weight: 800;
-        }
-        .info-meta {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 16px;
-            font-size: 0.95rem;
-            color: var(--text-muted);
-            margin-bottom: 16px;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 12px;
-        }
-        .info-meta span strong {
-            color: var(--text-main);
-        }
-        .info-synopsis {
-            font-size: 1.05rem;
-            line-height: 1.6;
-            margin-bottom: 20px;
-        }
-    </style>
 </head>
 <body>
     <!-- Navegación principal -->
@@ -167,7 +108,7 @@ if (isset($_SESSION['usuario_id'])) {
                     <i class="fa-solid fa-chart-simple"></i> Estadísticas
                 </a>
                 <?php if (isset($_SESSION['usuario_id'])): ?>
-                    <a href="favoritos.php" class="btn btn-secondary" style="border-color: rgba(220, 38, 38, 0.3); color: var(--secondary);">
+                    <a href="favoritos.php" class="btn btn-secondary btn-favoritos">
                         <i class="fa-solid fa-heart"></i> Mis Favoritos
                     </a>
 
@@ -209,10 +150,10 @@ if (isset($_SESSION['usuario_id'])) {
         </div>
     </header>
 
-    <main class="app-container" style="margin-top: 30px;">
-        <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="margin-bottom: 8px;">Reproductor de Trailers</h1>
-            <p style="color: var(--text-muted); margin: 0;">Disfruta del trailer oficial de la película seleccionada.</p>
+    <main class="app-container">
+        <div class="reproducer-header">
+            <h1>Reproductor de Trailers</h1>
+            <p>Disfruta del trailer oficial de la película seleccionada.</p>
         </div>
 
     <div class="player-wrapper">
@@ -231,13 +172,13 @@ if (isset($_SESSION['usuario_id'])) {
             </div>
             
             <?php if (isset($_SESSION['usuario_id'])): ?>
-                <div style="margin-bottom: 20px; text-align: center;">
+                <div class="text-center mb-24">
                     <?php if ($isTrailerFavorito): ?>
-                        <a href="toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" class="btn btn-secondary" style="border-color: rgba(220, 38, 38, 0.3); color: var(--secondary); display: inline-flex; align-items: center; gap: 8px;">
+                        <a href="toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" class="btn btn-secondary btn-active-favorito-reproductor">
                             <i class="fa-solid fa-heart"></i> Quitar de Favoritos
                         </a>
                     <?php else: ?>
-                        <a href="toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 8px;">
+                        <a href="toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" class="btn btn-secondary btn-inline-flex">
                             <i class="fa-regular fa-heart"></i> Añadir a Favoritos
                         </a>
                     <?php endif; ?>
@@ -249,9 +190,9 @@ if (isset($_SESSION['usuario_id'])) {
             </div>
 
             <?php if (!empty($reparto)): ?>
-                <div class="info-cast" style="border-top: 1px solid var(--border-color); padding-top: 20px; margin-top: 20px;">
-                    <h3 style="font-family: var(--font-headline); font-size: 1.2rem; font-weight: 700; color: #ffffff; margin-bottom: 12px;">Reparto / Elenco</h3>
-                    <div class="cast-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px;">
+                <div class="info-cast">
+                    <h3 class="info-cast-title">Reparto / Elenco</h3>
+                    <div class="cast-grid">
                         <?php foreach ($reparto as $actor): ?>
                             <a href="actor_peliculas.php?id=<?php echo $actor['id_reparto']; ?>" class="actor-card">
                                 <img src="<?php echo htmlspecialchars($actor['foto_url'] ?? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200'); ?>" alt="<?php echo htmlspecialchars($actor['nombre']); ?>">

@@ -1444,6 +1444,12 @@ textarea {
 .player-wrapper {
     position: relative;
     background-color: var(--card-bg) !important;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 30px;
+    box-shadow: var(--shadow-md);
+    margin: 0 auto;
+    max-width: 900px;
     backdrop-filter: blur(16px) !important;
     -webkit-backdrop-filter: blur(16px) !important;
 }
@@ -1462,8 +1468,55 @@ textarea {
 }
 
 .video-container {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 */
+    height: 0;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    background: #000;
     box-shadow: 0 0 50px rgba(245, 158, 11, 0.2), 0 20px 40px rgba(0, 0, 0, 0.6) !important;
-    border-color: rgba(245, 158, 11, 0.2) !important;
+    border: 1px solid rgba(245, 158, 11, 0.2) !important;
+    margin-bottom: 24px;
+}
+
+.video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.info-container h2 {
+    font-family: var(--font-headline);
+    color: #ffffff;
+    margin-bottom: 8px;
+    text-align: center;
+    font-size: 1.8rem;
+    font-weight: 800;
+}
+
+.info-meta {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 12px;
+}
+
+.info-meta span strong {
+    color: var(--text-primary);
+}
+
+.info-synopsis {
+    font-size: 1.05rem;
+    line-height: 1.6;
+    margin-bottom: 20px;
 }
 
 .actor-card {
@@ -1520,4 +1573,478 @@ textarea {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+/* ==========================================================================
+   Favorites Section (favoritos.php)
+   ========================================================================== */
+.favorite-heart-btn {
+    background: rgba(220, 38, 38, 0.15);
+    border: 1px solid rgba(220, 38, 38, 0.3);
+    border-radius: var(--radius-md);
+    padding: 8px 12px;
+    color: var(--secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+}
+
+.favorite-heart-btn:hover {
+    background: rgba(220, 38, 38, 0.3);
+    transform: scale(1.05);
+}
+
+/* ==========================================================================
+   Actor Filmography Profile (actor_peliculas.php)
+   ========================================================================== */
+.actor-profile-card {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 30px;
+    box-shadow: var(--shadow-md);
+    margin: 0 auto 40px auto;
+    max-width: 900px;
+    display: flex;
+    gap: 30px;
+    align-items: center;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.actor-avatar {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--primary);
+    box-shadow: 0 0 20px var(--primary-glow);
+}
+
+.actor-details h2 {
+    font-family: var(--font-headline);
+    color: #ffffff;
+    margin-bottom: 12px;
+    font-size: 2.2rem;
+    font-weight: 800;
+}
+
+.actor-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    font-size: 1rem;
+    color: var(--text-muted);
+}
+
+.actor-meta span strong {
+    color: var(--text-primary);
+}
+
+.movies-list-container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.movie-row-card {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    transition: var(--transition-smooth);
+}
+
+.movie-row-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.movie-row-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    overflow: hidden;
+}
+
+.movie-row-poster {
+    width: 50px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.movie-row-info h3 {
+    font-family: var(--font-headline);
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: #ffffff;
+    margin-bottom: 4px;
+}
+
+.movie-row-info p {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.movie-row-info p strong {
+    color: var(--primary);
+}
+
+.movie-row-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    white-space: nowrap;
+}
+
+.movie-row-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.movie-row-meta span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.movie-row-meta .rating {
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 4px;
+}
+
+@media (max-width: 600px) {
+    .actor-profile-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    .movie-row-card {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .movie-row-right {
+        justify-content: space-between;
+        border-top: 1px dashed var(--border-color);
+        padding-top: 12px;
+    }
+    .movie-row-meta {
+        align-items: flex-start;
+    }
+}
+
+/* ==========================================================================
+   Ranking Page Styles (ranking_trailers.php)
+   ========================================================================== */
+.rank-number {
+    font-family: var(--font-headline);
+    font-weight: 800;
+    color: var(--primary);
+    font-size: 1.2rem;
+    text-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+}
+
+/* ==========================================================================
+   Form Alerts and Footers (Auth Section)
+   ========================================================================== */
+.alert-error {
+    max-width: 550px;
+    margin: 0 auto 20px auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    background: rgba(220, 38, 38, 0.15);
+    border: 1px solid rgba(220, 38, 38, 0.3);
+    border-radius: var(--radius-md);
+    color: #ffffff;
+    font-size: 14px;
+}
+
+.alert-error i {
+    color: var(--secondary);
+}
+
+.auth-footer {
+    text-align: center;
+    margin-top: 15px;
+}
+
+.auth-footer p {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.auth-footer a {
+    color: var(--primary);
+    text-decoration: underline;
+    transition: var(--transition-smooth);
+}
+
+.auth-footer a:hover {
+    color: #fbbf24;
+}
+
+/* ==========================================================================
+   Hero Empty State (index.php)
+   ========================================================================== */
+.hero-empty {
+    background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-surface-lowest) 100%) !important;
+}
+
+.hero-empty .hero-overlay {
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    height: 100% !important;
+}
+
+.hero-empty-icon {
+    font-size: 64px;
+    color: var(--primary);
+    margin-bottom: 20px;
+}
+
+/* ==========================================================================
+   Search & Filter Containers (index.php)
+   ========================================================================== */
+.search-bar-container {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.search-input-wrapper {
+    position: relative;
+    flex: 2;
+    min-width: 300px;
+}
+
+.date-filter-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 2;
+    min-width: 300px;
+    background: var(--bg-surface-lowest);
+    padding: 6px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    transition: var(--transition-smooth);
+}
+
+.date-filter-container i {
+    color: var(--text-muted);
+    font-size: 16px;
+    margin-right: 4px;
+}
+
+.date-filter-container span {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.date-filter-container input[type="date"] {
+    padding: 6px 10px;
+    min-width: 120px;
+    border: none;
+    background: transparent;
+    height: auto;
+    box-shadow: none;
+}
+
+.date-filter-container #clearDateBtn {
+    padding: 8px 12px;
+    font-size: 11px;
+    margin-left: auto;
+}
+
+.upcoming-filter-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 14px;
+    width: 100%;
+}
+
+.upcoming-filter-container input[type="checkbox"] {
+    width: auto;
+    min-width: auto;
+    height: auto;
+    cursor: pointer;
+    transform: scale(1.25);
+    accent-color: var(--primary);
+}
+
+.upcoming-filter-container label {
+    font-size: 13px;
+    color: var(--text-primary);
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    margin: 0;
+}
+
+.catalog-title-wrapper {
+    margin-bottom: 24px;
+}
+
+.catalog-title-wrapper .section-title {
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* ==========================================================================
+   Custom Button styles for Navbar (Mis Favoritos)
+   ========================================================================== */
+.btn-favoritos {
+    border-color: rgba(220, 38, 38, 0.3) !important;
+    color: var(--secondary) !important;
+}
+
+.btn-favoritos:hover {
+    background: rgba(220, 38, 38, 0.1) !important;
+}
+
+.auth-footer a:hover {
+    color: #fbbf24;
+}
+
+/* ==========================================================================
+   Utility Helpers & Global Overrides (Centralization)
+   ========================================================================== */
+.text-center {
+    text-align: center !important;
+}
+
+.text-right {
+    text-align: right !important;
+}
+
+.nowrap {
+    white-space: nowrap !important;
+}
+
+.m-0 {
+    margin: 0 !important;
+}
+
+.mb-24 {
+    margin-bottom: 24px !important;
+}
+
+.mt-30 {
+    margin-top: 30px !important;
+}
+
+main.app-container {
+    margin-top: 30px;
+}
+
+.movie-poster-container,
+.movie-row-card {
+    cursor: pointer;
+}
+
+.btn-active-favorito {
+    color: var(--secondary) !important;
+}
+
+.section-title.m-0 {
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.text-muted-helper {
+    color: var(--text-muted) !important;
+    margin-top: 8px !important;
+}
+
+.empty-icon-secondary {
+    color: var(--secondary) !important;
+}
+
+.btn-empty-back {
+    margin-top: 15px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.actor-filmography-title {
+    font-family: var(--font-headline);
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 20px;
+}
+
+/* ==========================================================================
+   Reproducer Page Helpers (reproducir_trailer.php)
+   ========================================================================== */
+.reproducer-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.reproducer-header h1 {
+    margin-bottom: 8px;
+}
+
+.reproducer-header p {
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.btn-active-favorito-reproductor {
+    border-color: rgba(220, 38, 38, 0.3) !important;
+    color: var(--secondary) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.btn-inline-flex {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+
+.info-cast {
+    border-top: 1px solid var(--border-color);
+    padding-top: 20px;
+    margin-top: 20px;
+}
+
+.info-cast-title {
+    font-family: var(--font-headline);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 12px;
+}
+
+.cast-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
 }

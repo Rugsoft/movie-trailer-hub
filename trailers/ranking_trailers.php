@@ -20,22 +20,6 @@ $resultado = mysqli_stmt_get_result($stmt);
     <title>Ranking de Trailers</title>
     <link rel="icon" type="image/png" href="../images/logo movie trailer hub (1) (1).png">
     <link rel="stylesheet" href="../css/estilos.css">
-    <style>
-        .poster-mini {
-            width: 60px;
-            height: 40px;
-            object-fit: cover;
-            border-radius: var(--radius-sm);
-            border: 1px solid var(--border-color);
-        }
-        .rank-number {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 800;
-            color: var(--primary-color);
-            font-size: 1.2rem;
-            text-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
-        }
-    </style>
 </head>
 <body>
     <h1>Ranking de Popularidad</h1>
@@ -61,7 +45,7 @@ $resultado = mysqli_stmt_get_result($stmt);
                 while ($trailer = mysqli_fetch_assoc($resultado)) { 
                 ?>
                     <tr>
-                        <td style="text-align: center;"><span class="rank-number">#<?php echo $puesto++; ?></span></td>
+                        <td class="text-center"><span class="rank-number">#<?php echo $puesto++; ?></span></td>
                         <td>
                             <img src="<?php echo htmlspecialchars($trailer["poster_url"] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=600'); ?>" alt="Poster" class="poster-mini">
                         </td>
@@ -70,7 +54,7 @@ $resultado = mysqli_stmt_get_result($stmt);
                         <td><?php echo date('d/m/Y', strtotime($trailer["release_date"])); ?></td>
                         <td><?php echo htmlspecialchars($trailer["genero"]); ?></td>
                         <td>⭐ <strong><?php echo htmlspecialchars((string)$trailer["valoracion"]); ?></strong>/10</td>
-                        <td style="text-align: center; white-space: nowrap;">
+                        <td class="text-center nowrap">
                             <a class="btn-tabla btn-devolver" href="reproducir_trailer.php?id=<?php echo $trailer['id_trailer']; ?>">Ver</a>
                             <a class="btn-tabla btn-modificar" href="modificar_trailer.php?id=<?php echo $trailer['id_trailer']; ?>">Modificar</a>
                         </td>

@@ -26,15 +26,6 @@ $resultado = mysqli_stmt_get_result($stmt);
     <link rel="icon" type="image/png" href="../images/logo movie trailer hub (1) (1).png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../css/estilos.css">
-    <style>
-        .poster-mini {
-            width: 60px;
-            height: 40px;
-            object-fit: cover;
-            border-radius: var(--radius-sm);
-            border: 1px solid var(--border-color);
-        }
-    </style>
 </head>
 <body>
     <h1>Catálogo de Trailers</h1>
@@ -51,7 +42,7 @@ $resultado = mysqli_stmt_get_result($stmt);
                     <th>Género</th>
                     <th>Duración</th>
                     <th>Valoración</th>
-                    <th style="text-align: center;">Acciones</th>
+                    <th class="text-center">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -66,7 +57,7 @@ $resultado = mysqli_stmt_get_result($stmt);
                         <td><?php echo htmlspecialchars($trailer["genero"]); ?></td>
                         <td><?php echo htmlspecialchars((string)$trailer["duracion"]); ?> min</td>
                         <td>⭐ <?php echo htmlspecialchars((string)$trailer["valoracion"]); ?>/10</td>
-                        <td style="text-align: center; white-space: nowrap;">
+                        <td class="text-center nowrap">
                             <a class="btn-tabla btn-devolver" href="reproducir_trailer.php?id=<?php echo $trailer['id_trailer']; ?>">Ver</a>
                             <a class="btn-tabla btn-modificar" href="modificar_trailer.php?id=<?php echo $trailer['id_trailer']; ?>">Modificar</a>
                             <a class="btn-tabla btn-eliminar" href="eliminar_trailer.php?id=<?php echo $trailer['id_trailer']; ?>" onclick="return confirm('¿Estás seguro de que deseas eliminar este trailer?');">Eliminar</a>

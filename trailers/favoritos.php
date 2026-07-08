@@ -42,24 +42,6 @@ mysqli_close($conexion);
     <link rel="icon" type="image/png" href="../images/logo movie trailer hub (1) (1).png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../css/estilos.css">
-    <style>
-        .favorite-heart-btn {
-            background: rgba(220, 38, 38, 0.15);
-            border: 1px solid rgba(220, 38, 38, 0.3);
-            border-radius: var(--radius-md);
-            padding: 8px 12px;
-            color: var(--secondary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: var(--transition-smooth);
-        }
-        .favorite-heart-btn:hover {
-            background: rgba(220, 38, 38, 0.3);
-            transform: scale(1.05);
-        }
-    </style>
 </head>
 <body>
     
@@ -84,11 +66,11 @@ mysqli_close($conexion);
         </div>
     </header>
 
-    <main class="app-container" style="margin-top: 30px;">
+    <main class="app-container">
         
-        <div style="margin-bottom: 24px;">
-            <h2 class="section-title" style="border: none; margin: 0; padding: 0;">Mis Películas Favoritas</h2>
-            <p style="color: var(--text-muted); margin-top: 8px;">Aquí se muestran los trailers que has guardado en tu cuenta.</p>
+        <div class="mb-24">
+            <h2 class="section-title m-0">Mis Películas Favoritas</h2>
+            <p class="text-muted-helper">Aquí se muestran los trailers que has guardado en tu cuenta.</p>
         </div>
 
         <?php if (!empty($trailers)): ?>
@@ -96,7 +78,7 @@ mysqli_close($conexion);
                 <?php foreach ($trailers as $trailer): ?>
                     <article class="movie-card">
                         
-                        <div class="movie-poster-container" onclick="location.href='reproducir_trailer.php?id=<?= $trailer['id_trailer'] ?>'" style="cursor: pointer;">
+                        <div class="movie-poster-container" onclick="location.href='reproducir_trailer.php?id=<?= $trailer['id_trailer'] ?>'">
                             <img src="<?= htmlspecialchars($trailer['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=600') ?>" alt="<?= htmlspecialchars($trailer['titulo']) ?>" class="movie-poster">
                             
                             <div class="card-play-overlay">
@@ -136,10 +118,10 @@ mysqli_close($conexion);
                                 </a>
 
                                 <?php if (isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin'): ?>
-                                    <a class="btn btn-secondary btn-modificar" style="text-transform: uppercase;" href="modificar_trailer.php?id=<?= $trailer['id_trailer'] ?>">
+                                    <a class="btn btn-secondary btn-modificar" href="modificar_trailer.php?id=<?= $trailer['id_trailer'] ?>">
                                         <i class="fa-solid fa-pen-to-square"></i> Editar
                                     </a>
-                                    <a class="btn btn-danger btn-eliminar" style="text-transform: uppercase;" href="eliminar_trailer.php?id=<?= $trailer['id_trailer'] ?>" onclick="return confirm('¿Estás seguro de que deseas eliminar este trailer?');">
+                                    <a class="btn btn-danger btn-eliminar" href="eliminar_trailer.php?id=<?= $trailer['id_trailer'] ?>" onclick="return confirm('¿Estás seguro de que deseas eliminar este trailer?');">
                                         <i class="fa-solid fa-trash"></i> Borrar
                                     </a>
                                 <?php endif; ?>
@@ -150,10 +132,10 @@ mysqli_close($conexion);
             </section>
         <?php else: ?>
             <div class="empty-state">
-                <i class="fa-solid fa-heart-crack empty-icon" style="color: var(--secondary);"></i>
+                <i class="fa-solid fa-heart-crack empty-icon empty-icon-secondary"></i>
                 <h3 class="empty-title">Aún no tienes favoritos</h3>
                 <p>Navega al inicio de la página y haz clic en el ícono del corazón de cualquier película para añadirla aquí.</p>
-                <a href="../index.php" class="btn btn-primary" style="margin-top: 15px; display: inline-flex; align-items: center; gap: 8px;">
+                <a href="../index.php" class="btn btn-primary btn-empty-back">
                     <i class="fa-solid fa-arrow-left"></i> Explorar Catálogo
                 </a>
             </div>

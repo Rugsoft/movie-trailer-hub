@@ -111,7 +111,7 @@ mysqli_close($conexion);
                     <i class="fa-solid fa-chart-simple"></i> Estadísticas
                 </a>
                 <?php if (isset($_SESSION['usuario_id'])): ?>
-                    <a href="trailers/favoritos.php" class="btn btn-secondary" style="border-color: rgba(220, 38, 38, 0.3); color: var(--secondary);">
+                    <a href="trailers/favoritos.php" class="btn btn-secondary btn-favoritos">
                         <i class="fa-solid fa-heart"></i> Mis Favoritos
                     </a>
 
@@ -202,9 +202,9 @@ mysqli_close($conexion);
                 </div>
             </section>
         <?php else: ?>
-            <section class="hero" style="background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-surface-lowest) 100%);">
-                <div class="hero-overlay" style="align-items: center; justify-content: center; text-align: center; height: 100%;">
-                    <i class="fa-solid fa-video-slash" style="font-size: 64px; color: var(--primary); margin-bottom: 20px;"></i>
+            <section class="hero hero-empty">
+                <div class="hero-overlay">
+                    <i class="fa-solid fa-video-slash hero-empty-icon"></i>
                     <h2 class="hero-title">No hay trailers registrados</h2>
                     <p class="hero-desc">¡Empieza añadiendo tu primer trailer usando el botón superior!</p>
                 </div>
@@ -213,18 +213,18 @@ mysqli_close($conexion);
 
         <!-- Sección de Filtros y Búsqueda -->
         <section class="search-filter-section">
-            <div class="search-bar-container" style="display: flex; gap: 14px; flex-wrap: wrap;">
-                <div style="position: relative; flex: 2; min-width: 300px;">
+            <div class="search-bar-container">
+                <div class="search-input-wrapper">
                     <i class="fa-solid fa-magnifying-glass search-icon"></i>
                     <input type="text" id="searchInput" class="search-input" placeholder="Buscar por título, descripción o director...">
                 </div>
-                <div class="date-filter-container" style="display: flex; align-items: center; gap: 10px; flex: 2; min-width: 300px; background: var(--bg-surface-lowest); padding: 6px 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
-                    <i class="fa-solid fa-calendar-days" style="color: var(--text-muted); font-size: 16px; margin-right: 4px;"></i>
-                    <span style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Desde:</span>
-                    <input type="date" id="dateStart" class="search-input" style="padding: 6px 10px; min-width: 120px; border: none; background: transparent; height: auto; box-shadow: none;" placeholder="Fecha inicio">
-                    <span style="font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Hasta:</span>
-                    <input type="date" id="dateEnd" class="search-input" style="padding: 6px 10px; min-width: 120px; border: none; background: transparent; height: auto; box-shadow: none;" placeholder="Fecha fin">
-                    <button type="button" id="clearDateBtn" class="btn btn-secondary" style="padding: 8px 12px; font-size: 11px; margin-left: auto;"><i class="fa-solid fa-xmark"></i> Limpiar</button>
+                <div class="date-filter-container">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    <span>Desde:</span>
+                    <input type="date" id="dateStart" class="search-input" placeholder="Fecha inicio">
+                    <span>Hasta:</span>
+                    <input type="date" id="dateEnd" class="search-input" placeholder="Fecha fin">
+                    <button type="button" id="clearDateBtn" class="btn btn-secondary"><i class="fa-solid fa-xmark"></i> Limpiar</button>
                 </div>
             </div>
 
@@ -236,15 +236,15 @@ mysqli_close($conexion);
                 <?php endforeach; ?>
             </div>
 
-            <div class="upcoming-filter-container" style="display: flex; align-items: center; gap: 8px; margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 14px; width: 100%;">
-                <input type="checkbox" id="upcomingFilter" style="width: auto; min-width: auto; height: auto; cursor: pointer; transform: scale(1.25); accent-color: var(--primary);">
-                <label for="upcomingFilter" style="font-size: 13px; color: var(--text-primary); font-weight: 600; cursor: pointer; user-select: none; margin: 0;">Próximos Estrenos (Mostrar solo lanzamientos futuros ordenados cronológicamente)</label>
+            <div class="upcoming-filter-container">
+                <input type="checkbox" id="upcomingFilter">
+                <label for="upcomingFilter">Próximos Estrenos (Mostrar solo lanzamientos futuros ordenados cronológicamente)</label>
             </div>
         </section>
 
         <!-- Listado en Grilla de Películas -->
-        <div style="margin-bottom: 24px;">
-            <h2 class="section-title" style="border: none; margin: 0; padding: 0;">Catálogo de Películas</h2>
+        <div class="catalog-title-wrapper">
+            <h2 class="section-title">Catálogo de Películas</h2>
         </div>
 
         <section class="trailers-grid" id="trailersGrid">
@@ -257,7 +257,7 @@ mysqli_close($conexion);
                     data-genre="<?= htmlspecialchars($trailer['genero']) ?>"
                     data-release-date="<?= htmlspecialchars($trailer['release_date']) ?>">
 
-                    <div class="movie-poster-container" onclick="location.href='trailers/reproducir_trailer.php?id=<?= $trailer['id_trailer'] ?>'" style="cursor: pointer;">
+                    <div class="movie-poster-container" onclick="location.href='trailers/reproducir_trailer.php?id=<?= $trailer['id_trailer'] ?>'">
                         <img src="<?= htmlspecialchars($trailer['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=600') ?>" alt="<?= htmlspecialchars($trailer['titulo']) ?>" class="movie-poster">
 
                         <div class="card-play-overlay">
@@ -294,7 +294,7 @@ mysqli_close($conexion);
 
                             <?php if (isset($_SESSION['usuario_id'])): ?>
                                 <?php if (in_array((int)$trailer['id_trailer'], $userFavorites)): ?>
-                                    <a class="btn btn-secondary" style="color: var(--secondary);" href="trailers/toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" title="Quitar de favoritos">
+                                    <a class="btn btn-secondary btn-active-favorito" href="trailers/toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" title="Quitar de favoritos">
                                         <i class="fa-solid fa-heart"></i>
                                     </a>
                                 <?php else: ?>
@@ -305,10 +305,10 @@ mysqli_close($conexion);
                             <?php endif; ?>
 
                             <?php if (isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin'): ?>
-                                <a class="btn btn-secondary btn-modificar" style="text-transform: uppercase;" href="trailers/modificar_trailer.php?id=<?= $trailer['id_trailer'] ?>">
+                                <a class="btn btn-secondary btn-modificar" href="trailers/modificar_trailer.php?id=<?= $trailer['id_trailer'] ?>">
                                     <i class="fa-solid fa-pen-to-square"></i> Editar
                                 </a>
-                                <a class="btn btn-danger btn-eliminar" style="text-transform: uppercase;" href="trailers/eliminar_trailer.php?id=<?= $trailer['id_trailer'] ?>" onclick="return confirm('¿Estás seguro de que deseas eliminar este trailer?');">
+                                <a class="btn btn-danger btn-eliminar" href="trailers/eliminar_trailer.php?id=<?= $trailer['id_trailer'] ?>" onclick="return confirm('¿Estás seguro de que deseas eliminar este trailer?');">
                                     <i class="fa-solid fa-trash"></i> Borrar
                                 </a>
                             <?php endif; ?>
