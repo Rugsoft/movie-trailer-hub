@@ -272,6 +272,9 @@ require_once $rootPath . 'includes/navbar.php';
 
             const upcomingFilter = document.getElementById('upcomingFilter');
             const trailersGrid = document.getElementById('trailersGrid');
+            const dateStart = document.getElementById('dateStart');
+            const dateEnd = document.getElementById('dateEnd');
+            const clearDateBtn = document.getElementById('clearDateBtn');
 
             // Calcular hoy en formato YYYY-MM-DD
             const localDate = new Date();
@@ -292,11 +295,13 @@ require_once $rootPath . 'includes/navbar.php';
 
             dateStart.addEventListener('change', (e) => {
                 activeStartDate = e.target.value;
+                sortCards();
                 filterMovies();
             });
 
             dateEnd.addEventListener('change', (e) => {
                 activeEndDate = e.target.value;
+                sortCards();
                 filterMovies();
             });
 
@@ -310,6 +315,7 @@ require_once $rootPath . 'includes/navbar.php';
                 dateEnd.value = '';
                 activeStartDate = '';
                 activeEndDate = '';
+                sortCards();
                 filterMovies();
             });
 
@@ -326,6 +332,13 @@ require_once $rootPath . 'includes/navbar.php';
                 const cardsArray = Array.from(movieCards);
 
                 cardsArray.sort((a, b) => {
+                    // Si hay rango de fechas seleccionado, ordenar por fecha ascendente (más actual al más lejano)
+                    if (activeStartDate || activeEndDate) {
+                        const dateA = a.getAttribute('data-release-date');
+                        const dateB = b.getAttribute('data-release-date');
+                        return dateA.localeCompare(dateB); // Ascendente (más cercano/actual primero)
+                    }
+
                     if (upcomingFilter.checked) {
                         const dateA = a.getAttribute('data-release-date');
                         const dateB = b.getAttribute('data-release-date');
