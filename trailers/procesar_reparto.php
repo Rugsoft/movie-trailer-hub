@@ -66,7 +66,10 @@ if (empty($foto_url)) {
                     <div class="alerta-exito">
                         <p>El actor/actriz "<strong><?php echo htmlspecialchars($nombre . ' ' . $apellidos); ?></strong>" ha sido registrado exitosamente.</p>
                     </div>
-                    <a class="boton" href="../index.php">Volver al inicio</a>
+                    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+                        <a class="boton" href="añadir_reparto.php">Añadir otro actor</a>
+                        <a class="boton boton-secundario" href="../index.php">Volver al inicio</a>
+                    </div>
                 <?php else:
                     $error_db = mysqli_stmt_error($stmtInsertar);
                     mysqli_stmt_close($stmtInsertar);

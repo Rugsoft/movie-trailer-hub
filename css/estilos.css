@@ -2478,3 +2478,15 @@ main.app-container {
   color: var(--text-muted);
 }
 
+/* Botón secundario para contenedores de feedback */
+.boton-secundario {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.boton-secundario:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
