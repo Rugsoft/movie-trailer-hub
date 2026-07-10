@@ -259,6 +259,9 @@ require_once $rootPath . 'includes/navbar.php';
             <?php endforeach; ?>
         </section>
 
+        <!-- Contenedor de Paginación -->
+        <div id="paginationContainer" class="pagination-container"></div>
+
         <!-- Sin Resultados -->
         <div id="emptyState" class="empty-state" style="display: none;">
             <i class="fa-solid fa-magnifying-glass-minus empty-icon"></i>
@@ -289,6 +292,8 @@ require_once $rootPath . 'includes/navbar.php';
             const day = String(localDate.getDate()).padStart(2, '0');
             const today = `${year}-${month}-${day}`;
 
+            const PAGE_SIZE = 30;
+            let currentPage = 1;
             let activeGenre = 'Todos';
             let searchQuery = '';
             let activeStartDate = '';
@@ -359,11 +364,17 @@ require_once $rootPath . 'includes/navbar.php';
                 cardsArray.forEach(card => trailersGrid.appendChild(card));
             }
 
-            function filterMovies() {
+            function filterMovies(resetPage = true) {
+                if (resetPage) {
+                    currentPage = 1;
+                }
+
                 let visibleCount = 0;
                 const isUpcomingChecked = upcomingFilter.checked;
+                const matchedCards = [];
+                const currentCards = trailersGrid.querySelectorAll('.movie-card');
 
-                movieCards.forEach(card => {
+                currentCards.forEach(card => {
                     const title = card.getAttribute('data-title').toLowerCase();
                     const synopsis = card.getAttribute('data-synopsis').toLowerCase();
                     const director = card.getAttribute('data-director').toLowerCase();
@@ -387,8 +398,26 @@ require_once $rootPath . 'includes/navbar.php';
                     const matchesUpcoming = !isUpcomingChecked || releaseDate >= today;
 
                     if (matchesSearch && matchesGenre && matchesDate && matchesUpcoming) {
-                        card.style.display = 'flex';
+                        matchedCards.push(card);
                         visibleCount++;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+
+                // Calcular páginas
+                const totalPages = Math.ceil(matchedCards.length / PAGE_SIZE);
+                if (currentPage > totalPages) {
+                    currentPage = Math.max(1, totalPages);
+                }
+
+                // Mostrar sólo las tarjetas de la página actual
+                const startIndex = (currentPage - 1) * PAGE_SIZE;
+                const endIndex = startIndex + PAGE_SIZE;
+
+                matchedCards.forEach((card, index) => {
+                    if (index >= startIndex && index < endIndex) {
+                        card.style.display = 'flex';
                     } else {
                         card.style.display = 'none';
                     }
@@ -398,6 +427,70 @@ require_once $rootPath . 'includes/navbar.php';
                     emptyState.style.display = 'flex';
                 } else {
                     emptyState.style.display = 'none';
+                }
+
+                renderPagination(totalPages);
+            }
+
+            function renderPagination(totalPages) {
+                const container = document.getElementById('paginationContainer');
+                if (!container) return;
+                container.innerHTML = '';
+
+                if (totalPages <= 1) {
+                    return; // Ocultar si solo hay una página
+                }
+
+                // Botón Anterior
+                const prevBtn = document.createElement('button');
+                prevBtn.className = 'btn btn-secondary';
+                prevBtn.style.padding = '8px 16px';
+                prevBtn.innerHTML = '<i class="fa-solid fa-chevron-left"></i>';
+                prevBtn.disabled = currentPage === 1;
+                prevBtn.addEventListener('click', () => {
+                    if (currentPage > 1) {
+                        currentPage--;
+                        filterMovies(false);
+                        scrollToGrid();
+                    }
+                });
+                container.appendChild(prevBtn);
+
+                // Números de página
+                for (let i = 1; i <= totalPages; i++) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.className = `pagination-num-btn ${currentPage === i ? 'active' : ''}`;
+                    pageBtn.innerText = i;
+                    pageBtn.addEventListener('click', () => {
+                        if (currentPage !== i) {
+                            currentPage = i;
+                            filterMovies(false);
+                            scrollToGrid();
+                        }
+                    });
+                    container.appendChild(pageBtn);
+                }
+
+                // Botón Siguiente
+                const nextBtn = document.createElement('button');
+                nextBtn.className = 'btn btn-secondary';
+                nextBtn.style.padding = '8px 16px';
+                nextBtn.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
+                nextBtn.disabled = currentPage === totalPages;
+                nextBtn.addEventListener('click', () => {
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        filterMovies(false);
+                        scrollToGrid();
+                    }
+                });
+                container.appendChild(nextBtn);
+            }
+
+            function scrollToGrid() {
+                const grid = document.getElementById('trailersGrid');
+                if (grid) {
+                    grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             }
 
@@ -492,6 +585,9 @@ require_once $rootPath . 'includes/navbar.php';
                 // Inicializar autoplay
                 startAutoplay();
             }
+
+            // Inicializar paginación al cargar
+            filterMovies(true);
         });
 
         function closeToast(id) {
