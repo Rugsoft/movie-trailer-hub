@@ -34,6 +34,9 @@ $pais = trim($_POST["pais"] ?? "");
             // Validar si el director ya existe
             $sqlExiste = "SELECT * FROM directores WHERE nombre = ? AND apellidos = ?";
             $stmtExiste = mysqli_prepare($conexion, $sqlExiste);
+            if (!$stmtExiste) {
+                die("Error al preparar la validación de existencia de director: " . mysqli_error($conexion));
+            }
             mysqli_stmt_bind_param($stmtExiste, "ss", $nombre, $apellidos);
             mysqli_stmt_execute($stmtExiste);
             $resultadoExiste = mysqli_stmt_get_result($stmtExiste);
@@ -51,6 +54,9 @@ $pais = trim($_POST["pais"] ?? "");
                 mysqli_stmt_close($stmtExiste);
                 $sqlInsertar = "INSERT INTO directores (nombre, apellidos, edad, pais) VALUES (?, ?, ?, ?)";
                 $stmtInsertar = mysqli_prepare($conexion, $sqlInsertar);
+                if (!$stmtInsertar) {
+                    die("Error al preparar el registro del director: " . mysqli_error($conexion));
+                }
                 mysqli_stmt_bind_param($stmtInsertar, "ssis", $nombre, $apellidos, $edad, $pais);
                 
                 if (mysqli_stmt_execute($stmtInsertar)):

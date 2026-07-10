@@ -19,6 +19,9 @@ if ($id_trailer <= 0) {
 // Verificar si ya es favorito
 $sqlCheck = "SELECT 1 FROM favoritos WHERE id_usuario = ? AND id_trailer = ? LIMIT 1";
 $stmtCheck = mysqli_prepare($conexion, $sqlCheck);
+if (!$stmtCheck) {
+    die("Error al preparar la verificación de favoritos: " . mysqli_error($conexion));
+}
 mysqli_stmt_bind_param($stmtCheck, "ii", $id_usuario, $id_trailer);
 mysqli_stmt_execute($stmtCheck);
 $resCheck = mysqli_stmt_get_result($stmtCheck);
@@ -29,6 +32,9 @@ if ($isFavorito) {
     // Quitar de favoritos
     $sqlDelete = "DELETE FROM favoritos WHERE id_usuario = ? AND id_trailer = ?";
     $stmtDelete = mysqli_prepare($conexion, $sqlDelete);
+    if (!$stmtDelete) {
+        die("Error al preparar la eliminación de favoritos: " . mysqli_error($conexion));
+    }
     mysqli_stmt_bind_param($stmtDelete, "ii", $id_usuario, $id_trailer);
     mysqli_stmt_execute($stmtDelete);
     mysqli_stmt_close($stmtDelete);
@@ -37,6 +43,9 @@ if ($isFavorito) {
     // Añadir a favoritos
     $sqlInsert = "INSERT INTO favoritos (id_usuario, id_trailer) VALUES (?, ?)";
     $stmtInsert = mysqli_prepare($conexion, $sqlInsert);
+    if (!$stmtInsert) {
+        die("Error al preparar la inserción de favoritos: " . mysqli_error($conexion));
+    }
     mysqli_stmt_bind_param($stmtInsert, "ii", $id_usuario, $id_trailer);
     mysqli_stmt_execute($stmtInsert);
     mysqli_stmt_close($stmtInsert);

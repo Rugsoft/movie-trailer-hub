@@ -61,69 +61,110 @@ if (empty($poster_url)) {
 </head>
 <body>
     <div class="feedback-container">
-        
-        <?php if ($id_trailer === 0 || $titulo == "" || $release_date == "" || empty($generos_post) || $duracion == "" || $trailer_url == "" || $valoracion == ""): ?>
+               <?php if ($id_trailer === 0 || $titulo == "" || $release_date == "" || empty($generos_post) || $duracion <= 0 || $trailer_url == "" || $valoracion < 0.0 || $valoracion > 10.0): ?>
             <h1>Datos Incompletos</h1>
             <div class="alerta">
-                <p>Faltan datos obligatorios en el formulario de edición. Inténtalo de nuevo.</p>
+                <p>Faltan datos obligatorios en el formulario de edición o los valores ingresados no son válidos. Inténtalo de nuevo.</p>
             </div>
             <a class="boton" href="listar_trailers.php">Volver al catálogo</a>
 
         <?php else:
-            $sqlActualizar = "UPDATE trailers SET titulo = ?, id_director = ?, release_date = ?, duracion = ?, trailer_url = ?, poster_url = ?, valoracion = ?, sinopsis = ? WHERE id_trailer = ?";
-            $stmtActualizar = mysqli_prepare($conexion, $sqlActualizar);
-            mysqli_stmt_bind_param($stmtActualizar, "sisissds" . "i", $titulo, $id_director, $release_date, $duracion, $trailer_url, $poster_url, $valoracion, $sinopsis, $id_trailer);
+            // Iniciar transacción
+            mysqli_begin_transaction($conexion);
             
-            if (mysqli_stmt_execute($stmtActualizar)):
+            $exito = true;
+            $error_db = "";
+            
+            try {
+                // 1. Actualizar datos básicos del trailer
+                $sqlActualizar = "UPDATE trailers SET titulo = ?, id_director = ?, release_date = ?, duracion = ?, trailer_url = ?, poster_url = ?, valoracion = ?, sinopsis = ? WHERE id_trailer = ?";
+                $stmtActualizar = mysqli_prepare($conexion, $sqlActualizar);
+                if (!$stmtActualizar) {
+                    throw new Exception("Error al preparar la actualización del trailer: " . mysqli_error($conexion));
+                }
+                
+                mysqli_stmt_bind_param($stmtActualizar, "sisissdsi", $titulo, $id_director, $release_date, $duracion, $trailer_url, $poster_url, $valoracion, $sinopsis, $id_trailer);
+                if (!mysqli_stmt_execute($stmtActualizar)) {
+                    throw new Exception("Error al actualizar los datos del trailer: " . mysqli_stmt_error($stmtActualizar));
+                }
                 mysqli_stmt_close($stmtActualizar);
                 
-                // Eliminar asociaciones de géneros anteriores en trailers_generos
+                // 2. Eliminar asociaciones de géneros anteriores en trailers_generos
                 $sqlDeleteAssoc = "DELETE FROM trailers_generos WHERE id_trailer = ?";
                 $stmtDelete = mysqli_prepare($conexion, $sqlDeleteAssoc);
+                if (!$stmtDelete) {
+                    throw new Exception("Error al preparar eliminación de géneros: " . mysqli_error($conexion));
+                }
                 mysqli_stmt_bind_param($stmtDelete, "i", $id_trailer);
-                mysqli_stmt_execute($stmtDelete);
+                if (!mysqli_stmt_execute($stmtDelete)) {
+                    throw new Exception("Error al eliminar géneros anteriores: " . mysqli_stmt_error($stmtDelete));
+                }
                 mysqli_stmt_close($stmtDelete);
                 
-                // Insertar las nuevas asociaciones en trailers_generos
+                // 3. Insertar las nuevas asociaciones en trailers_generos
                 $sqlInsertAssoc = "INSERT INTO trailers_generos (id_trailer, id_genero) VALUES (?, ?)";
                 $stmtInsert = mysqli_prepare($conexion, $sqlInsertAssoc);
+                if (!$stmtInsert) {
+                    throw new Exception("Error al preparar inserción de géneros: " . mysqli_error($conexion));
+                }
                 foreach ($generos_post as $id_genero) {
                     mysqli_stmt_bind_param($stmtInsert, "ii", $id_trailer, $id_genero);
-                    mysqli_stmt_execute($stmtInsert);
+                    if (!mysqli_stmt_execute($stmtInsert)) {
+                        throw new Exception("Error al asociar género: " . mysqli_stmt_error($stmtInsert));
+                    }
                 }
                 mysqli_stmt_close($stmtInsert);
                 
-                // Eliminar asociaciones de reparto anteriores en reparto_trailers
+                // 4. Eliminar asociaciones de reparto anteriores en reparto_trailers
                 $sqlDeleteReparto = "DELETE FROM reparto_trailers WHERE id_trailer = ?";
                 $stmtDeleteReparto = mysqli_prepare($conexion, $sqlDeleteReparto);
+                if (!$stmtDeleteReparto) {
+                    throw new Exception("Error al preparar eliminación de reparto: " . mysqli_error($conexion));
+                }
                 mysqli_stmt_bind_param($stmtDeleteReparto, "i", $id_trailer);
-                mysqli_stmt_execute($stmtDeleteReparto);
+                if (!mysqli_stmt_execute($stmtDeleteReparto)) {
+                    throw new Exception("Error al eliminar reparto anterior: " . mysqli_stmt_error($stmtDeleteReparto));
+                }
                 mysqli_stmt_close($stmtDeleteReparto);
                 
-                // Insertar las nuevas asociaciones en reparto_trailers
+                // 5. Insertar las nuevas asociaciones en reparto_trailers
                 if (!empty($actores_post)) {
                     $sqlInsertReparto = "INSERT INTO reparto_trailers (id_trailer, id_reparto, personaje) VALUES (?, ?, ?)";
                     $stmtInsertReparto = mysqli_prepare($conexion, $sqlInsertReparto);
+                    if (!$stmtInsertReparto) {
+                        throw new Exception("Error al preparar inserción de reparto: " . mysqli_error($conexion));
+                    }
                     foreach ($actores_post as $id_reparto) {
                         $personaje = trim($personajes_post[$id_reparto] ?? "");
                         mysqli_stmt_bind_param($stmtInsertReparto, "iis", $id_trailer, $id_reparto, $personaje);
-                        mysqli_stmt_execute($stmtInsertReparto);
+                        if (!mysqli_stmt_execute($stmtInsertReparto)) {
+                            throw new Exception("Error al asociar actor: " . mysqli_stmt_error($stmtInsertReparto));
+                        }
                     }
                     mysqli_stmt_close($stmtInsertReparto);
                 }
+                
+                // Todo correcto, confirmar cambios
+                mysqli_commit($conexion);
+                
+            } catch (Exception $e) {
+                // Revertir todos los cambios si algo falla
+                mysqli_rollback($conexion);
+                $exito = false;
+                $error_db = $e->getMessage();
+            }
+            
+            if ($exito):
             ?>
                 <h1>¡Trailer Actualizado!</h1>
                 <div class="alerta-exito">
                     <p>Los datos de "<strong><?php echo htmlspecialchars($titulo); ?></strong>" han sido modificados exitosamente en la base de datos.</p>
                 </div>
                 <a class="boton" href="listar_trailers.php">Ver catálogo completo</a>
-            <?php else:
-                $error_db = mysqli_stmt_error($stmtActualizar);
-                mysqli_stmt_close($stmtActualizar);
-            ?>
+            <?php else: ?>
                 <h1>Error de Actualización</h1>
                 <div class="alerta">
-                    <p>Error al modificar el trailer en la base de datos: <?php echo htmlspecialchars($error_db); ?></p>
+                    <p>Error en la operación de base de datos: <?php echo htmlspecialchars($error_db); ?></p>
                 </div>
                 <a class="boton" href="modificar_trailer.php?id=<?php echo $id_trailer; ?>">Volver a intentarlo</a>
             <?php endif; ?>

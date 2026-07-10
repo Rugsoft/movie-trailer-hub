@@ -61,11 +61,10 @@ if (empty($poster_url)) {
 </head>
 <body>
     <div class="feedback-container">
-        
-        <?php if ($titulo == "" || $release_date == "" || empty($generos_post) || $duracion == "" || $trailer_url == "" || $valoracion == ""): ?>
+                <?php if ($titulo == "" || $release_date == "" || empty($generos_post) || $duracion <= 0 || $trailer_url == "" || $valoracion < 0.0 || $valoracion > 10.0): ?>
             <h1>Datos Incompletos</h1>
             <div class="alerta">
-                <p>Faltan datos obligatorios en el formulario. Vuelve atrás y revisa todos los campos.</p>
+                <p>Faltan datos obligatorios en el formulario o los valores ingresados no son válidos. Vuelve atrás y revisa todos los campos.</p>
             </div>
             <a class="boton" href="añadir_trailer.php">Volver al formulario</a>
 
@@ -73,6 +72,9 @@ if (empty($poster_url)) {
             // Validar si la película ya existe por título y fecha de estreno
             $sqlExiste = "SELECT * FROM trailers WHERE titulo = ? AND release_date = ?";
             $stmtExiste = mysqli_prepare($conexion, $sqlExiste);
+            if (!$stmtExiste) {
+                die("Error al preparar la validación de existencia: " . mysqli_error($conexion));
+            }
             mysqli_stmt_bind_param($stmtExiste, "ss", $titulo, $release_date);
             mysqli_stmt_execute($stmtExiste);
             $resultadoExiste = mysqli_stmt_get_result($stmtExiste);
@@ -88,20 +90,36 @@ if (empty($poster_url)) {
 
             <?php else:
                 mysqli_stmt_close($stmtExiste);
-                $sqlInsertar = "INSERT INTO trailers (titulo, id_director, release_date, duracion, trailer_url, poster_url, valoracion, sinopsis) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-                $stmtInsertar = mysqli_prepare($conexion, $sqlInsertar);
-                mysqli_stmt_bind_param($stmtInsertar, "sisissds", $titulo, $id_director, $release_date, $duracion, $trailer_url, $poster_url, $valoracion, $sinopsis);
-                
-                if (mysqli_stmt_execute($stmtInsertar)):
+
+                // Iniciar transacción
+                mysqli_begin_transaction($conexion);
+                $exito = true;
+                $error_db = "";
+
+                try {
+                    $sqlInsertar = "INSERT INTO trailers (titulo, id_director, release_date, duracion, trailer_url, poster_url, valoracion, sinopsis) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                    $stmtInsertar = mysqli_prepare($conexion, $sqlInsertar);
+                    if (!$stmtInsertar) {
+                        throw new Exception("Error al preparar la creación del trailer: " . mysqli_error($conexion));
+                    }
+                    mysqli_stmt_bind_param($stmtInsertar, "sisissds", $titulo, $id_director, $release_date, $duracion, $trailer_url, $poster_url, $valoracion, $sinopsis);
+                    if (!mysqli_stmt_execute($stmtInsertar)) {
+                        throw new Exception("Error al insertar el trailer: " . mysqli_stmt_error($stmtInsertar));
+                    }
                     $id_trailer = mysqli_insert_id($conexion);
                     mysqli_stmt_close($stmtInsertar);
                     
                     // Insertar asociaciones de géneros en trailers_generos
                     $sqlAssoc = "INSERT INTO trailers_generos (id_trailer, id_genero) VALUES (?, ?)";
                     $stmtAssoc = mysqli_prepare($conexion, $sqlAssoc);
+                    if (!$stmtAssoc) {
+                        throw new Exception("Error al preparar la asociación de géneros: " . mysqli_error($conexion));
+                    }
                     foreach ($generos_post as $id_genero) {
                         mysqli_stmt_bind_param($stmtAssoc, "ii", $id_trailer, $id_genero);
-                        mysqli_stmt_execute($stmtAssoc);
+                        if (!mysqli_stmt_execute($stmtAssoc)) {
+                            throw new Exception("Error al asociar género: " . mysqli_stmt_error($stmtAssoc));
+                        }
                     }
                     mysqli_stmt_close($stmtAssoc);
                     
@@ -109,26 +127,38 @@ if (empty($poster_url)) {
                     if (!empty($actores_post)) {
                         $sqlRepartoAssoc = "INSERT INTO reparto_trailers (id_trailer, id_reparto, personaje) VALUES (?, ?, ?)";
                         $stmtReparto = mysqli_prepare($conexion, $sqlRepartoAssoc);
+                        if (!$stmtReparto) {
+                            throw new Exception("Error al preparar la asociación de reparto: " . mysqli_error($conexion));
+                        }
                         foreach ($actores_post as $id_reparto) {
                             $personaje = trim($personajes_post[$id_reparto] ?? "");
                             mysqli_stmt_bind_param($stmtReparto, "iis", $id_trailer, $id_reparto, $personaje);
-                            mysqli_stmt_execute($stmtReparto);
+                            if (!mysqli_stmt_execute($stmtReparto)) {
+                                throw new Exception("Error al asociar actor: " . mysqli_stmt_error($stmtReparto));
+                            }
                         }
                         mysqli_stmt_close($stmtReparto);
                     }
+
+                    // Confirmar transacción
+                    mysqli_commit($conexion);
+                } catch (Exception $e) {
+                    mysqli_rollback($conexion);
+                    $exito = false;
+                    $error_db = $e->getMessage();
+                }
+
+                if ($exito):
                 ?>
                     <h1>¡Trailer Añadido!</h1>
                     <div class="alerta-exito">
                         <p>El trailer de "<strong><?php echo htmlspecialchars($titulo); ?></strong>" ha sido guardado exitosamente en la base de datos.</p>
                     </div>
                     <a class="boton" href="../index.php">Volver al inicio</a>
-                <?php else:
-                    $error_db = mysqli_stmt_error($stmtInsertar);
-                    mysqli_stmt_close($stmtInsertar);
-                ?>
+                <?php else: ?>
                     <h1>Error de Registro</h1>
                     <div class="alerta">
-                        <p>Error al añadir el trailer en la base de datos: <?php echo htmlspecialchars($error_db); ?></p>
+                        <p>Error en la operación de base de datos: <?php echo htmlspecialchars($error_db); ?></p>
                     </div>
                     <a class="boton" href="añadir_trailer.php">Volver al formulario</a>
                 <?php endif; ?>

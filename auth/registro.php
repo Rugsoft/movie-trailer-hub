@@ -23,24 +23,30 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             // Verificar si el usuario ya existe (por username o email)
             $sqlCheck = "SELECT id_usuario FROM usuarios WHERE username = ? OR email = ? LIMIT 1";
             $stmtCheck = mysqli_prepare($conexion, $sqlCheck);
+            if (!$stmtCheck) {
+                die("Error al preparar la verificación del registro: " . mysqli_error($conexion));
+            }
             mysqli_stmt_bind_param($stmtCheck, "ss", $username, $email);
-        mysqli_stmt_execute($stmtCheck);
-        $resCheck = mysqli_stmt_get_result($stmtCheck);
-        
-        if (mysqli_num_rows($resCheck) > 0) {
-            $error = "El nombre de usuario o el correo electrónico ya están registrados.";
-            mysqli_stmt_close($stmtCheck);
-        } else {
-            mysqli_stmt_close($stmtCheck);
+            mysqli_stmt_execute($stmtCheck);
+            $resCheck = mysqli_stmt_get_result($stmtCheck);
             
-            // Registrar usuario
-            $passwordHash = password_hash($password, PASSWORD_DEFAULT);
-            $rol = 'lector';
-            $fecha_alta = date("Y-m-d");
-            
-            $sqlInsert = "INSERT INTO usuarios (username, password_hash, nombre, apellidos, email, telefono, rol, fecha_alta) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-            $stmtInsert = mysqli_prepare($conexion, $sqlInsert);
-            mysqli_stmt_bind_param($stmtInsert, "ssssssss", $username, $passwordHash, $nombre, $apellidos, $email, $telefono, $rol, $fecha_alta);
+            if (mysqli_num_rows($resCheck) > 0) {
+                $error = "El nombre de usuario o el correo electrónico ya están registrados.";
+                mysqli_stmt_close($stmtCheck);
+            } else {
+                mysqli_stmt_close($stmtCheck);
+                
+                // Registrar usuario
+                $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+                $rol = 'lector';
+                $fecha_alta = date("Y-m-d");
+                
+                $sqlInsert = "INSERT INTO usuarios (username, password_hash, nombre, apellidos, email, telefono, rol, fecha_alta) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                $stmtInsert = mysqli_prepare($conexion, $sqlInsert);
+                if (!$stmtInsert) {
+                    die("Error al preparar el registro de usuario: " . mysqli_error($conexion));
+                }
+                mysqli_stmt_bind_param($stmtInsert, "ssssssss", $username, $passwordHash, $nombre, $apellidos, $email, $telefono, $rol, $fecha_alta);
             
             if (mysqli_stmt_execute($stmtInsert)) {
                 mysqli_stmt_close($stmtInsert);

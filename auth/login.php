@@ -11,6 +11,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if ($username !== "" && $password !== "") {
         $sql = "SELECT * FROM usuarios WHERE username = ? LIMIT 1";
         $stmt = mysqli_prepare($conexion, $sql);
+        if (!$stmt) {
+            die("Error al preparar la consulta de inicio de sesión: " . mysqli_error($conexion));
+        }
         mysqli_stmt_bind_param($stmt, "s", $username);
         mysqli_stmt_execute($stmt);
         $res = mysqli_stmt_get_result($stmt);

@@ -35,6 +35,9 @@ $pais = trim($_POST["pais"] ?? "");
             // Validar si ya existe otro director con el mismo nombre y apellido
             $sqlExiste = "SELECT * FROM directores WHERE nombre = ? AND apellidos = ? AND id_director != ?";
             $stmtExiste = mysqli_prepare($conexion, $sqlExiste);
+            if (!$stmtExiste) {
+                die("Error al preparar la validación de existencia de director: " . mysqli_error($conexion));
+            }
             mysqli_stmt_bind_param($stmtExiste, "ssi", $nombre, $apellidos, $id_director);
             mysqli_stmt_execute($stmtExiste);
             $resultadoExiste = mysqli_stmt_get_result($stmtExiste);
@@ -52,6 +55,9 @@ $pais = trim($_POST["pais"] ?? "");
                 mysqli_stmt_close($stmtExiste);
                 $sqlActualizar = "UPDATE directores SET nombre = ?, apellidos = ?, edad = ?, pais = ? WHERE id_director = ?";
                 $stmtActualizar = mysqli_prepare($conexion, $sqlActualizar);
+                if (!$stmtActualizar) {
+                    die("Error al preparar la modificación del director: " . mysqli_error($conexion));
+                }
                 mysqli_stmt_bind_param($stmtActualizar, "ssisi", $nombre, $apellidos, $edad, $pais, $id_director);
                 
                 if (mysqli_stmt_execute($stmtActualizar)):

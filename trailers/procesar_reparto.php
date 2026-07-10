@@ -40,6 +40,9 @@ if (empty($foto_url)) {
             // Validar si el actor ya existe
             $sqlExiste = "SELECT * FROM reparto WHERE nombre = ? AND apellidos = ?";
             $stmtExiste = mysqli_prepare($conexion, $sqlExiste);
+            if (!$stmtExiste) {
+                die("Error al preparar la validación de existencia del actor: " . mysqli_error($conexion));
+            }
             mysqli_stmt_bind_param($stmtExiste, "ss", $nombre, $apellidos);
             mysqli_stmt_execute($stmtExiste);
             $resultadoExiste = mysqli_stmt_get_result($stmtExiste);
@@ -57,6 +60,9 @@ if (empty($foto_url)) {
                 mysqli_stmt_close($stmtExiste);
                 $sqlInsertar = "INSERT INTO reparto (nombre, apellidos, edad, pais, foto_url) VALUES (?, ?, ?, ?, ?)";
                 $stmtInsertar = mysqli_prepare($conexion, $sqlInsertar);
+                if (!$stmtInsertar) {
+                    die("Error al preparar el registro del actor: " . mysqli_error($conexion));
+                }
                 mysqli_stmt_bind_param($stmtInsertar, "ssiss", $nombre, $apellidos, $edad, $pais, $foto_url);
                 
                 if (mysqli_stmt_execute($stmtInsertar)):

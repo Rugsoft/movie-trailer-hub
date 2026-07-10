@@ -40,6 +40,9 @@ if (empty($foto_url)) {
             // Validar si ya existe otro actor con el mismo nombre y apellido
             $sqlExiste = "SELECT * FROM reparto WHERE nombre = ? AND apellidos = ? AND id_reparto != ?";
             $stmtExiste = mysqli_prepare($conexion, $sqlExiste);
+            if (!$stmtExiste) {
+                die("Error al preparar la validación de existencia del actor: " . mysqli_error($conexion));
+            }
             mysqli_stmt_bind_param($stmtExiste, "ssi", $nombre, $apellidos, $id_reparto);
             mysqli_stmt_execute($stmtExiste);
             $resultadoExiste = mysqli_stmt_get_result($stmtExiste);
@@ -57,6 +60,9 @@ if (empty($foto_url)) {
                 mysqli_stmt_close($stmtExiste);
                 $sqlActualizar = "UPDATE reparto SET nombre = ?, apellidos = ?, edad = ?, pais = ?, foto_url = ? WHERE id_reparto = ?";
                 $stmtActualizar = mysqli_prepare($conexion, $sqlActualizar);
+                if (!$stmtActualizar) {
+                    die("Error al preparar la modificación del actor: " . mysqli_error($conexion));
+                }
                 mysqli_stmt_bind_param($stmtActualizar, "ssissi", $nombre, $apellidos, $edad, $pais, $foto_url, $id_reparto);
                 
                 if (mysqli_stmt_execute($stmtActualizar)):
