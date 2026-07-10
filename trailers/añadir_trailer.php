@@ -25,6 +25,18 @@ $resDirectores = mysqli_query($conexion, $sqlDirectores);
     <h1>Añadir Nuevo Trailer</h1>
     <p>Formulario para registrar una nueva película y su trailer en la base de datos.</p>
 
+    <!-- SECCIÓN TMDB AUTOCOMPLETAR -->
+    <div class="tmdb-autocomplete-card">
+        <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Autocompletar con TMDB (Recomendado)</h3>
+        <p>Introduce el título de la película para rellenar automáticamente la ficha de datos, sinopsis, portada, trailer oficial y asociar reparto/director de tu base de datos.</p>
+        <div class="tmdb-search-row">
+            <input type="text" id="tmdb_movie_query" placeholder="Ej: Interstellar, Batman, Gladiator...">
+            <button type="button" id="btn_tmdb_movie_search" class="btn btn-primary"><i class="fa-solid fa-magnifying-glass"></i> Buscar</button>
+        </div>
+        <div id="tmdb_movie_results" class="tmdb-movie-results"></div>
+        <div id="tmdb_status_box" class="tmdb-status-box"></div>
+    </div>
+
     <form action="procesar_trailer.php" method="POST">
         <label for="titulo">Título de la Película *</label>
         <input type="text" id="titulo" name="titulo" required placeholder="Ej: Interstellar">
@@ -102,6 +114,197 @@ $resDirectores = mysqli_query($conexion, $sqlDirectores);
     </form>
 
     <a class="volver" href="../index.php">← Volver al inicio</a>
+
+    <!-- Script de Integración con TMDB -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tmdbQuery = document.getElementById('tmdb_movie_query');
+            const btnSearch = document.getElementById('btn_tmdb_movie_search');
+            const resultsBox = document.getElementById('tmdb_movie_results');
+            const statusBox = document.getElementById('tmdb_status_box');
+
+            tmdbQuery.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchMovie();
+                }
+            });
+
+            btnSearch.addEventListener('click', searchMovie);
+
+            function searchMovie() {
+                const query = tmdbQuery.value.trim();
+                if (query === '') {
+                    alert('Por favor escribe el título de la película.');
+                    return;
+                }
+
+                resultsBox.style.display = 'flex';
+                resultsBox.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 10px;"><i class="fa-solid fa-spinner fa-spin"></i> Buscando en TMDB...</div>';
+                statusBox.style.display = 'none';
+
+                fetch(`api_tmdb.php?action=search_movie&query=${encodeURIComponent(query)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.error) {
+                            resultsBox.innerHTML = `<div style="color: var(--danger, #ef4444); text-align: center; padding: 10px;"><i class="fa-solid fa-circle-exclamation"></i> ${data.error}</div>`;
+                            return;
+                        }
+
+                        if (!data.results || data.results.length === 0) {
+                            resultsBox.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 10px;">No se encontraron películas con ese título.</div>';
+                            return;
+                        }
+
+                        resultsBox.innerHTML = '';
+                        data.results.forEach(movie => {
+                            const year = movie.release_date ? movie.release_date.substring(0, 4) : 'N/A';
+                            const imgUrl = movie.poster_path ? `https://image.tmdb.org/t/p/w92${movie.poster_path}` : 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=92';
+                            
+                            const row = document.createElement('div');
+                            row.className = 'tmdb-result-row';
+                            
+                            row.innerHTML = `
+                                <div class="tmdb-result-row-info">
+                                    <img src="${imgUrl}">
+                                    <div>
+                                        <strong class="tmdb-result-row-title">${movie.title}</strong>
+                                        <div class="tmdb-result-row-year">${year}</div>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-secondary btn-sm" style="font-size: 12px; padding: 4px 10px;">Seleccionar</button>
+                            `;
+
+                            row.addEventListener('click', () => selectMovie(movie.id));
+                            resultsBox.appendChild(row);
+                        });
+                    })
+                    .catch(err => {
+                        resultsBox.innerHTML = `<div style="color: var(--danger); text-align: center; padding: 10px;">Error al conectar con el servidor.</div>`;
+                        console.error(err);
+                    });
+            }
+
+            function selectMovie(id) {
+                resultsBox.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 10px;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando ficha completa...</div>';
+                
+                fetch(`api_tmdb.php?action=movie_details&id=${id}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.error) {
+                            resultsBox.innerHTML = `<div style="color: var(--danger); text-align: center; padding: 10px;">${data.error}</div>`;
+                            return;
+                        }
+
+                        resultsBox.style.display = 'none';
+
+                        document.getElementById('titulo').value = data.title || '';
+                        document.getElementById('release_date').value = data.release_date || '';
+                        document.getElementById('duracion').value = data.runtime || '';
+                        document.getElementById('sinopsis').value = data.overview || '';
+                        document.getElementById('valoracion').value = data.vote_average ? data.vote_average.toFixed(1) : '0.0';
+                        
+                        if (data.poster_path) {
+                            document.getElementById('poster_url').value = `https://image.tmdb.org/t/p/w500${data.poster_path}`;
+                        }
+
+                        let trailerUrlFound = '';
+                        if (data.videos && data.videos.results) {
+                            const trailer = data.videos.results.find(v => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser'));
+                            if (trailer) {
+                                trailerUrlFound = `https://www.youtube.com/watch?v=${trailer.key}`;
+                                document.getElementById('trailer_url').value = trailerUrlFound;
+                            }
+                        }
+
+                        let directorName = '';
+                        let localDirectorFound = false;
+                        if (data.credits && data.credits.crew) {
+                            const directorObj = data.credits.crew.find(c => c.job === 'Director');
+                            if (directorObj) {
+                                directorName = directorObj.name;
+                                const directorSelect = document.getElementById('id_director');
+                                
+                                for (let i = 0; i < directorSelect.options.length; i++) {
+                                    const option = directorSelect.options[i];
+                                    const optionTextNormalized = option.text.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                                    const directorNormalized = directorName.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                                    
+                                    if (optionTextNormalized.includes(directorNormalized) || directorNormalized.includes(optionTextNormalized)) {
+                                        directorSelect.selectedIndex = i;
+                                        localDirectorFound = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        let missingActors = [];
+                        let matchedCount = 0;
+
+                        const actorCheckboxes = document.querySelectorAll('input[name="actores[]"]');
+                        actorCheckboxes.forEach(cb => {
+                            cb.checked = false;
+                            const charInput = document.getElementsByName(`personajes[${cb.value}]`)[0];
+                            if (charInput) charInput.value = '';
+                        });
+
+                        if (data.credits && data.credits.cast) {
+                            const topCast = data.credits.cast.slice(0, 10);
+
+                            topCast.forEach(castMember => {
+                                let actorFound = false;
+                                const castNameNorm = castMember.name.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+                                actorCheckboxes.forEach(cb => {
+                                    const label = cb.closest('label');
+                                    if (label) {
+                                        const actorLabelText = label.innerText.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                                        if (actorLabelText.includes(castNameNorm) || castNameNorm.includes(actorLabelText)) {
+                                            cb.checked = true;
+                                            actorFound = true;
+                                            matchedCount++;
+                                            
+                                            const charInput = document.getElementsByName(`personajes[${cb.value}]`)[0];
+                                            if (charInput) {
+                                                charInput.value = castMember.character || '';
+                                            }
+                                        }
+                                    }
+                                });
+
+                                if (!actorFound) {
+                                    missingActors.push(castMember.name);
+                                }
+                            });
+                        }
+
+                        statusBox.style.display = 'flex';
+                        let statusHtml = `<div style="color: #10b981; font-weight: 600; margin-bottom: 4px;"><i class="fa-solid fa-circle-check"></i> Ficha cargada: "${data.title}"</div>`;
+                        
+                        if (directorName) {
+                            if (localDirectorFound) {
+                                statusHtml += `<div><i class="fa-solid fa-user-tie" style="color: #10b981;"></i> Director: <strong>${directorName}</strong> (asociado localmente)</div>`;
+                            } else {
+                                statusHtml += `<div><i class="fa-solid fa-user-tie" style="color: #f59e0b;"></i> Director: <strong>${directorName}</strong> (<span style="color: #f59e0b;">no encontrado en BD local</span>). <a href="añadir_director.php" target="_blank" style="color: var(--primary); text-decoration: underline;">Crear Director</a></div>`;
+                            }
+                        }
+
+                        statusHtml += `<div><i class="fa-solid fa-users" style="color: #10b981;"></i> Actores asociados localmente: <strong>${matchedCount}</strong></div>`;
+                        
+                        if (missingActors.length > 0) {
+                            statusHtml += `<div style="margin-top: 4px; font-size: 12px; color: var(--text-muted);"><i class="fa-solid fa-triangle-exclamation"></i> Actores en TMDB no creados localmente: <em>${missingActors.join(', ')}</em>. <a href="añadir_reparto.php" target="_blank" style="color: var(--primary); text-decoration: underline;">Añadir Actor</a></div>`;
+                        }
+
+                        statusBox.innerHTML = statusHtml;
+                    })
+                    .catch(err => {
+                        resultsBox.innerHTML = `<div style="color: var(--danger); text-align: center; padding: 10px;">Error al cargar detalles de la película.</div>`;
+                        console.error(err);
+                    });
+            }
+        });
+    </script>
 <?php
 require_once $rootPath . 'includes/footer.php';
 ?>
