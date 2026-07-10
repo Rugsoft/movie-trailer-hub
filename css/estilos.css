@@ -2502,3 +2502,38 @@ a.movie-row-card {
   border-color: var(--text-primary);
   color: var(--text-primary);
 }
+
+/* ==========================================================================
+   Recomendaciones (Reproducir Page)
+   ========================================================================== */
+.recommendations-section {
+  max-width: 900px;
+  margin: 64px auto 0 auto;
+}
+
+.recommendations-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+@media (max-width: 992px) {
+  .recommendations-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+}
+
+@media (max-width: 600px) {
+  .recommendations-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}
+
+@media (max-width: 400px) {
+  .recommendations-grid {
+    grid-template-columns: 1fr;
+  }
+}
