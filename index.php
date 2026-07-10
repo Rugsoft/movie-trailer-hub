@@ -94,548 +94,551 @@ $rootPath = "./";
 require_once $rootPath . 'includes/navbar.php';
 ?>
 
-    <main class="app-container">
+<main class="app-container">
 
-        <!-- Notificaciones eliminadas de aquí (ahora se renderizan como Toasts abajo a la derecha) -->
+    <!-- Notificaciones eliminadas de aquí (ahora se renderizan como Toasts abajo a la derecha) -->
 
-        <!-- Banner Destacado (Hero) / Carrusel -->
-        <?php if (!empty($featuredTrailers)): ?>
-            <section class="hero">
-                <div class="carousel-container" id="heroCarousel">
-                    <div class="carousel-track">
-                        <?php foreach ($featuredTrailers as $index => $item): ?>
-                            <div class="carousel-slide <?php echo $index === 0 ? 'active' : ''; ?>" data-slide-index="<?php echo $index; ?>">
-                                <img src="<?= htmlspecialchars($item['poster_url'] ?? 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600') ?>" alt="<?= htmlspecialchars($item['titulo']) ?>" class="hero-banner">
-                                <div class="hero-overlay">
-                                    <span class="hero-tag">Estreno Próximo</span>
-                                    <h2 class="hero-title"><?= htmlspecialchars($item['titulo']) ?></h2>
-                                    <p class="hero-desc"><?= htmlspecialchars($item['sinopsis'] ?? 'Sin descripción disponible.') ?></p>
-                                    <div class="hero-meta">
-                                        <span><i class="fa-solid fa-film"></i> <?= htmlspecialchars($item['genero']) ?></span>
-                                        <span><i class="fa-solid fa-calendar"></i> <?= date('d/m/Y', strtotime($item['release_date'])) ?></span>
-                                        <span><i class="fa-solid fa-star"></i> <?= htmlspecialchars((string)$item['valoracion']) ?>/10</span>
-                                        <span><i class="fa-solid fa-clock"></i> <?= htmlspecialchars((string)$item['duracion']) ?> min</span>
-                                    </div>
-                                    <div>
-                                        <a href="trailers/reproducir_trailer.php?id=<?= $item['id_trailer'] ?>" class="btn btn-primary">
-                                            <i class="fa-solid fa-play"></i> Reproducir Trailer
-                                        </a>
-                                    </div>
+    <!-- Banner Destacado (Hero) / Carrusel -->
+    <?php if (!empty($featuredTrailers)): ?>
+        <section class="hero">
+            <div class="carousel-container" id="heroCarousel">
+                <div class="carousel-track">
+                    <?php foreach ($featuredTrailers as $index => $item): ?>
+                        <div class="carousel-slide <?php echo $index === 0 ? 'active' : ''; ?>" data-slide-index="<?php echo $index; ?>">
+                            <img src="<?= htmlspecialchars($item['poster_url'] ?? 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600') ?>" alt="<?= htmlspecialchars($item['titulo']) ?>" class="hero-banner">
+                            <div class="hero-overlay">
+                                <span class="hero-tag">Estreno Próximo</span>
+                                <h2 class="hero-title"><?= htmlspecialchars($item['titulo']) ?></h2>
+                                <p class="hero-desc"><?= htmlspecialchars($item['sinopsis'] ?? 'Sin descripción disponible.') ?></p>
+                                <div class="hero-meta">
+                                    <span><i class="fa-solid fa-film"></i> <?= htmlspecialchars($item['genero']) ?></span>
+                                    <span><i class="fa-solid fa-calendar"></i> <?= date('d/m/Y', strtotime($item['release_date'])) ?></span>
+                                    <span><i class="fa-solid fa-star"></i> <?= htmlspecialchars((string)$item['valoracion']) ?>/10</span>
+                                    <span><i class="fa-solid fa-clock"></i> <?= htmlspecialchars((string)$item['duracion']) ?> min</span>
+                                </div>
+                                <div>
+                                    <a href="trailers/reproducir_trailer.php?id=<?= $item['id_trailer'] ?>" class="btn btn-primary">
+                                        <i class="fa-solid fa-play"></i> Reproducir Trailer
+                                    </a>
                                 </div>
                             </div>
-                        <?php endforeach; ?>
-                    </div>
-
-                    <!-- Carousel Indicators / Dots -->
-                    <div class="carousel-dots">
-                        <?php foreach ($featuredTrailers as $index => $item): ?>
-                            <button class="carousel-dot <?php echo $index === 0 ? 'active' : ''; ?>" data-dot-index="<?php echo $index; ?>" aria-label="Diapositiva <?php echo $index + 1; ?>"></button>
-                        <?php endforeach; ?>
-                    </div>
-
-                    <!-- Carousel Nav Arrows -->
-                    <button type="button" class="carousel-control prev" id="carouselPrevBtn" aria-label="Anterior">
-                        <i class="fa-solid fa-chevron-left"></i>
-                    </button>
-                    <button type="button" class="carousel-control next" id="carouselNextBtn" aria-label="Siguiente">
-                        <i class="fa-solid fa-chevron-right"></i>
-                    </button>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
-            </section>
-        <?php else: ?>
-            <section class="hero hero-empty">
-                <div class="hero-overlay">
-                    <i class="fa-solid fa-video-slash hero-empty-icon"></i>
-                    <h2 class="hero-title">No hay trailers registrados</h2>
-                    <p class="hero-desc">¡Empieza añadiendo tu primer trailer usando el botón superior!</p>
-                </div>
-            </section>
-        <?php endif; ?>
 
-        <!-- Sección de Filtros y Búsqueda -->
-        <section class="search-filter-section">
-            <div class="search-bar-container">
-                <div class="search-input-wrapper">
-                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                    <input type="text" id="searchInput" class="search-input" placeholder="Buscar por título, descripción o director...">
+                <!-- Carousel Indicators / Dots -->
+                <div class="carousel-dots">
+                    <?php foreach ($featuredTrailers as $index => $item): ?>
+                        <button class="carousel-dot <?php echo $index === 0 ? 'active' : ''; ?>" data-dot-index="<?php echo $index; ?>" aria-label="Diapositiva <?php echo $index + 1; ?>"></button>
+                    <?php endforeach; ?>
                 </div>
-                <div class="date-filter-container">
-                    <i class="fa-solid fa-calendar-days"></i>
-                    <span>Desde:</span>
-                    <input type="date" id="dateStart" class="search-input" placeholder="Fecha inicio">
-                    <span>Hasta:</span>
-                    <input type="date" id="dateEnd" class="search-input" placeholder="Fecha fin">
-                    <button type="button" id="clearDateBtn" class="btn btn-secondary"><i class="fa-solid fa-xmark"></i> Limpiar</button>
-                </div>
-            </div>
 
-            <div class="filters-container">
-                <span class="filter-label">Filtrar por género:</span>
-                <button class="genre-tag active" data-genre="Todos">Todos</button>
-                <?php foreach ($genres as $genre): ?>
-                    <button class="genre-tag" data-genre="<?= htmlspecialchars($genre) ?>"><?= htmlspecialchars($genre) ?></button>
-                <?php endforeach; ?>
-            </div>
-
-            <div class="upcoming-filter-container">
-                <input type="checkbox" id="upcomingFilter">
-                <label for="upcomingFilter">Próximos Estrenos (Mostrar solo lanzamientos futuros ordenados cronológicamente)</label>
+                <!-- Carousel Nav Arrows -->
+                <button type="button" class="carousel-control prev" id="carouselPrevBtn" aria-label="Anterior">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <button type="button" class="carousel-control next" id="carouselNextBtn" aria-label="Siguiente">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
             </div>
         </section>
+    <?php else: ?>
+        <section class="hero hero-empty">
+            <div class="hero-overlay">
+                <i class="fa-solid fa-video-slash hero-empty-icon"></i>
+                <h2 class="hero-title">No hay trailers registrados</h2>
+                <p class="hero-desc">¡Empieza añadiendo tu primer trailer usando el botón superior!</p>
+            </div>
+        </section>
+    <?php endif; ?>
 
-        <!-- Listado en Grilla de Películas -->
-        <div class="catalog-title-wrapper">
-            <h2 class="section-title">Catálogo de Películas</h2>
+    <!-- Sección de Filtros y Búsqueda -->
+    <section class="search-filter-section">
+        <div class="search-bar-container">
+            <div class="search-input-wrapper">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="searchInput" class="search-input" placeholder="Buscar por título, descripción o director...">
+            </div>
+            <div class="date-filter-container">
+                <i class="fa-solid fa-calendar-days"></i>
+                <span>Desde:</span>
+                <input type="date" id="dateStart" class="search-input" placeholder="Fecha inicio">
+                <span>Hasta:</span>
+                <input type="date" id="dateEnd" class="search-input" placeholder="Fecha fin">
+                <button type="button" id="clearDateBtn" class="btn btn-secondary"><i class="fa-solid fa-xmark"></i> Limpiar</button>
+            </div>
         </div>
 
-        <section class="trailers-grid" id="trailersGrid">
-            <?php foreach ($trailers as $trailer): ?>
-                <article class="movie-card"
-                    data-id="<?= htmlspecialchars((string)$trailer['id_trailer']) ?>"
-                    data-title="<?= htmlspecialchars($trailer['titulo']) ?>"
-                    data-synopsis="<?= htmlspecialchars($trailer['sinopsis'] ?? '') ?>"
-                    data-director="<?= htmlspecialchars($trailer['director'] ?? '') ?>"
-                    data-genre="<?= htmlspecialchars($trailer['genero']) ?>"
-                    data-release-date="<?= htmlspecialchars($trailer['release_date']) ?>">
-
-                    <a class="movie-poster-container" href="trailers/reproducir_trailer.php?id=<?= $trailer['id_trailer'] ?>">
-                        <img src="<?= htmlspecialchars($trailer['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=600') ?>" alt="<?= htmlspecialchars($trailer['titulo']) ?>" class="movie-poster">
-
-                        <div class="card-play-overlay">
-                            <div class="play-icon-circle">
-                                <i class="fa-solid fa-play"></i>
-                            </div>
-                        </div>
-
-                        <div class="rating-badge">
-                            <i class="fa-solid fa-star"></i>
-                            <span><?= htmlspecialchars((string)$trailer['valoracion']) ?></span>
-                        </div>
-
-                        <div class="genre-badge">
-                            <?= htmlspecialchars($trailer['genero']) ?>
-                        </div>
-                    </a>
-
-                    <div class="movie-info">
-                        <h3 class="movie-title"><?= htmlspecialchars($trailer['titulo']) ?></h3>
-
-                        <div class="movie-meta-row">
-                            <span><i class="fa-regular fa-calendar"></i> <?= date('d/m/Y', strtotime($trailer['release_date'])) ?></span>
-                            <span><i class="fa-regular fa-clock"></i> <?= htmlspecialchars((string)$trailer['duracion']) ?> min</span>
-                            <span><i class="fa-solid fa-user-tie"></i> <?= htmlspecialchars($trailer['director'] ?? 'N/A') ?></span>
-                        </div>
-
-                        <p class="movie-description"><?= htmlspecialchars($trailer['sinopsis'] ?? 'Sin sinopsis.') ?></p>
-
-                        <div class="movie-actions">
-                            <a class="btn btn-secondary" href="trailers/reproducir_trailer.php?id=<?= $trailer['id_trailer'] ?>">
-                                <i class="fa-solid fa-play"></i> Ver
-                            </a>
-
-                            <?php if (isset($_SESSION['usuario_id'])): ?>
-                                <?php if (in_array((int)$trailer['id_trailer'], $userFavorites)): ?>
-                                    <a class="btn btn-secondary btn-active-favorito" href="trailers/toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" title="Quitar de favoritos">
-                                        <i class="fa-solid fa-heart"></i>
-                                    </a>
-                                <?php else: ?>
-                                    <a class="btn btn-secondary" href="trailers/toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" title="Añadir a favoritos">
-                                        <i class="fa-regular fa-heart"></i>
-                                    </a>
-                                <?php endif; ?>
-                            <?php endif; ?>
-
-                            <?php if (isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin'): ?>
-                                <a class="btn btn-secondary btn-modificar" href="trailers/modificar_trailer.php?id=<?= $trailer['id_trailer'] ?>">
-                                    <i class="fa-solid fa-pen-to-square"></i> Editar
-                                </a>
-                                <a class="btn btn-danger btn-eliminar" href="trailers/eliminar_trailer.php?id=<?= $trailer['id_trailer'] ?>" onclick="return confirm('¿Estás seguro de que deseas eliminar este trailer?');">
-                                    <i class="fa-solid fa-trash"></i> Borrar
-                                </a>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </article>
+        <div class="filters-container">
+            <span class="filter-label">Filtrar por género:</span>
+            <button class="genre-tag active" data-genre="Todos">Todos</button>
+            <?php foreach ($genres as $genre): ?>
+                <button class="genre-tag" data-genre="<?= htmlspecialchars($genre) ?>"><?= htmlspecialchars($genre) ?></button>
             <?php endforeach; ?>
-        </section>
-
-        <!-- Contenedor de Paginación -->
-        <div id="paginationContainer" class="pagination-container"></div>
-
-        <!-- Sin Resultados -->
-        <div id="emptyState" class="empty-state" style="display: none;">
-            <i class="fa-solid fa-magnifying-glass-minus empty-icon"></i>
-            <h3 class="empty-title">Sin Resultados</h3>
-            <p>No se encontraron películas con los criterios indicados.</p>
         </div>
 
-    </main>
+        <div class="upcoming-filter-container">
+            <input type="checkbox" id="upcomingFilter">
+            <label for="upcomingFilter">Próximos Estrenos (Mostrar solo lanzamientos futuros ordenados cronológicamente)</label>
+        </div>
+    </section>
 
-    <!-- Script de búsqueda y filtrado interactivo -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const searchInput = document.getElementById('searchInput');
-            const genreTags = document.querySelectorAll('.genre-tag');
-            const movieCards = document.querySelectorAll('.movie-card');
-            const emptyState = document.getElementById('emptyState');
+    <!-- Listado en Grilla de Películas -->
+    <div class="catalog-title-wrapper">
+        <h2 class="section-title">Catálogo de Películas</h2>
+    </div>
 
-            const upcomingFilter = document.getElementById('upcomingFilter');
-            const trailersGrid = document.getElementById('trailersGrid');
-            const dateStart = document.getElementById('dateStart');
-            const dateEnd = document.getElementById('dateEnd');
-            const clearDateBtn = document.getElementById('clearDateBtn');
+    <section class="trailers-grid" id="trailersGrid">
+        <?php foreach ($trailers as $trailer): ?>
+            <article class="movie-card"
+                data-id="<?= htmlspecialchars((string)$trailer['id_trailer']) ?>"
+                data-title="<?= htmlspecialchars($trailer['titulo']) ?>"
+                data-synopsis="<?= htmlspecialchars($trailer['sinopsis'] ?? '') ?>"
+                data-director="<?= htmlspecialchars($trailer['director'] ?? '') ?>"
+                data-genre="<?= htmlspecialchars($trailer['genero']) ?>"
+                data-release-date="<?= htmlspecialchars($trailer['release_date']) ?>">
 
-            // Calcular hoy en formato YYYY-MM-DD
-            const localDate = new Date();
-            const year = localDate.getFullYear();
-            const month = String(localDate.getMonth() + 1).padStart(2, '0');
-            const day = String(localDate.getDate()).padStart(2, '0');
-            const today = `${year}-${month}-${day}`;
+                <a class="movie-poster-container" href="trailers/reproducir_trailer.php?id=<?= $trailer['id_trailer'] ?>">
+                    <img src="<?= htmlspecialchars($trailer['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=600') ?>" alt="<?= htmlspecialchars($trailer['titulo']) ?>" class="movie-poster">
 
-            const PAGE_SIZE = 30;
-            let currentPage = 1;
-            let activeGenre = 'Todos';
-            let searchQuery = '';
-            let activeStartDate = '';
-            let activeEndDate = '';
+                    <div class="card-play-overlay">
+                        <div class="play-icon-circle">
+                            <i class="fa-solid fa-play"></i>
+                        </div>
+                    </div>
 
-            searchInput.addEventListener('input', (e) => {
-                searchQuery = e.target.value.toLowerCase().trim();
-                filterMovies();
-            });
+                    <div class="rating-badge">
+                        <i class="fa-solid fa-star"></i>
+                        <span><?= htmlspecialchars((string)$trailer['valoracion']) ?></span>
+                    </div>
 
-            dateStart.addEventListener('change', (e) => {
-                activeStartDate = e.target.value;
-                sortCards();
-                filterMovies();
-            });
+                    <div class="genre-badge">
+                        <?= htmlspecialchars($trailer['genero']) ?>
+                    </div>
+                </a>
 
-            dateEnd.addEventListener('change', (e) => {
-                activeEndDate = e.target.value;
-                sortCards();
-                filterMovies();
-            });
+                <div class="movie-info">
+                    <h3 class="movie-title"><?= htmlspecialchars($trailer['titulo']) ?></h3>
 
-            upcomingFilter.addEventListener('change', () => {
-                sortCards();
-                filterMovies();
-            });
+                    <div class="movie-meta-row">
+                        <span><i class="fa-regular fa-calendar"></i> <?= date('d/m/Y', strtotime($trailer['release_date'])) ?></span>
+                        <span><i class="fa-regular fa-clock"></i> <?= htmlspecialchars((string)$trailer['duracion']) ?> min</span>
+                        <span><i class="fa-solid fa-user-tie"></i> <?= htmlspecialchars($trailer['director'] ?? 'N/A') ?></span>
+                    </div>
 
-            clearDateBtn.addEventListener('click', () => {
-                dateStart.value = '';
-                dateEnd.value = '';
-                activeStartDate = '';
-                activeEndDate = '';
-                sortCards();
-                filterMovies();
-            });
+                    <p class="movie-description"><?= htmlspecialchars($trailer['sinopsis'] ?? 'Sin sinopsis.') ?></p>
 
-            genreTags.forEach(tag => {
-                tag.addEventListener('click', () => {
-                    genreTags.forEach(t => t.classList.remove('active'));
-                    tag.classList.add('active');
-                    activeGenre = tag.getAttribute('data-genre');
-                    filterMovies();
-                });
-            });
+                    <div class="movie-actions">
+                        <a class="btn btn-secondary" href="trailers/reproducir_trailer.php?id=<?= $trailer['id_trailer'] ?>">
+                            <i class="fa-solid fa-play"></i> Ver
+                        </a>
 
-            function sortCards() {
-                const cardsArray = Array.from(movieCards);
+                        <?php if (isset($_SESSION['usuario_id'])): ?>
+                            <?php if (in_array((int)$trailer['id_trailer'], $userFavorites)): ?>
+                                <a class="btn btn-secondary btn-active-favorito" href="trailers/toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" title="Quitar de favoritos">
+                                    <i class="fa-solid fa-heart"></i>
+                                </a>
+                            <?php else: ?>
+                                <a class="btn btn-secondary" href="trailers/toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" title="Añadir a favoritos">
+                                    <i class="fa-regular fa-heart"></i>
+                                </a>
+                            <?php endif; ?>
+                        <?php endif; ?>
 
-                cardsArray.sort((a, b) => {
-                    // Si hay rango de fechas seleccionado, ordenar por fecha ascendente (más actual al más lejano)
-                    if (activeStartDate || activeEndDate) {
-                        const dateA = a.getAttribute('data-release-date');
-                        const dateB = b.getAttribute('data-release-date');
-                        return dateA.localeCompare(dateB); // Ascendente (más cercano/actual primero)
-                    }
+                        <?php if (isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin'): ?>
+                            <a class="btn btn-secondary btn-modificar" href="trailers/modificar_trailer.php?id=<?= $trailer['id_trailer'] ?>">
+                                <i class="fa-solid fa-pen-to-square"></i> Editar
+                            </a>
+                            <a class="btn btn-danger btn-eliminar" href="trailers/eliminar_trailer.php?id=<?= $trailer['id_trailer'] ?>" onclick="return confirm('¿Estás seguro de que deseas eliminar este trailer?');">
+                                <i class="fa-solid fa-trash"></i> Borrar
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </article>
+        <?php endforeach; ?>
+    </section>
 
-                    if (upcomingFilter.checked) {
-                        const dateA = a.getAttribute('data-release-date');
-                        const dateB = b.getAttribute('data-release-date');
-                        return dateA.localeCompare(dateB); // Ascendente
-                    } else {
-                        const idA = parseInt(a.getAttribute('data-id'));
-                        const idB = parseInt(b.getAttribute('data-id'));
-                        return idB - idA; // Descendente por ID (orden original)
-                    }
-                });
+    <!-- Contenedor de Paginación -->
+    <div id="paginationContainer" class="pagination-container"></div>
 
-                cardsArray.forEach(card => trailersGrid.appendChild(card));
-            }
+    <!-- Sin Resultados -->
+    <div id="emptyState" class="empty-state" style="display: none;">
+        <i class="fa-solid fa-magnifying-glass-minus empty-icon"></i>
+        <h3 class="empty-title">Sin Resultados</h3>
+        <p>No se encontraron películas con los criterios indicados.</p>
+    </div>
 
-            function filterMovies(resetPage = true) {
-                if (resetPage) {
-                    currentPage = 1;
-                }
+</main>
 
-                let visibleCount = 0;
-                const isUpcomingChecked = upcomingFilter.checked;
-                const matchedCards = [];
-                const currentCards = trailersGrid.querySelectorAll('.movie-card');
+<!-- Script de búsqueda y filtrado interactivo -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const searchInput = document.getElementById('searchInput');
+        const genreTags = document.querySelectorAll('.genre-tag');
+        const movieCards = document.querySelectorAll('.movie-card');
+        const emptyState = document.getElementById('emptyState');
 
-                currentCards.forEach(card => {
-                    const title = card.getAttribute('data-title').toLowerCase();
-                    const synopsis = card.getAttribute('data-synopsis').toLowerCase();
-                    const director = card.getAttribute('data-director').toLowerCase();
-                    const genre = card.getAttribute('data-genre');
-                    const releaseDate = card.getAttribute('data-release-date');
+        const upcomingFilter = document.getElementById('upcomingFilter');
+        const trailersGrid = document.getElementById('trailersGrid');
+        const dateStart = document.getElementById('dateStart');
+        const dateEnd = document.getElementById('dateEnd');
+        const clearDateBtn = document.getElementById('clearDateBtn');
 
-                    const matchesSearch = title.includes(searchQuery) ||
-                        synopsis.includes(searchQuery) ||
-                        director.includes(searchQuery);
+        // Calcular hoy en formato YYYY-MM-DD
+        const localDate = new Date();
+        const year = localDate.getFullYear();
+        const month = String(localDate.getMonth() + 1).padStart(2, '0');
+        const day = String(localDate.getDate()).padStart(2, '0');
+        const today = `${year}-${month}-${day}`;
 
-                    const matchesGenre = activeGenre === 'Todos' || (genre && genre.split(', ').map(g => g.trim()).includes(activeGenre));
+        const PAGE_SIZE = 30;
+        let currentPage = 1;
+        let activeGenre = 'Todos';
+        let searchQuery = '';
+        let activeStartDate = '';
+        let activeEndDate = '';
 
-                    let matchesDate = true;
-                    if (activeStartDate && releaseDate < activeStartDate) {
-                        matchesDate = false;
-                    }
-                    if (activeEndDate && releaseDate > activeEndDate) {
-                        matchesDate = false;
-                    }
-
-                    const matchesUpcoming = !isUpcomingChecked || releaseDate >= today;
-
-                    if (matchesSearch && matchesGenre && matchesDate && matchesUpcoming) {
-                        matchedCards.push(card);
-                        visibleCount++;
-                    } else {
-                        card.style.display = 'none';
-                    }
-                });
-
-                // Calcular páginas
-                const totalPages = Math.ceil(matchedCards.length / PAGE_SIZE);
-                if (currentPage > totalPages) {
-                    currentPage = Math.max(1, totalPages);
-                }
-
-                // Mostrar sólo las tarjetas de la página actual
-                const startIndex = (currentPage - 1) * PAGE_SIZE;
-                const endIndex = startIndex + PAGE_SIZE;
-
-                matchedCards.forEach((card, index) => {
-                    if (index >= startIndex && index < endIndex) {
-                        card.style.display = 'flex';
-                    } else {
-                        card.style.display = 'none';
-                    }
-                });
-
-                if (visibleCount === 0) {
-                    emptyState.style.display = 'flex';
-                } else {
-                    emptyState.style.display = 'none';
-                }
-
-                renderPagination(totalPages);
-            }
-
-            function renderPagination(totalPages) {
-                const container = document.getElementById('paginationContainer');
-                if (!container) return;
-                container.innerHTML = '';
-
-                if (totalPages <= 1) {
-                    return; // Ocultar si solo hay una página
-                }
-
-                // Botón Anterior
-                const prevBtn = document.createElement('button');
-                prevBtn.className = 'btn btn-secondary';
-                prevBtn.style.padding = '8px 16px';
-                prevBtn.innerHTML = '<i class="fa-solid fa-chevron-left"></i>';
-                prevBtn.disabled = currentPage === 1;
-                prevBtn.addEventListener('click', () => {
-                    if (currentPage > 1) {
-                        currentPage--;
-                        filterMovies(false);
-                        scrollToGrid();
-                    }
-                });
-                container.appendChild(prevBtn);
-
-                // Números de página
-                for (let i = 1; i <= totalPages; i++) {
-                    const pageBtn = document.createElement('button');
-                    pageBtn.className = `pagination-num-btn ${currentPage === i ? 'active' : ''}`;
-                    pageBtn.innerText = i;
-                    pageBtn.addEventListener('click', () => {
-                        if (currentPage !== i) {
-                            currentPage = i;
-                            filterMovies(false);
-                            scrollToGrid();
-                        }
-                    });
-                    container.appendChild(pageBtn);
-                }
-
-                // Botón Siguiente
-                const nextBtn = document.createElement('button');
-                nextBtn.className = 'btn btn-secondary';
-                nextBtn.style.padding = '8px 16px';
-                nextBtn.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
-                nextBtn.disabled = currentPage === totalPages;
-                nextBtn.addEventListener('click', () => {
-                    if (currentPage < totalPages) {
-                        currentPage++;
-                        filterMovies(false);
-                        scrollToGrid();
-                    }
-                });
-                container.appendChild(nextBtn);
-            }
-
-            function scrollToGrid() {
-                const grid = document.getElementById('trailersGrid');
-                if (grid) {
-                    grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            }
-
-            // --- Lógica del Carrusel del Hero ---
-            const carousel = document.getElementById('heroCarousel');
-            if (carousel) {
-                const slides = carousel.querySelectorAll('.carousel-slide');
-                const dots = carousel.querySelectorAll('.carousel-dot');
-                const prevBtn = document.getElementById('carouselPrevBtn');
-                const nextBtn = document.getElementById('carouselNextBtn');
-                let currentIndex = 0;
-                let autoplayTimer = null;
-
-                function showSlide(index) {
-                    if (slides.length === 0) return;
-
-                    // Asegurar límites circulares
-                    if (index >= slides.length) {
-                        currentIndex = 0;
-                    } else if (index < 0) {
-                        currentIndex = slides.length - 1;
-                    } else {
-                        currentIndex = index;
-                    }
-
-                    // Actualizar clases active en slides y dots
-                    slides.forEach((slide, i) => {
-                        if (i === currentIndex) {
-                            slide.classList.add('active');
-                        } else {
-                            slide.classList.remove('active');
-                        }
-                    });
-
-                    dots.forEach((dot, i) => {
-                        if (i === currentIndex) {
-                            dot.classList.add('active');
-                        } else {
-                            dot.classList.remove('active');
-                        }
-                    });
-                }
-
-                function nextSlide() {
-                    showSlide(currentIndex + 1);
-                }
-
-                function prevSlide() {
-                    showSlide(currentIndex - 1);
-                }
-
-                function startAutoplay() {
-                    stopAutoplay();
-                    autoplayTimer = setInterval(nextSlide, 5000); // Rotar cada 5 segundos
-                }
-
-                function stopAutoplay() {
-                    if (autoplayTimer) {
-                        clearInterval(autoplayTimer);
-                        autoplayTimer = null;
-                    }
-                }
-
-                // Eventos de botones
-                if (nextBtn) {
-                    nextBtn.addEventListener('click', () => {
-                        nextSlide();
-                        startAutoplay(); // Resetear temporizador al interactuar
-                    });
-                }
-
-                if (prevBtn) {
-                    prevBtn.addEventListener('click', () => {
-                        prevSlide();
-                        startAutoplay(); // Resetear temporizador al interactuar
-                    });
-                }
-
-                // Eventos de indicadores (dots)
-                dots.forEach(dot => {
-                    dot.addEventListener('click', () => {
-                        const index = parseInt(dot.getAttribute('data-dot-index'));
-                        showSlide(index);
-                        startAutoplay(); // Resetear temporizador al interactuar
-                    });
-                });
-
-                // Pausar autoplay al pasar el ratón por encima del carrusel
-                carousel.addEventListener('mouseenter', stopAutoplay);
-                carousel.addEventListener('mouseleave', startAutoplay);
-
-                // Inicializar autoplay
-                startAutoplay();
-            }
-
-            // Inicializar paginación al cargar
-            filterMovies(true);
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value.toLowerCase().trim();
+            filterMovies();
         });
 
-        function closeToast(id) {
-            const toast = document.getElementById(id);
-            if (toast) {
-                toast.classList.remove('show');
-                toast.classList.add('hide');
-                setTimeout(() => {
-                    toast.remove();
-                }, 400);
+        dateStart.addEventListener('change', (e) => {
+            activeStartDate = e.target.value;
+            sortCards();
+            filterMovies();
+        });
+
+        dateEnd.addEventListener('change', (e) => {
+            activeEndDate = e.target.value;
+            sortCards();
+            filterMovies();
+        });
+
+        upcomingFilter.addEventListener('change', () => {
+            sortCards();
+            filterMovies();
+        });
+
+        clearDateBtn.addEventListener('click', () => {
+            dateStart.value = '';
+            dateEnd.value = '';
+            activeStartDate = '';
+            activeEndDate = '';
+            sortCards();
+            filterMovies();
+        });
+
+        genreTags.forEach(tag => {
+            tag.addEventListener('click', () => {
+                genreTags.forEach(t => t.classList.remove('active'));
+                tag.classList.add('active');
+                activeGenre = tag.getAttribute('data-genre');
+                filterMovies();
+            });
+        });
+
+        function sortCards() {
+            const cardsArray = Array.from(movieCards);
+
+            cardsArray.sort((a, b) => {
+                // Si hay rango de fechas seleccionado, ordenar por fecha ascendente (más actual al más lejano)
+                if (activeStartDate || activeEndDate) {
+                    const dateA = a.getAttribute('data-release-date');
+                    const dateB = b.getAttribute('data-release-date');
+                    return dateA.localeCompare(dateB); // Ascendente (más cercano/actual primero)
+                }
+
+                if (upcomingFilter.checked) {
+                    const dateA = a.getAttribute('data-release-date');
+                    const dateB = b.getAttribute('data-release-date');
+                    return dateA.localeCompare(dateB); // Ascendente
+                } else {
+                    const idA = parseInt(a.getAttribute('data-id'));
+                    const idB = parseInt(b.getAttribute('data-id'));
+                    return idB - idA; // Descendente por ID (orden original)
+                }
+            });
+
+            cardsArray.forEach(card => trailersGrid.appendChild(card));
+        }
+
+        function filterMovies(resetPage = true) {
+            if (resetPage) {
+                currentPage = 1;
+            }
+
+            let visibleCount = 0;
+            const isUpcomingChecked = upcomingFilter.checked;
+            const matchedCards = [];
+            const currentCards = trailersGrid.querySelectorAll('.movie-card');
+
+            currentCards.forEach(card => {
+                const title = card.getAttribute('data-title').toLowerCase();
+                const synopsis = card.getAttribute('data-synopsis').toLowerCase();
+                const director = card.getAttribute('data-director').toLowerCase();
+                const genre = card.getAttribute('data-genre');
+                const releaseDate = card.getAttribute('data-release-date');
+
+                const matchesSearch = title.includes(searchQuery) ||
+                    synopsis.includes(searchQuery) ||
+                    director.includes(searchQuery);
+
+                const matchesGenre = activeGenre === 'Todos' || (genre && genre.split(', ').map(g => g.trim()).includes(activeGenre));
+
+                let matchesDate = true;
+                if (activeStartDate && releaseDate < activeStartDate) {
+                    matchesDate = false;
+                }
+                if (activeEndDate && releaseDate > activeEndDate) {
+                    matchesDate = false;
+                }
+
+                const matchesUpcoming = !isUpcomingChecked || releaseDate >= today;
+
+                if (matchesSearch && matchesGenre && matchesDate && matchesUpcoming) {
+                    matchedCards.push(card);
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Calcular páginas
+            const totalPages = Math.ceil(matchedCards.length / PAGE_SIZE);
+            if (currentPage > totalPages) {
+                currentPage = Math.max(1, totalPages);
+            }
+
+            // Mostrar sólo las tarjetas de la página actual
+            const startIndex = (currentPage - 1) * PAGE_SIZE;
+            const endIndex = startIndex + PAGE_SIZE;
+
+            matchedCards.forEach((card, index) => {
+                if (index >= startIndex && index < endIndex) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            if (visibleCount === 0) {
+                emptyState.style.display = 'flex';
+            } else {
+                emptyState.style.display = 'none';
+            }
+
+            renderPagination(totalPages);
+        }
+
+        function renderPagination(totalPages) {
+            const container = document.getElementById('paginationContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (totalPages <= 1) {
+                return; // Ocultar si solo hay una página
+            }
+
+            // Botón Anterior
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'btn btn-secondary';
+            prevBtn.style.padding = '8px 16px';
+            prevBtn.innerHTML = '<i class="fa-solid fa-chevron-left"></i>';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    filterMovies(false);
+                    scrollToGrid();
+                }
+            });
+            container.appendChild(prevBtn);
+
+            // Números de página
+            for (let i = 1; i <= totalPages; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `pagination-num-btn ${currentPage === i ? 'active' : ''}`;
+                pageBtn.innerText = i;
+                pageBtn.addEventListener('click', () => {
+                    if (currentPage !== i) {
+                        currentPage = i;
+                        filterMovies(false);
+                        scrollToGrid();
+                    }
+                });
+                container.appendChild(pageBtn);
+            }
+
+            // Botón Siguiente
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'btn btn-secondary';
+            nextBtn.style.padding = '8px 16px';
+            nextBtn.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    filterMovies(false);
+                    scrollToGrid();
+                }
+            });
+            container.appendChild(nextBtn);
+        }
+
+        function scrollToGrid() {
+            const grid = document.getElementById('trailersGrid');
+            if (grid) {
+                grid.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const toasts = document.querySelectorAll('.toast');
-            toasts.forEach((toast) => {
-                setTimeout(() => {
-                    toast.classList.add('show');
-                }, 100);
+        // --- Lógica del Carrusel del Hero ---
+        const carousel = document.getElementById('heroCarousel');
+        if (carousel) {
+            const slides = carousel.querySelectorAll('.carousel-slide');
+            const dots = carousel.querySelectorAll('.carousel-dot');
+            const prevBtn = document.getElementById('carouselPrevBtn');
+            const nextBtn = document.getElementById('carouselNextBtn');
+            let currentIndex = 0;
+            let autoplayTimer = null;
 
-                setTimeout(() => {
-                    closeToast(toast.id);
-                }, 4000);
+            function showSlide(index) {
+                if (slides.length === 0) return;
+
+                // Asegurar límites circulares
+                if (index >= slides.length) {
+                    currentIndex = 0;
+                } else if (index < 0) {
+                    currentIndex = slides.length - 1;
+                } else {
+                    currentIndex = index;
+                }
+
+                // Actualizar clases active en slides y dots
+                slides.forEach((slide, i) => {
+                    if (i === currentIndex) {
+                        slide.classList.add('active');
+                    } else {
+                        slide.classList.remove('active');
+                    }
+                });
+
+                dots.forEach((dot, i) => {
+                    if (i === currentIndex) {
+                        dot.classList.add('active');
+                    } else {
+                        dot.classList.remove('active');
+                    }
+                });
+            }
+
+            function nextSlide() {
+                showSlide(currentIndex + 1);
+            }
+
+            function prevSlide() {
+                showSlide(currentIndex - 1);
+            }
+
+            function startAutoplay() {
+                stopAutoplay();
+                autoplayTimer = setInterval(nextSlide, 5000); // Rotar cada 5 segundos
+            }
+
+            function stopAutoplay() {
+                if (autoplayTimer) {
+                    clearInterval(autoplayTimer);
+                    autoplayTimer = null;
+                }
+            }
+
+            // Eventos de botones
+            if (nextBtn) {
+                nextBtn.addEventListener('click', () => {
+                    nextSlide();
+                    startAutoplay(); // Resetear temporizador al interactuar
+                });
+            }
+
+            if (prevBtn) {
+                prevBtn.addEventListener('click', () => {
+                    prevSlide();
+                    startAutoplay(); // Resetear temporizador al interactuar
+                });
+            }
+
+            // Eventos de indicadores (dots)
+            dots.forEach(dot => {
+                dot.addEventListener('click', () => {
+                    const index = parseInt(dot.getAttribute('data-dot-index'));
+                    showSlide(index);
+                    startAutoplay(); // Resetear temporizador al interactuar
+                });
             });
-        });
-    </script>
 
-    <!-- Toast Notification Container -->
-    <div class="toast-container" id="toastContainer">
-        <?php if ($successMsg): ?>
-            <div class="toast toast-success" id="successToast">
-                <i class="fa-solid fa-circle-check toast-icon"></i>
-                <div class="toast-message"><?= htmlspecialchars($successMsg) ?></div>
-                <button class="toast-close" onclick="closeToast('successToast')">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-        <?php endif; ?>
-        <?php if ($errorMsg): ?>
-            <div class="toast toast-error" id="errorToast">
-                <i class="fa-solid fa-circle-exclamation toast-icon"></i>
-                <div class="toast-message"><?= htmlspecialchars($errorMsg) ?></div>
-                <button class="toast-close" onclick="closeToast('errorToast')">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-        <?php endif; ?>
-    </div>
+            // Pausar autoplay al pasar el ratón por encima del carrusel
+            carousel.addEventListener('mouseenter', stopAutoplay);
+            carousel.addEventListener('mouseleave', startAutoplay);
+
+            // Inicializar autoplay
+            startAutoplay();
+        }
+
+        // Inicializar paginación al cargar
+        filterMovies(true);
+    });
+
+    function closeToast(id) {
+        const toast = document.getElementById(id);
+        if (toast) {
+            toast.classList.remove('show');
+            toast.classList.add('hide');
+            setTimeout(() => {
+                toast.remove();
+            }, 400);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const toasts = document.querySelectorAll('.toast');
+        toasts.forEach((toast) => {
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+
+            setTimeout(() => {
+                closeToast(toast.id);
+            }, 4000);
+        });
+    });
+</script>
+
+<!-- Toast Notification Container -->
+<div class="toast-container" id="toastContainer">
+    <?php if ($successMsg): ?>
+        <div class="toast toast-success" id="successToast">
+            <i class="fa-solid fa-circle-check toast-icon"></i>
+            <div class="toast-message"><?= htmlspecialchars($successMsg) ?></div>
+            <button class="toast-close" onclick="closeToast('successToast')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    <?php endif; ?>
+    <?php if ($errorMsg): ?>
+        <div class="toast toast-error" id="errorToast">
+            <i class="fa-solid fa-circle-exclamation toast-icon"></i>
+            <div class="toast-message"><?= htmlspecialchars($errorMsg) ?></div>
+            <button class="toast-close" onclick="closeToast('errorToast')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    <?php endif; ?>
+</div>
 <?php
 require_once $rootPath . 'includes/footer.php';
 ?>

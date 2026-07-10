@@ -651,7 +651,8 @@ CREATE TABLE `usuarios` (
   `email` varchar(120) NOT NULL,
   `telefono` varchar(20) DEFAULT NULL,
   `rol` varchar(35) NOT NULL DEFAULT 'lector',
-  `fecha_alta` date NOT NULL
+  `fecha_alta` date NOT NULL,
+  `avatar_url` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --

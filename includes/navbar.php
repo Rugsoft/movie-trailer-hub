@@ -58,9 +58,14 @@
                         </div>
                     <?php endif; ?>
                     
-                    <span class="user-greeting">
-                        <i class="fa-solid fa-circle-user"></i>Hola, <?= htmlspecialchars($_SESSION['username']) ?>
-                    </span>
+                    <a href="<?php echo $rootPath; ?>auth/perfil.php" class="user-greeting" title="Editar mi perfil">
+                        <?php if (!empty($_SESSION['avatar_url'])): ?>
+                            <img src="<?php echo htmlspecialchars($_SESSION['avatar_url']); ?>" alt="Avatar" class="user-avatar-mini" style="width: 22px; height: 22px; border-radius: 50%; object-fit: cover; margin-right: 4px;">
+                        <?php else: ?>
+                            <i class="fa-solid fa-circle-user"></i>
+                        <?php endif; ?>
+                        Hola, <?= htmlspecialchars($_SESSION['username']) ?>
+                    </a>
 
                     <a href="<?php echo $rootPath; ?>auth/logout.php" class="btn btn-secondary">
                         <i class="fa-solid fa-right-from-bracket"></i> Salir

@@ -25,6 +25,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $_SESSION["username"] = $usuario["username"];
             $_SESSION["nombre"] = $usuario["nombre"];
             $_SESSION["rol"] = $usuario["rol"];
+            $_SESSION["avatar_url"] = $usuario["avatar_url"] ?? null;
             
             $_SESSION["success"] = "¡Bienvenido de nuevo, " . $usuario["nombre"] . "!";
             header("Location: ../index.php");
