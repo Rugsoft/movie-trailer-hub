@@ -64,7 +64,7 @@ require $rootPath . 'includes/navbar.php';
             
             <?php if (!empty($movies)): ?>
                 <?php foreach ($movies as $movie): ?>
-                    <div class="movie-row-card" onclick="location.href='reproducir_trailer.php?id=<?php echo $movie['id_trailer']; ?>'">
+                    <a class="movie-row-card" href="reproducir_trailer.php?id=<?php echo $movie['id_trailer']; ?>">
                         <div class="movie-row-left">
                             <img src="<?php echo htmlspecialchars($movie['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=200'); ?>" alt="Poster" class="movie-row-poster">
                             <div class="movie-row-info">
@@ -79,7 +79,7 @@ require $rootPath . 'includes/navbar.php';
                                 <span>🎬 Género: <?php echo htmlspecialchars($movie['genero']); ?></span>
                             </div>
                         </div>
-                    </div>
+                    </a>
                 <?php endforeach; ?>
             <?php else: ?>
                 <div class="alerta">

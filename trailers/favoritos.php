@@ -53,7 +53,7 @@ require_once $rootPath . 'includes/navbar.php';
                 <?php foreach ($trailers as $trailer): ?>
                     <article class="movie-card">
                         
-                        <div class="movie-poster-container" onclick="location.href='reproducir_trailer.php?id=<?= $trailer['id_trailer'] ?>'">
+                        <a class="movie-poster-container" href="reproducir_trailer.php?id=<?= $trailer['id_trailer'] ?>">
                             <img src="<?= htmlspecialchars($trailer['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=600') ?>" alt="<?= htmlspecialchars($trailer['titulo']) ?>" class="movie-poster">
                             
                             <div class="card-play-overlay">
@@ -70,7 +70,7 @@ require_once $rootPath . 'includes/navbar.php';
                             <div class="genre-badge">
                                 <?= htmlspecialchars($trailer['genero']) ?>
                             </div>
-                        </div>
+                        </a>
 
                         <div class="movie-info">
                             <h3 class="movie-title"><?= htmlspecialchars($trailer['titulo']) ?></h3>

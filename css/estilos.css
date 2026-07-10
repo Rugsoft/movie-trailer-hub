@@ -2041,6 +2041,18 @@ main.app-container {
   cursor: pointer;
 }
 
+a.movie-poster-container {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+a.movie-row-card {
+  display: flex;
+  text-decoration: none;
+  color: inherit;
+}
+
 .btn-active-favorito {
   color: var(--secondary) !important;
 }
