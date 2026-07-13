@@ -6,4 +6,4 @@ node_modules/
 .vscode/
 .DS_Store
 .clinerules
-.config/conexion.php
+config/conexion.php
