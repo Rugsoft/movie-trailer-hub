@@ -2392,7 +2392,8 @@ a.movie-row-card {
   border: 1px dashed var(--primary);
   padding: 20px;
   border-radius: var(--radius-md);
-  margin-bottom: 30px;
+  max-width: 550px;
+  margin: 0 auto 30px auto;
 }
 
 .tmdb-autocomplete-card h3 {
@@ -2750,7 +2751,9 @@ body.cinema-mode-active .cinema-backdrop {
 body.cinema-mode-active .player-wrapper {
   z-index: 1000;
   position: relative;
-  box-shadow: 0 0 100px rgba(0, 0, 0, 0.95), 0 0 50px var(--primary-glow);
+  box-shadow:
+    0 0 100px rgba(0, 0, 0, 0.95),
+    0 0 50px var(--primary-glow);
   border-color: rgba(245, 158, 11, 0.35);
   background-color: var(--bg-surface-lowest) !important;
 }
