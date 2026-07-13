@@ -19,10 +19,10 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$servidor = "localhost";
-$usuario = "root";
-$password = "";
-$base_datos = "movie_trailer_hub";
+$servidor = "sql108.infinityfree.com";
+$usuario = "if0_42320411";
+$password = "KiraKireta3";
+$base_datos = "if0_42320411_movie_trailer_hub";
 
 // Conexión a la base de datos MySQL
 $conexion = mysqli_connect($servidor, $usuario, $password, $base_datos);
@@ -31,4 +31,4 @@ $conexion = mysqli_connect($servidor, $usuario, $password, $base_datos);
 if (!$conexion) {
     die("Error de conexión: " . mysqli_connect_error());
 }
-?>
+mysqli_set_charset($conexion, "utf8mb4");

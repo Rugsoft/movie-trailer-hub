@@ -2779,3 +2779,219 @@ body.cinema-mode-active .video-container {
   cursor: pointer;
   transition: var(--transition-smooth);
 }
+
+/* ==========================================================================
+   Reviews System Section
+   ========================================================================== */
+.reviews-section {
+  margin-top: 36px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-color);
+}
+
+.reviews-section .info-cast-title {
+  margin-bottom: 20px;
+}
+
+.reviews-avg-rating {
+  color: var(--primary);
+  margin-left: 12px;
+  font-size: 14px;
+}
+
+.write-review-card {
+  background: var(--bg-surface-elevated);
+  padding: 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  margin-bottom: 24px;
+}
+
+.write-review-card h4 {
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-family: var(--font-headline);
+}
+
+.write-review-card form {
+  background: transparent;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  max-width: 100%;
+  margin: 0;
+  gap: 12px;
+}
+
+.star-rating-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.star-rating-container span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.star-rating {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.star-rating label {
+  font-size: 20px;
+  color: #4b5563;
+  cursor: pointer;
+  transition: color 0.2s;
+  margin-top: 0 !important; /* Override default label margin */
+}
+
+.star-rating input[type="radio"]:checked ~ label {
+  color: var(--primary) !important;
+}
+
+.star-rating label:hover,
+.star-rating label:hover ~ label {
+  color: #f59e0b !important;
+}
+
+.write-review-card textarea {
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 13px;
+  resize: vertical;
+}
+
+.write-review-card textarea:focus {
+  outline: none;
+  border-color: var(--border-color-focus);
+}
+
+.review-form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.login-prompt-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--border-color);
+  padding: 16px;
+  border-radius: var(--radius-md);
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.login-prompt-card p {
+  font-size: 13px;
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.login-prompt-card p a {
+  color: var(--primary);
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.no-reviews-msg {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 16px 0;
+  font-style: italic;
+}
+
+.review-item {
+  border-bottom: 1px solid rgba(216, 195, 173, 0.05);
+  padding-bottom: 16px;
+  display: flex;
+  gap: 14px;
+}
+
+.review-avatar-container img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border-color);
+}
+
+.review-avatar-fallback {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+}
+
+.review-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.review-author-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.review-author-username {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: 6px;
+}
+
+.review-date {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.review-stars {
+  color: var(--primary);
+  font-size: 12px;
+  display: flex;
+  gap: 2px;
+}
+
+.review-text {
+  font-size: 13px;
+  color: var(--text-primary);
+  margin-top: 4px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  text-align: left;
+}

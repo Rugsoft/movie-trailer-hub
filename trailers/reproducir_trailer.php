@@ -2,6 +2,20 @@
 require_once "../config/conexion.php";
 define('BASE_PATH', '../');
 
+// Auto-migración: Crear tabla de reseñas si no existe
+$sqlMigrateResenas = "CREATE TABLE IF NOT EXISTS resenas (
+    id_resena INT AUTO_INCREMENT PRIMARY KEY,
+    id_trailer INT NOT NULL,
+    id_usuario INT NOT NULL,
+    valoracion INT NOT NULL,
+    comentario TEXT DEFAULT NULL,
+    fecha_alta DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_trailer_usuario (id_trailer, id_usuario),
+    CONSTRAINT fk_resenas_trailers FOREIGN KEY (id_trailer) REFERENCES trailers(id_trailer) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_resenas_usuarios FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
+mysqli_query($conexion, $sqlMigrateResenas);
+
 $successMsg = $_SESSION['success'] ?? null;
 $errorMsg = $_SESSION['error'] ?? null;
 unset($_SESSION['success'], $_SESSION['error']);
@@ -25,6 +39,61 @@ $trailer = mysqli_fetch_assoc($resultado);
 
 if (!$trailer) {
     echo "<h1>Trailer no encontrado</h1>";
+    exit;
+}
+
+// Procesar el envío de una nueva reseña o actualización/eliminación de una existente
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    if (!isset($_SESSION['usuario_id'])) {
+        $_SESSION['error'] = "Debes iniciar sesión para publicar o modificar una reseña.";
+        header("Location: reproducir_trailer.php?id=" . $id);
+        exit;
+    }
+    
+    $id_usuario = (int)$_SESSION['usuario_id'];
+    
+    if ($_POST['action'] === 'guardar_resena') {
+        $valoracion = isset($_POST['valoracion']) ? (int)$_POST['valoracion'] : 0;
+        $comentario = isset($_POST['comentario']) ? trim($_POST['comentario']) : '';
+        
+        if ($valoracion < 1 || $valoracion > 5) {
+            $_SESSION['error'] = "Por favor selecciona una valoración entre 1 y 5 estrellas.";
+            header("Location: reproducir_trailer.php?id=" . $id);
+            exit;
+        }
+        
+        $sqlSave = "INSERT INTO resenas (id_trailer, id_usuario, valoracion, comentario, fecha_alta) 
+                    VALUES (?, ?, ?, ?, NOW()) 
+                    ON DUPLICATE KEY UPDATE valoracion = VALUES(valoracion), comentario = VALUES(comentario), fecha_alta = NOW()";
+        $stmtSave = mysqli_prepare($conexion, $sqlSave);
+        if ($stmtSave) {
+            mysqli_stmt_bind_param($stmtSave, "iiis", $id, $id_usuario, $valoracion, $comentario);
+            if (mysqli_stmt_execute($stmtSave)) {
+                $_SESSION['success'] = "¡Tu reseña ha sido guardada con éxito!";
+            } else {
+                $_SESSION['error'] = "Error al guardar la reseña. Inténtalo de nuevo.";
+            }
+            mysqli_stmt_close($stmtSave);
+        } else {
+            $_SESSION['error'] = "Error en el servidor al procesar la reseña.";
+        }
+    } elseif ($_POST['action'] === 'eliminar_resena') {
+        $sqlDel = "DELETE FROM resenas WHERE id_trailer = ? AND id_usuario = ?";
+        $stmtDel = mysqli_prepare($conexion, $sqlDel);
+        if ($stmtDel) {
+            mysqli_stmt_bind_param($stmtDel, "ii", $id, $id_usuario);
+            if (mysqli_stmt_execute($stmtDel)) {
+                $_SESSION['success'] = "Tu reseña ha sido eliminada.";
+            } else {
+                $_SESSION['error'] = "Error al eliminar la reseña.";
+            }
+            mysqli_stmt_close($stmtDel);
+        } else {
+            $_SESSION['error'] = "Error en el servidor al eliminar la reseña.";
+        }
+    }
+    
+    header("Location: reproducir_trailer.php?id=" . $id);
     exit;
 }
 
@@ -196,6 +265,46 @@ if (isset($_SESSION['usuario_id'])) {
     $isTrailerFavorito = mysqli_num_rows($resFav) > 0;
     mysqli_stmt_close($stmtFav);
 }
+
+// Consultar todas las reseñas y valoraciones para este trailer
+$resenas = [];
+$sqlResenas = "SELECT r.*, u.username, u.avatar_url, u.nombre, u.apellidos 
+               FROM resenas r 
+               JOIN usuarios u ON r.id_usuario = u.id_usuario 
+               WHERE r.id_trailer = ? 
+               ORDER BY r.fecha_alta DESC";
+$stmtResenas = mysqli_prepare($conexion, $sqlResenas);
+if ($stmtResenas) {
+    mysqli_stmt_bind_param($stmtResenas, "i", $id);
+    mysqli_stmt_execute($stmtResenas);
+    $resRes = mysqli_stmt_get_result($stmtResenas);
+    while ($row = mysqli_fetch_assoc($resRes)) {
+        $resenas[] = $row;
+    }
+    mysqli_stmt_close($stmtResenas);
+}
+
+// Buscar si el usuario actual ya ha dejado una reseña
+$userReview = null;
+if (isset($_SESSION['usuario_id'])) {
+    $id_usuario = (int)$_SESSION['usuario_id'];
+    foreach ($resenas as $r) {
+        if ((int)$r['id_usuario'] === $id_usuario) {
+            $userReview = $r;
+            break;
+        }
+    }
+}
+
+// Calcular el promedio de valoración
+$avgRating = 0;
+if (!empty($resenas)) {
+    $totalRating = 0;
+    foreach ($resenas as $r) {
+        $totalRating += (int)$r['valoracion'];
+    }
+    $avgRating = round($totalRating / count($resenas), 1);
+}
 ?>
 <?php
 $pageTitle = "Reproduciendo: " . $trailer['titulo'];
@@ -271,6 +380,122 @@ require_once $rootPath . 'includes/navbar.php';
                     </div>
                 </div>
             <?php endif; ?>
+
+            <!-- Sección de Reseñas y Comentarios -->
+            <div class="reviews-section">
+                <h3 class="info-cast-title">
+                    <i class="fa-solid fa-comments"></i> Reseñas y Valoraciones (<?= count($resenas) ?>)
+                    <?php if ($avgRating > 0): ?>
+                        <span class="reviews-avg-rating">
+                            <i class="fa-solid fa-star"></i> <?= $avgRating ?> / 5 promedio
+                        </span>
+                    <?php endif; ?>
+                </h3>
+                
+                <!-- Formulario para escribir/editar reseña (si está logueado) -->
+                <?php if (isset($_SESSION['usuario_id'])): ?>
+                    <div class="write-review-card">
+                        <h4>
+                            <?= $userReview ? 'Editar tu reseña' : 'Escribe tu reseña' ?>
+                        </h4>
+                        
+                        <form action="" method="POST">
+                            <input type="hidden" name="action" value="guardar_resena">
+                            
+                            <!-- Selector de estrellas interactivo -->
+                            <div class="star-rating-container">
+                                <span>Tu valoración:</span>
+                                <div class="star-rating">
+                                    <?php 
+                                    $userRating = $userReview ? (int)$userReview['valoracion'] : 0;
+                                    for ($i = 5; $i >= 1; $i--): 
+                                    ?>
+                                        <input type="radio" id="star-<?= $i ?>" name="valoracion" value="<?= $i ?>" style="display: none;" <?= $userRating === $i ? 'checked' : '' ?> required>
+                                        <label for="star-<?= $i ?>" class="star-label" title="<?= $i ?> estrellas">
+                                            <i class="fa-solid fa-star"></i>
+                                        </label>
+                                    <?php endfor; ?>
+                                </div>
+                            </div>
+                            
+                            <textarea name="comentario" rows="3" placeholder="Escribe tu reseña u opinión sobre este trailer (opcional)..." required><?= $userReview ? htmlspecialchars($userReview['comentario']) : '' ?></textarea>
+                            
+                            <div class="review-form-actions">
+                                <?php if ($userReview): ?>
+                                    <button type="submit" name="delete_btn" onclick="document.getElementById('deleteReviewForm').submit(); return false;" class="btn btn-danger">
+                                        <i class="fa-solid fa-trash"></i> Eliminar
+                                    </button>
+                                <?php endif; ?>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa-solid fa-paper-plane"></i> <?= $userReview ? 'Guardar Cambios' : 'Publicar Reseña' ?>
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <?php if ($userReview): ?>
+                            <!-- Formulario oculto para eliminar reseña -->
+                            <form id="deleteReviewForm" action="" method="POST" style="display:none;">
+                                <input type="hidden" name="action" value="eliminar_resena">
+                            </form>
+                        <?php endif; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="login-prompt-card">
+                        <p>
+                            <i class="fa-solid fa-circle-info"></i> Debes <a href="../auth/login.php">iniciar sesión</a> para dejar una valoración o comentario.
+                        </p>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Listado de Reseñas -->
+                <div class="reviews-list">
+                    <?php if (empty($resenas)): ?>
+                        <p class="no-reviews-msg">
+                            Nadie ha valorado este trailer todavía. ¡Sé el primero!
+                        </p>
+                    <?php else: ?>
+                        <?php foreach ($resenas as $resena): ?>
+                            <div class="review-item">
+                                <!-- Avatar -->
+                                <div class="review-avatar-container">
+                                    <?php if (!empty($resena['avatar_url'])): ?>
+                                        <img src="<?= htmlspecialchars($resena['avatar_url']) ?>" alt="Avatar">
+                                    <?php else: ?>
+                                        <div class="review-avatar-fallback">
+                                            <i class="fa-solid fa-user"></i>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                
+                                <!-- Detalles de la reseña -->
+                                <div class="review-details">
+                                    <div class="review-header">
+                                        <div>
+                                            <span class="review-author-name"><?= htmlspecialchars($resena['nombre'] . ' ' . $resena['apellidos']) ?></span>
+                                            <span class="review-author-username">@<?= htmlspecialchars($resena['username']) ?></span>
+                                        </div>
+                                        <span class="review-date">
+                                            <i class="fa-regular fa-clock"></i> <?= date('d/m/Y H:i', strtotime($resena['fecha_alta'])) ?>
+                                        </span>
+                                    </div>
+                                    
+                                    <!-- Estrellas -->
+                                    <div class="review-stars">
+                                        <?php for ($k = 1; $k <= 5; $k++): ?>
+                                            <i class="<?= $k <= (int)$resena['valoracion'] ? 'fa-solid' : 'fa-regular' ?> fa-star"></i>
+                                        <?php endfor; ?>
+                                    </div>
+                                    
+                                    <!-- Comentario -->
+                                    <?php if (!empty($resena['comentario'])): ?>
+                                        <p class="review-text"><?= htmlspecialchars($resena['comentario']) ?></p>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
         </div>
     </div>
 
