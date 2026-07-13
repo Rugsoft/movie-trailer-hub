@@ -35,7 +35,7 @@ define('BASE_PATH', '../');
     </div>
 
     <!-- Estado de Carga / Logs -->
-    <div id="statusModal" class="cinema-backdrop" style="display: none; align-items: center; justify-content: center; z-index: 1000; background: rgba(8, 20, 37, 0.9);">
+    <div id="statusModal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; align-items: center; justify-content: center; z-index: 1000; background: rgba(8, 20, 37, 0.9); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
         <div class="write-review-card" style="width: 90%; max-width: 500px; padding: 30px; border-radius: var(--radius-lg); text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid var(--border-color-focus);">
             <div id="modalSpinner">
                 <i class="fa-solid fa-circle-notch fa-spin" style="font-size: 48px; color: var(--primary); margin-bottom: 20px;"></i>
@@ -44,7 +44,11 @@ define('BASE_PATH', '../');
             <div id="modalMessage" style="text-align: left; background: var(--bg-surface-lowest); padding: 15px; border-radius: var(--radius-md); font-size: 13px; max-height: 250px; overflow-y: auto; margin-bottom: 20px; line-height: 1.6; border: 1px solid var(--border-color);">
                 Iniciando descarga...
             </div>
-            <button type="button" id="btnCloseModal" class="btn btn-secondary" style="display: none; margin: 0 auto;">Cerrar y Ver Catálogo</button>
+            <button type="button" id="btnCloseModal" class="btn btn-secondary" style="display: none; margin: 0 auto;">Cerrar</button>
+            <div id="modalActions" style="display: none; justify-content: center; gap: 12px; margin-top: 15px;">
+                <button type="button" id="btnGoCatalog" class="btn btn-secondary">Ver Catálogo</button>
+                <button type="button" id="btnImportAnother" class="btn btn-primary">Añadir otro trailer</button>
+            </div>
         </div>
     </div>
 
@@ -64,6 +68,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalMessage = document.getElementById('modalMessage');
     const modalSpinner = document.getElementById('modalSpinner');
     const btnCloseModal = document.getElementById('btnCloseModal');
+    const modalActions = document.getElementById('modalActions');
+    const btnGoCatalog = document.getElementById('btnGoCatalog');
+    const btnImportAnother = document.getElementById('btnImportAnother');
 
     movieQuery.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
@@ -148,6 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modalMessage.innerHTML = '<div><i class="fa-solid fa-spinner fa-spin"></i> Conectando con TMDB para obtener metadatos...</div>';
         modalSpinner.style.display = 'block';
         btnCloseModal.style.display = 'none';
+        modalActions.style.display = 'none';
 
         fetch('procesar_importar_tmdb.php', {
             method: 'POST',
@@ -185,12 +193,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             modalMessage.innerHTML = logHtml;
             
-            btnCloseModal.innerText = "Ver Catálogo";
-            btnCloseModal.style.display = 'block';
+            btnCloseModal.style.display = 'none';
+            modalActions.style.display = 'flex';
             
-            // Refrescar buscador tras cerrar
-            btnCloseModal.onclick = () => {
+            btnGoCatalog.onclick = () => {
                 window.location.href = '../index.php';
+            };
+            
+            btnImportAnother.onclick = () => {
+                statusModal.style.display = 'none';
+                movieQuery.value = '';
+                resultsGrid.innerHTML = '';
             };
         })
         .catch(err => {
