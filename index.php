@@ -7,13 +7,17 @@ $successMsg = $_SESSION['success'] ?? null;
 $errorMsg = $_SESSION['error'] ?? null;
 unset($_SESSION['success'], $_SESSION['error']);
 
-// Consultar todos los trailers con sus géneros
-$sql = "SELECT t.*, GROUP_CONCAT(g.nombre SEPARATOR ', ') as genero,
-               CONCAT(d.nombre, ' ', d.apellidos) as director
+// Consultar todos los trailers con sus géneros y reparto (actores/actrices)
+$sql = "SELECT t.*, 
+               GROUP_CONCAT(DISTINCT g.nombre SEPARATOR ', ') as genero,
+               CONCAT(d.nombre, ' ', d.apellidos) as director,
+               GROUP_CONCAT(DISTINCT CONCAT(r.nombre, ' ', r.apellidos) SEPARATOR ', ') as reparto
         FROM trailers t
         LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
         LEFT JOIN generos g ON tg.id_genero = g.id_genero
         LEFT JOIN directores d ON t.id_director = d.id_director
+        LEFT JOIN reparto_trailers rt ON t.id_trailer = rt.id_trailer
+        LEFT JOIN reparto r ON rt.id_reparto = r.id_reparto
         GROUP BY t.id_trailer
         ORDER BY t.id_trailer DESC";
 $res = mysqli_query($conexion, $sql);
@@ -157,7 +161,7 @@ require_once $rootPath . 'includes/navbar.php';
         <div class="search-bar-container">
             <div class="search-input-wrapper">
                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                <input type="text" id="searchInput" class="search-input" placeholder="Buscar por título, descripción o director...">
+                <input type="text" id="searchInput" class="search-input" placeholder="Buscar por título, descripción, actor/actriz o director...">
             </div>
             <div class="date-filter-container">
                 <i class="fa-solid fa-calendar-days"></i>
@@ -195,6 +199,7 @@ require_once $rootPath . 'includes/navbar.php';
                 data-title="<?= htmlspecialchars($trailer['titulo']) ?>"
                 data-synopsis="<?= htmlspecialchars($trailer['sinopsis'] ?? '') ?>"
                 data-director="<?= htmlspecialchars($trailer['director'] ?? '') ?>"
+                data-actors="<?= htmlspecialchars($trailer['reparto'] ?? '') ?>"
                 data-genre="<?= htmlspecialchars($trailer['genero']) ?>"
                 data-release-date="<?= htmlspecialchars($trailer['release_date']) ?>">
 
@@ -378,12 +383,14 @@ require_once $rootPath . 'includes/navbar.php';
                 const title = card.getAttribute('data-title').toLowerCase();
                 const synopsis = card.getAttribute('data-synopsis').toLowerCase();
                 const director = card.getAttribute('data-director').toLowerCase();
+                const actors = (card.getAttribute('data-actors') || '').toLowerCase();
                 const genre = card.getAttribute('data-genre');
                 const releaseDate = card.getAttribute('data-release-date');
 
                 const matchesSearch = title.includes(searchQuery) ||
                     synopsis.includes(searchQuery) ||
-                    director.includes(searchQuery);
+                    director.includes(searchQuery) ||
+                    actors.includes(searchQuery);
 
                 const matchesGenre = activeGenre === 'Todos' || (genre && genre.split(', ').map(g => g.trim()).includes(activeGenre));
 
