@@ -40,106 +40,103 @@ while ($row = mysqli_fetch_assoc($resGenresCur)) {
 }
 mysqli_stmt_close($stmtGenresCur);
 
-// Obtener películas recomendadas (mismo director y del mismo género, máximo 5)
+// Obtener actores del trailer actual para calcular coincidencia de reparto
+$actorsList = [];
+$sqlActorsCur = "SELECT id_reparto FROM reparto_trailers WHERE id_trailer = ?";
+$stmtActorsCur = mysqli_prepare($conexion, $sqlActorsCur);
+mysqli_stmt_bind_param($stmtActorsCur, "i", $id);
+mysqli_stmt_execute($stmtActorsCur);
+$resActorsCur = mysqli_stmt_get_result($stmtActorsCur);
+while ($row = mysqli_fetch_assoc($resActorsCur)) {
+    $actorsList[] = (int)$row['id_reparto'];
+}
+mysqli_stmt_close($stmtActorsCur);
+
+// Obtener películas recomendadas usando el algoritmo inteligente de puntuación
 $recommendations = [];
 $id_director = $trailer['id_director'];
 
-// 1. Obtener películas del mismo director (máximo 5 posibles para completar de ser necesario)
-$recsDirector = [];
+$scoreTerms = [];
+$bindParams = [];
+$bindTypes = "";
+
+// Puntos por mismo director (si tiene director asignado)
 if ($id_director !== null) {
-    $sqlDir = "SELECT t.id_trailer, t.titulo, t.poster_url, t.valoracion, t.release_date, t.duracion,
-                      GROUP_CONCAT(DISTINCT g.nombre SEPARATOR ', ') as genero,
-                      CONCAT(d.nombre, ' ', d.apellidos) as director
-               FROM trailers t
-               LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
-               LEFT JOIN generos g ON tg.id_genero = g.id_genero
-               LEFT JOIN directores d ON t.id_director = d.id_director
-               WHERE t.id_director = ? AND t.id_trailer != ?
-               GROUP BY t.id_trailer
-               ORDER BY t.valoracion DESC
-               LIMIT 5";
-    $stmtDir = mysqli_prepare($conexion, $sqlDir);
-    mysqli_stmt_bind_param($stmtDir, "ii", $id_director, $id);
-    mysqli_stmt_execute($stmtDir);
-    $resDir = mysqli_stmt_get_result($stmtDir);
-    while ($row = mysqli_fetch_assoc($resDir)) {
-        $recsDirector[$row['id_trailer']] = $row;
-    }
-    mysqli_stmt_close($stmtDir);
+    $scoreTerms[] = "(CASE WHEN t.id_director = ? THEN 3 ELSE 0 END)";
+    $bindParams[] = (int)$id_director;
+    $bindTypes .= "i";
+} else {
+    $scoreTerms[] = "0";
 }
 
-// 2. Obtener películas del mismo género (máximo 5 posibles, excluyendo la actual)
-$recsGenre = [];
+$joins = [];
+
+// Coincidencia de géneros: 1 punto por cada género en común
 if (!empty($genresList)) {
-    $placeholders = implode(",", array_fill(0, count($genresList), "?"));
-    $sqlGen = "SELECT t.id_trailer, t.titulo, t.poster_url, t.valoracion, t.release_date, t.duracion,
-                      GROUP_CONCAT(DISTINCT g.nombre SEPARATOR ', ') as genero,
-                      CONCAT(d.nombre, ' ', d.apellidos) as director
-               FROM trailers t
-               JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
-               LEFT JOIN generos g ON tg.id_genero = g.id_genero
-               LEFT JOIN directores d ON t.id_director = d.id_director
-               WHERE tg.id_genero IN ($placeholders) AND t.id_trailer != ?
-               GROUP BY t.id_trailer
-               ORDER BY t.valoracion DESC
-               LIMIT 5";
-    $stmtGen = mysqli_prepare($conexion, $sqlGen);
+    $genresPlaceholders = implode(",", array_fill(0, count($genresList), "?"));
+    $joins[] = "LEFT JOIN (
+        SELECT id_trailer, COUNT(*) as cnt 
+        FROM trailers_generos 
+        WHERE id_genero IN ($genresPlaceholders) 
+        GROUP BY id_trailer
+    ) genre_matches ON t.id_trailer = genre_matches.id_trailer";
+    $scoreTerms[] = "COALESCE(genre_matches.cnt, 0) * 1";
     
-    $typesGen = str_repeat("i", count($genresList)) . "i";
-    $paramsGen = array_merge($genresList, [$id]);
+    foreach ($genresList as $gId) {
+        $bindParams[] = $gId;
+        $bindTypes .= "i";
+    }
+}
+
+// Coincidencia de reparto: 2 puntos por cada actor/actriz en común
+if (!empty($actorsList)) {
+    $actorsPlaceholders = implode(",", array_fill(0, count($actorsList), "?"));
+    $joins[] = "LEFT JOIN (
+        SELECT id_trailer, COUNT(*) as cnt 
+        FROM reparto_trailers 
+        WHERE id_reparto IN ($actorsPlaceholders) 
+        GROUP BY id_trailer
+    ) actor_matches ON t.id_trailer = actor_matches.id_trailer";
+    $scoreTerms[] = "COALESCE(actor_matches.cnt, 0) * 2";
     
-    mysqli_stmt_bind_param($stmtGen, $typesGen, ...$paramsGen);
-    mysqli_stmt_execute($stmtGen);
-    $resGen = mysqli_stmt_get_result($stmtGen);
-    while ($row = mysqli_fetch_assoc($resGen)) {
-        $recsGenre[$row['id_trailer']] = $row;
-    }
-    mysqli_stmt_close($stmtGen);
-}
-
-// Mezclar según la regla de prioridad balanceada:
-// - Hasta 2 del director.
-// - El resto (hasta 3) de género (que no estén duplicados).
-// - Si falta de algún grupo, completamos con el otro hasta 5.
-$finalRecs = [];
-
-// Tomamos hasta 2 del director
-$dirCount = 0;
-foreach ($recsDirector as $key => $movie) {
-    if ($dirCount < 2) {
-        $finalRecs[$key] = $movie;
-        $dirCount++;
+    foreach ($actorsList as $aId) {
+        $bindParams[] = $aId;
+        $bindTypes .= "i";
     }
 }
 
-// Tomamos hasta 3 de género (evitando duplicados)
-$genreCount = 0;
-foreach ($recsGenre as $key => $movie) {
-    if (!isset($finalRecs[$key]) && $genreCount < 3) {
-        $finalRecs[$key] = $movie;
-        $genreCount++;
-    }
-}
+$scoreExpr = implode(" + ", $scoreTerms);
+$joinsSql = implode("\n", $joins);
 
-// Si aún no llegamos a 5 y quedan del director, completamos
-if (count($finalRecs) < 5) {
-    foreach ($recsDirector as $key => $movie) {
-        if (!isset($finalRecs[$key]) && count($finalRecs) < 5) {
-            $finalRecs[$key] = $movie;
-        }
-    }
-}
+$sqlRecs = "SELECT t.id_trailer, t.titulo, t.poster_url, t.valoracion, t.release_date, t.duracion,
+                   GROUP_CONCAT(DISTINCT g.nombre SEPARATOR ', ') as genero,
+                   CONCAT(d.nombre, ' ', d.apellidos) as director,
+                   ($scoreExpr) as recommendation_score
+            FROM trailers t
+            LEFT JOIN directores d ON t.id_director = d.id_director
+            LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
+            LEFT JOIN generos g ON tg.id_genero = g.id_genero
+            $joinsSql
+            WHERE t.id_trailer != ?
+            GROUP BY t.id_trailer
+            ORDER BY recommendation_score DESC, t.valoracion DESC
+            LIMIT 5";
 
-// Si aún no llegamos a 5 y quedan de género, completamos
-if (count($finalRecs) < 5) {
-    foreach ($recsGenre as $key => $movie) {
-        if (!isset($finalRecs[$key]) && count($finalRecs) < 5) {
-            $finalRecs[$key] = $movie;
-        }
-    }
-}
+$bindParams[] = $id; // Excluir la película actual
+$bindTypes .= "i";
 
-$recommendations = array_values($finalRecs);
+$stmtRecs = mysqli_prepare($conexion, $sqlRecs);
+if ($stmtRecs) {
+    if (!empty($bindParams)) {
+        mysqli_stmt_bind_param($stmtRecs, $bindTypes, ...$bindParams);
+    }
+    mysqli_stmt_execute($stmtRecs);
+    $resRecs = mysqli_stmt_get_result($stmtRecs);
+    while ($row = mysqli_fetch_assoc($resRecs)) {
+        $recommendations[] = $row;
+    }
+    mysqli_stmt_close($stmtRecs);
+}
 
 // Registrar la visualización en la base de datos
 $id_usuario_view = isset($_SESSION['usuario_id']) ? (int)$_SESSION['usuario_id'] : null;
@@ -310,6 +307,12 @@ require_once $rootPath . 'includes/navbar.php';
                                 <span><i class="fa-regular fa-calendar"></i> <?= date('Y', strtotime($rec['release_date'])) ?></span>
                                 <span><i class="fa-regular fa-clock"></i> <?= htmlspecialchars((string)$rec['duracion']) ?> min</span>
                             </div>
+
+                            <?php if (isset($rec['recommendation_score']) && $rec['recommendation_score'] > 0): ?>
+                                <div class="recommendation-badge" style="font-size: 10px; font-weight: 700; color: var(--primary); background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25); padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; margin-bottom: 8px; width: fit-content;">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Recomendado
+                                </div>
+                            <?php endif; ?>
 
                             <div class="movie-actions" style="margin-top: auto; padding-top: 10px;">
                                 <a class="btn btn-secondary" href="reproducir_trailer.php?id=<?= $rec['id_trailer'] ?>" style="width: 100%; justify-content: center; font-size: 12px; padding: 8px 12px;">
