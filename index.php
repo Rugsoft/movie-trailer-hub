@@ -36,19 +36,47 @@ while ($row = mysqli_fetch_assoc($resGenres)) {
 }
 mysqli_free_result($resGenres);
 
-// Consultar favoritos si está logueado
+// Consultar favoritos y vistos recientemente si está logueado
 $userFavorites = [];
+$recentlyViewed = [];
 if (isset($_SESSION['usuario_id'])) {
     $id_usuario = $_SESSION['usuario_id'];
+    
+    // Favoritos
     $sqlFavs = "SELECT id_trailer FROM favoritos WHERE id_usuario = ?";
     $stmtFavs = mysqli_prepare($conexion, $sqlFavs);
-    mysqli_stmt_bind_param($stmtFavs, "i", $id_usuario);
-    mysqli_stmt_execute($stmtFavs);
-    $resFavs = mysqli_stmt_get_result($stmtFavs);
-    while ($row = mysqli_fetch_assoc($resFavs)) {
-        $userFavorites[] = (int)$row['id_trailer'];
+    if ($stmtFavs) {
+        mysqli_stmt_bind_param($stmtFavs, "i", $id_usuario);
+        mysqli_stmt_execute($stmtFavs);
+        $resFavs = mysqli_stmt_get_result($stmtFavs);
+        while ($row = mysqli_fetch_assoc($resFavs)) {
+            $userFavorites[] = (int)$row['id_trailer'];
+        }
+        mysqli_stmt_close($stmtFavs);
     }
-    mysqli_stmt_close($stmtFavs);
+
+    // Vistos recientemente (últimos 5 trailers vistos sin duplicar película)
+    $sqlRecent = "SELECT t.id_trailer, t.titulo, t.poster_url, t.valoracion, t.release_date, t.duracion,
+                         GROUP_CONCAT(DISTINCT g.nombre SEPARATOR ', ') as genero,
+                         MAX(v.fecha_visualizacion) as ultima_vista
+                  FROM visualizaciones v
+                  JOIN trailers t ON v.id_trailer = t.id_trailer
+                  LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
+                  LEFT JOIN generos g ON tg.id_genero = g.id_genero
+                  WHERE v.id_usuario = ?
+                  GROUP BY t.id_trailer
+                  ORDER BY ultima_vista DESC
+                  LIMIT 5";
+    $stmtRecent = mysqli_prepare($conexion, $sqlRecent);
+    if ($stmtRecent) {
+        mysqli_stmt_bind_param($stmtRecent, "i", $id_usuario);
+        mysqli_stmt_execute($stmtRecent);
+        $resRecent = mysqli_stmt_get_result($stmtRecent);
+        while ($row = mysqli_fetch_assoc($resRecent)) {
+            $recentlyViewed[] = $row;
+        }
+        mysqli_stmt_close($stmtRecent);
+    }
 }
 
 // 1. Intentar traer los 5 trailers más próximos a estrenarse (fecha >= hoy)
@@ -152,6 +180,52 @@ require_once $rootPath . 'includes/navbar.php';
                 <i class="fa-solid fa-video-slash hero-empty-icon"></i>
                 <h2 class="hero-title">No hay trailers registrados</h2>
                 <p class="hero-desc">¡Empieza añadiendo tu primer trailer usando el botón superior!</p>
+            </div>
+        </section>
+    <?php endif; ?>
+
+    <!-- Sección Vistos Recientemente -->
+    <?php if (!empty($recentlyViewed)): ?>
+        <section class="recently-viewed-section" style="margin-top: 30px; margin-bottom: 30px;">
+            <div class="catalog-title-wrapper" style="margin-bottom: 16px;">
+                <h2 class="section-title"><i class="fa-solid fa-clock-rotate-left"></i> Visto Recientemente</h2>
+            </div>
+            <div class="recommendations-grid">
+                <?php foreach ($recentlyViewed as $recent): ?>
+                    <article class="movie-card" style="display: flex; flex-direction: column;">
+                        <a class="movie-poster-container" href="trailers/reproducir_trailer.php?id=<?= $recent['id_trailer'] ?>">
+                            <img src="<?= htmlspecialchars($recent['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=600') ?>" alt="<?= htmlspecialchars($recent['titulo']) ?>" class="movie-poster">
+
+                            <div class="card-play-overlay">
+                                <div class="play-icon-circle">
+                                    <i class="fa-solid fa-play"></i>
+                                </div>
+                            </div>
+
+                            <div class="rating-badge">
+                                <i class="fa-solid fa-star"></i>
+                                <span><?= htmlspecialchars((string)$recent['valoracion']) ?></span>
+                            </div>
+
+                            <div class="genre-badge">
+                                <?= htmlspecialchars($recent['genero']) ?>
+                            </div>
+                        </a>
+
+                        <div class="movie-info" style="display: flex; flex-direction: column; flex-grow: 1; padding: 12px;">
+                            <h3 class="movie-title" style="font-size: 14px; margin-bottom: 4px;"><?= htmlspecialchars($recent['titulo']) ?></h3>
+                            <div class="movie-meta-row" style="font-size: 11px; margin-bottom: 8px;">
+                                <span><i class="fa-regular fa-calendar"></i> <?= date('Y', strtotime($recent['release_date'])) ?></span>
+                                <span><i class="fa-regular fa-clock"></i> <?= htmlspecialchars((string)$recent['duracion']) ?> min</span>
+                            </div>
+                            <div class="movie-actions" style="margin-top: auto; padding-top: 8px;">
+                                <a class="btn btn-secondary" href="trailers/reproducir_trailer.php?id=<?= $recent['id_trailer'] ?>" style="width: 100%; justify-content: center; font-size: 11px; padding: 6px 10px;">
+                                    <i class="fa-solid fa-play"></i> Ver Ficha
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+                <?php endforeach; ?>
             </div>
         </section>
     <?php endif; ?>
