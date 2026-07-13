@@ -7,7 +7,138 @@ $successMsg = $_SESSION['success'] ?? null;
 $errorMsg = $_SESSION['error'] ?? null;
 unset($_SESSION['success'], $_SESSION['error']);
 
-// Consultar todos los trailers con sus géneros y reparto (actores/actrices)
+// 1. Consultar géneros de la tabla generos (lo necesitamos para validar el filtro de géneros)
+$sqlGenres = "SELECT nombre FROM generos ORDER BY nombre ASC";
+$resGenres = mysqli_query($conexion, $sqlGenres);
+$genres = [];
+while ($row = mysqli_fetch_assoc($resGenres)) {
+    $genres[] = $row['nombre'];
+}
+mysqli_free_result($resGenres);
+
+// 2. Obtener y validar parámetros de filtros y búsqueda desde $_GET
+$search = isset($_GET['search']) ? trim($_GET['search']) : '';
+$genre = isset($_GET['genre']) ? trim($_GET['genre']) : 'Todos';
+$start_date = isset($_GET['start_date']) ? trim($_GET['start_date']) : '';
+$end_date = isset($_GET['end_date']) ? trim($_GET['end_date']) : '';
+$upcoming = (isset($_GET['upcoming']) && $_GET['upcoming'] === '1') ? 1 : 0;
+
+// Validar que el género exista
+if ($genre !== 'Todos' && !in_array($genre, $genres)) {
+    $genre = 'Todos';
+}
+
+// Validar formato básico de fechas
+function isValidDateString($dateStr) {
+    if (empty($dateStr)) return false;
+    $d = DateTime::createFromFormat('Y-m-d', $dateStr);
+    return $d && $d->format('Y-m-d') === $dateStr;
+}
+if (!empty($start_date) && !isValidDateString($start_date)) {
+    $start_date = '';
+}
+if (!empty($end_date) && !isValidDateString($end_date)) {
+    $end_date = '';
+}
+
+// Construir condiciones SQL (WHERE) para filtros dinámicos
+$whereClauses = [];
+$params = [];
+$paramTypes = "";
+
+if ($search !== '') {
+    $whereClauses[] = "(t.titulo LIKE ? OR t.sinopsis LIKE ? OR CONCAT(d.nombre, ' ', d.apellidos) LIKE ? OR t.id_trailer IN (
+        SELECT rt2.id_trailer 
+        FROM reparto_trailers rt2 
+        JOIN reparto r2 ON rt2.id_reparto = r2.id_reparto 
+        WHERE CONCAT(r2.nombre, ' ', r2.apellidos) LIKE ?
+    ))";
+    $searchWildcard = '%' . $search . '%';
+    $params[] = $searchWildcard;
+    $params[] = $searchWildcard;
+    $params[] = $searchWildcard;
+    $params[] = $searchWildcard;
+    $paramTypes .= "ssss";
+}
+
+if ($genre !== 'Todos' && $genre !== '') {
+    $whereClauses[] = "t.id_trailer IN (
+        SELECT tg2.id_trailer 
+        FROM trailers_generos tg2 
+        JOIN generos g2 ON tg2.id_genero = g2.id_genero 
+        WHERE g2.nombre = ?
+    )";
+    $params[] = $genre;
+    $paramTypes .= "s";
+}
+
+if ($start_date !== '') {
+    $whereClauses[] = "t.release_date >= ?";
+    $params[] = $start_date;
+    $paramTypes .= "s";
+}
+
+if ($end_date !== '') {
+    $whereClauses[] = "t.release_date <= ?";
+    $params[] = $end_date;
+    $paramTypes .= "s";
+}
+
+if ($upcoming === 1) {
+    $whereClauses[] = "t.release_date >= CURDATE()";
+}
+
+$whereSql = "";
+if (!empty($whereClauses)) {
+    $whereSql = "WHERE " . implode(" AND ", $whereClauses);
+}
+
+// 3. Obtener el conteo total para la paginación
+$countSql = "SELECT COUNT(DISTINCT t.id_trailer) as total 
+             FROM trailers t
+             LEFT JOIN directores d ON t.id_director = d.id_director
+             $whereSql";
+
+$totalRecords = 0;
+$stmtCount = mysqli_prepare($conexion, $countSql);
+if ($stmtCount) {
+    if (!empty($params)) {
+        mysqli_stmt_bind_param($stmtCount, $paramTypes, ...$params);
+    }
+    mysqli_stmt_execute($stmtCount);
+    $resCount = mysqli_stmt_get_result($stmtCount);
+    if ($rowCount = mysqli_fetch_assoc($resCount)) {
+        $totalRecords = (int)$rowCount['total'];
+    }
+    mysqli_stmt_close($stmtCount);
+}
+
+// Configuración de Paginación (Límite de 15 trailers)
+$limit = 15;
+$totalPages = ceil($totalRecords / $limit);
+if ($totalPages < 1) {
+    $totalPages = 1;
+}
+
+$page = isset($_GET['page']) ? $_GET['page'] : 1;
+if (!filter_var($page, FILTER_VALIDATE_INT) || $page < 1) {
+    $page = 1;
+} else {
+    $page = (int)$page;
+}
+if ($page > $totalPages) {
+    $page = $totalPages;
+}
+
+$offset = ($page - 1) * $limit;
+
+// Ordenación coherente
+$orderSql = "ORDER BY t.id_trailer DESC";
+if ($start_date !== '' || $end_date !== '' || $upcoming === 1) {
+    $orderSql = "ORDER BY t.release_date ASC, t.id_trailer DESC";
+}
+
+// 4. Consultar los trailers de la página actual con LIMIT y OFFSET
 $sql = "SELECT t.*, 
                GROUP_CONCAT(DISTINCT g.nombre SEPARATOR ', ') as genero,
                CONCAT(d.nombre, ' ', d.apellidos) as director,
@@ -18,25 +149,35 @@ $sql = "SELECT t.*,
         LEFT JOIN directores d ON t.id_director = d.id_director
         LEFT JOIN reparto_trailers rt ON t.id_trailer = rt.id_trailer
         LEFT JOIN reparto r ON rt.id_reparto = r.id_reparto
+        $whereSql
         GROUP BY t.id_trailer
-        ORDER BY t.id_trailer DESC";
-$res = mysqli_query($conexion, $sql);
+        $orderSql
+        LIMIT ? OFFSET ?";
+
 $trailers = [];
-while ($row = mysqli_fetch_assoc($res)) {
-    $trailers[] = $row;
+$stmtMain = mysqli_prepare($conexion, $sql);
+if ($stmtMain) {
+    $mainParams = $params;
+    $mainParams[] = $limit;
+    $mainParams[] = $offset;
+    $mainParamTypes = $paramTypes . "ii";
+    mysqli_stmt_bind_param($stmtMain, $mainParamTypes, ...$mainParams);
+    mysqli_stmt_execute($stmtMain);
+    $resMain = mysqli_stmt_get_result($stmtMain);
+    while ($row = mysqli_fetch_assoc($resMain)) {
+        $trailers[] = $row;
+    }
+    mysqli_stmt_close($stmtMain);
 }
-mysqli_free_result($res);
 
-// Consultar géneros de la tabla generos
-$sqlGenres = "SELECT nombre FROM generos ORDER BY nombre ASC";
-$resGenres = mysqli_query($conexion, $sqlGenres);
-$genres = [];
-while ($row = mysqli_fetch_assoc($resGenres)) {
-    $genres[] = $row['nombre'];
+// Helper para construir las URLs de paginación conservando los filtros actuales
+function buildPaginationUrl($pageNum) {
+    $params = $_GET;
+    $params['page'] = $pageNum;
+    return 'index.php?' . http_build_query($params);
 }
-mysqli_free_result($resGenres);
 
-// Consultar favoritos y vistos recientemente si está logueado
+// 5. Consultar favoritos y vistos recientemente si está logueado
 $userFavorites = [];
 $recentlyViewed = [];
 if (isset($_SESSION['usuario_id'])) {
@@ -79,8 +220,8 @@ if (isset($_SESSION['usuario_id'])) {
     }
 }
 
-// 1. Intentar traer los 5 trailers más próximos a estrenarse (fecha >= hoy)
-$sqlFeatured = "SELECT t.*, GROUP_CONCAT(g.nombre SEPARATOR ', ') as genero,
+// 6. Intentar traer los 5 trailers más próximos a estrenarse para el banner (independiente de filtros)
+$sqlFeatured = "SELECT t.*, GROUP_CONCAT(DISTINCT g.nombre SEPARATOR ', ') as genero,
                        CONCAT(d.nombre, ' ', d.apellidos) as director
                 FROM trailers t
                 LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
@@ -97,11 +238,11 @@ while ($row = mysqli_fetch_assoc($resFeatured)) {
 }
 mysqli_free_result($resFeatured);
 
-// 2. Si no hay suficientes próximos a estrenarse, rellenar con los últimos agregados
+// Si no hay suficientes próximos a estrenarse, rellenar con los últimos agregados
 if (count($featuredTrailers) < 5) {
     $needed = 5 - count($featuredTrailers);
     $excludeIds = !empty($featuredTrailers) ? implode(',', array_column($featuredTrailers, 'id_trailer')) : '0';
-    $sqlFallback = "SELECT t.*, GROUP_CONCAT(g.nombre SEPARATOR ', ') as genero,
+    $sqlFallback = "SELECT t.*, GROUP_CONCAT(DISTINCT g.nombre SEPARATOR ', ') as genero,
                            CONCAT(d.nombre, ' ', d.apellidos) as director
                     FROM trailers t
                     LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
@@ -234,29 +375,29 @@ require_once $rootPath . 'includes/navbar.php';
     <section class="search-filter-section">
         <div class="search-bar-container">
             <div class="search-input-wrapper">
-                <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                <input type="text" id="searchInput" class="search-input" placeholder="Buscar por título, descripción, actor/actriz o director...">
+                <i class="fa-solid fa-magnifying-glass search-icon" style="cursor: pointer;"></i>
+                <input type="text" id="searchInput" class="search-input" value="<?= htmlspecialchars($search) ?>" placeholder="Buscar por título, descripción, actor/actriz o director...">
             </div>
             <div class="date-filter-container">
                 <i class="fa-solid fa-calendar-days"></i>
                 <span>Desde:</span>
-                <input type="date" id="dateStart" class="search-input" placeholder="Fecha inicio">
+                <input type="date" id="dateStart" class="search-input" value="<?= htmlspecialchars($start_date) ?>" placeholder="Fecha inicio">
                 <span>Hasta:</span>
-                <input type="date" id="dateEnd" class="search-input" placeholder="Fecha fin">
+                <input type="date" id="dateEnd" class="search-input" value="<?= htmlspecialchars($end_date) ?>" placeholder="Fecha fin">
                 <button type="button" id="clearDateBtn" class="btn btn-secondary"><i class="fa-solid fa-xmark"></i> Limpiar</button>
             </div>
         </div>
 
         <div class="filters-container">
             <span class="filter-label">Filtrar por género:</span>
-            <button class="genre-tag active" data-genre="Todos">Todos</button>
-            <?php foreach ($genres as $genre): ?>
-                <button class="genre-tag" data-genre="<?= htmlspecialchars($genre) ?>"><?= htmlspecialchars($genre) ?></button>
+            <button class="genre-tag <?php echo $genre === 'Todos' ? 'active' : ''; ?>" data-genre="Todos">Todos</button>
+            <?php foreach ($genres as $g): ?>
+                <button class="genre-tag <?php echo $genre === $g ? 'active' : ''; ?>" data-genre="<?= htmlspecialchars($g) ?>"><?= htmlspecialchars($g) ?></button>
             <?php endforeach; ?>
         </div>
 
         <div class="upcoming-filter-container">
-            <input type="checkbox" id="upcomingFilter">
+            <input type="checkbox" id="upcomingFilter" <?php echo $upcoming === 1 ? 'checked' : ''; ?>>
             <label for="upcomingFilter">Próximos Estrenos (Mostrar solo lanzamientos futuros ordenados cronológicamente)</label>
         </div>
     </section>
@@ -339,10 +480,41 @@ require_once $rootPath . 'includes/navbar.php';
     </section>
 
     <!-- Contenedor de Paginación -->
-    <div id="paginationContainer" class="pagination-container"></div>
+    <div id="paginationContainer" class="pagination-container">
+        <?php if ($totalPages > 1): ?>
+            <!-- Botón Anterior -->
+            <?php if ($page > 1): ?>
+                <a href="<?= buildPaginationUrl($page - 1) ?>" class="btn btn-secondary" style="padding: 8px 16px;">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </a>
+            <?php else: ?>
+                <button class="btn btn-secondary" style="padding: 8px 16px;" disabled>
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+            <?php endif; ?>
+
+            <!-- Números de página -->
+            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                <a href="<?= buildPaginationUrl($i) ?>" class="pagination-num-btn <?= $page === $i ? 'active' : '' ?>">
+                    <?= $i ?>
+                </a>
+            <?php endfor; ?>
+
+            <!-- Botón Siguiente -->
+            <?php if ($page < $totalPages): ?>
+                <a href="<?= buildPaginationUrl($page + 1) ?>" class="btn btn-secondary" style="padding: 8px 16px;">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </a>
+            <?php else: ?>
+                <button class="btn btn-secondary" style="padding: 8px 16px;" disabled>
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            <?php endif; ?>
+        <?php endif; ?>
+    </div>
 
     <!-- Sin Resultados -->
-    <div id="emptyState" class="empty-state" style="display: none;">
+    <div id="emptyState" class="empty-state" style="display: <?= empty($trailers) ? 'flex' : 'none' ?>;">
         <i class="fa-solid fa-magnifying-glass-minus empty-icon"></i>
         <h3 class="empty-title">Sin Resultados</h3>
         <p>No se encontraron películas con los criterios indicados.</p>
@@ -355,226 +527,111 @@ require_once $rootPath . 'includes/navbar.php';
     document.addEventListener('DOMContentLoaded', () => {
         const searchInput = document.getElementById('searchInput');
         const genreTags = document.querySelectorAll('.genre-tag');
-        const movieCards = document.querySelectorAll('.movie-card');
-        const emptyState = document.getElementById('emptyState');
-
         const upcomingFilter = document.getElementById('upcomingFilter');
-        const trailersGrid = document.getElementById('trailersGrid');
         const dateStart = document.getElementById('dateStart');
         const dateEnd = document.getElementById('dateEnd');
         const clearDateBtn = document.getElementById('clearDateBtn');
 
-        // Calcular hoy en formato YYYY-MM-DD
-        const localDate = new Date();
-        const year = localDate.getFullYear();
-        const month = String(localDate.getMonth() + 1).padStart(2, '0');
-        const day = String(localDate.getDate()).padStart(2, '0');
-        const today = `${year}-${month}-${day}`;
+        function updateFilters() {
+            const urlParams = new URLSearchParams();
+            
+            const searchVal = searchInput.value.trim();
+            if (searchVal !== '') {
+                urlParams.set('search', searchVal);
+            }
 
-        const PAGE_SIZE = 30;
-        let currentPage = 1;
-        let activeGenre = 'Todos';
-        let searchQuery = '';
-        let activeStartDate = '';
-        let activeEndDate = '';
+            const activeGenreTag = document.querySelector('.genre-tag.active');
+            const genreVal = activeGenreTag ? activeGenreTag.getAttribute('data-genre') : 'Todos';
+            if (genreVal !== 'Todos' && genreVal !== '') {
+                urlParams.set('genre', genreVal);
+            }
 
-        searchInput.addEventListener('input', (e) => {
-            searchQuery = e.target.value.toLowerCase().trim();
-            filterMovies();
+            const dateStartVal = dateStart.value;
+            if (dateStartVal !== '') {
+                urlParams.set('start_date', dateStartVal);
+            }
+
+            const dateEndVal = dateEnd.value;
+            if (dateEndVal !== '') {
+                urlParams.set('end_date', dateEndVal);
+            }
+
+            if (upcomingFilter.checked) {
+                urlParams.set('upcoming', '1');
+            }
+
+            // Al cambiar filtros, volvemos a la página 1
+            urlParams.set('page', '1');
+
+            window.location.href = 'index.php?' + urlParams.toString();
+        }
+
+        // Buscador: debounce de 800ms
+        let searchTimeout;
+        searchInput.addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(updateFilters, 800);
         });
 
-        dateStart.addEventListener('change', (e) => {
-            activeStartDate = e.target.value;
-            sortCards();
-            filterMovies();
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                clearTimeout(searchTimeout);
+                updateFilters();
+            }
         });
 
-        dateEnd.addEventListener('change', (e) => {
-            activeEndDate = e.target.value;
-            sortCards();
-            filterMovies();
-        });
+        // Icono de lupa interactivo
+        const searchIcon = document.querySelector('.search-icon');
+        if (searchIcon) {
+            searchIcon.style.cursor = 'pointer';
+            searchIcon.addEventListener('click', () => {
+                clearTimeout(searchTimeout);
+                updateFilters();
+            });
+        }
 
-        upcomingFilter.addEventListener('change', () => {
-            sortCards();
-            filterMovies();
-        });
+        // Mantener el cursor al escribir después de recargar
+        if (searchInput.value !== '') {
+            searchInput.focus();
+            const length = searchInput.value.length;
+            searchInput.setSelectionRange(length, length);
+        }
 
-        clearDateBtn.addEventListener('click', () => {
-            dateStart.value = '';
-            dateEnd.value = '';
-            activeStartDate = '';
-            activeEndDate = '';
-            sortCards();
-            filterMovies();
-        });
-
+        // Tags de Género
         genreTags.forEach(tag => {
             tag.addEventListener('click', () => {
                 genreTags.forEach(t => t.classList.remove('active'));
                 tag.classList.add('active');
-                activeGenre = tag.getAttribute('data-genre');
-                filterMovies();
+                updateFilters();
             });
         });
 
-        function sortCards() {
-            const cardsArray = Array.from(movieCards);
+        // Rango de Fechas
+        dateStart.addEventListener('change', updateFilters);
+        dateEnd.addEventListener('change', updateFilters);
 
-            cardsArray.sort((a, b) => {
-                // Si hay rango de fechas seleccionado, ordenar por fecha ascendente (más actual al más lejano)
-                if (activeStartDate || activeEndDate) {
-                    const dateA = a.getAttribute('data-release-date');
-                    const dateB = b.getAttribute('data-release-date');
-                    return dateA.localeCompare(dateB); // Ascendente (más cercano/actual primero)
+        clearDateBtn.addEventListener('click', () => {
+            dateStart.value = '';
+            dateEnd.value = '';
+            updateFilters();
+        });
+
+        // Checkbox Próximos Estrenos
+        upcomingFilter.addEventListener('change', updateFilters);
+
+        // Scroll inteligente según interacción
+        const urlParams = new URLSearchParams(window.location.search);
+        if (window.location.search !== '') {
+            if (urlParams.has('search')) {
+                const searchSection = document.querySelector('.search-filter-section');
+                if (searchSection) {
+                    searchSection.scrollIntoView({ behavior: 'auto', block: 'start' });
                 }
-
-                if (upcomingFilter.checked) {
-                    const dateA = a.getAttribute('data-release-date');
-                    const dateB = b.getAttribute('data-release-date');
-                    return dateA.localeCompare(dateB); // Ascendente
-                } else {
-                    const idA = parseInt(a.getAttribute('data-id'));
-                    const idB = parseInt(b.getAttribute('data-id'));
-                    return idB - idA; // Descendente por ID (orden original)
+            } else if (urlParams.has('page') || urlParams.has('genre') || urlParams.has('start_date') || urlParams.has('end_date') || urlParams.has('upcoming')) {
+                const catalogTitle = document.querySelector('.catalog-title-wrapper');
+                if (catalogTitle) {
+                    catalogTitle.scrollIntoView({ behavior: 'auto', block: 'start' });
                 }
-            });
-
-            cardsArray.forEach(card => trailersGrid.appendChild(card));
-        }
-
-        function filterMovies(resetPage = true) {
-            if (resetPage) {
-                currentPage = 1;
-            }
-
-            let visibleCount = 0;
-            const isUpcomingChecked = upcomingFilter.checked;
-            const matchedCards = [];
-            const currentCards = trailersGrid.querySelectorAll('.movie-card');
-
-            currentCards.forEach(card => {
-                const title = card.getAttribute('data-title').toLowerCase();
-                const synopsis = card.getAttribute('data-synopsis').toLowerCase();
-                const director = card.getAttribute('data-director').toLowerCase();
-                const actors = (card.getAttribute('data-actors') || '').toLowerCase();
-                const genre = card.getAttribute('data-genre');
-                const releaseDate = card.getAttribute('data-release-date');
-
-                const matchesSearch = title.includes(searchQuery) ||
-                    synopsis.includes(searchQuery) ||
-                    director.includes(searchQuery) ||
-                    actors.includes(searchQuery);
-
-                const matchesGenre = activeGenre === 'Todos' || (genre && genre.split(', ').map(g => g.trim()).includes(activeGenre));
-
-                let matchesDate = true;
-                if (activeStartDate && releaseDate < activeStartDate) {
-                    matchesDate = false;
-                }
-                if (activeEndDate && releaseDate > activeEndDate) {
-                    matchesDate = false;
-                }
-
-                const matchesUpcoming = !isUpcomingChecked || releaseDate >= today;
-
-                if (matchesSearch && matchesGenre && matchesDate && matchesUpcoming) {
-                    matchedCards.push(card);
-                    visibleCount++;
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-
-            // Calcular páginas
-            const totalPages = Math.ceil(matchedCards.length / PAGE_SIZE);
-            if (currentPage > totalPages) {
-                currentPage = Math.max(1, totalPages);
-            }
-
-            // Mostrar sólo las tarjetas de la página actual
-            const startIndex = (currentPage - 1) * PAGE_SIZE;
-            const endIndex = startIndex + PAGE_SIZE;
-
-            matchedCards.forEach((card, index) => {
-                if (index >= startIndex && index < endIndex) {
-                    card.style.display = 'flex';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-
-            if (visibleCount === 0) {
-                emptyState.style.display = 'flex';
-            } else {
-                emptyState.style.display = 'none';
-            }
-
-            renderPagination(totalPages);
-        }
-
-        function renderPagination(totalPages) {
-            const container = document.getElementById('paginationContainer');
-            if (!container) return;
-            container.innerHTML = '';
-
-            if (totalPages <= 1) {
-                return; // Ocultar si solo hay una página
-            }
-
-            // Botón Anterior
-            const prevBtn = document.createElement('button');
-            prevBtn.className = 'btn btn-secondary';
-            prevBtn.style.padding = '8px 16px';
-            prevBtn.innerHTML = '<i class="fa-solid fa-chevron-left"></i>';
-            prevBtn.disabled = currentPage === 1;
-            prevBtn.addEventListener('click', () => {
-                if (currentPage > 1) {
-                    currentPage--;
-                    filterMovies(false);
-                    scrollToGrid();
-                }
-            });
-            container.appendChild(prevBtn);
-
-            // Números de página
-            for (let i = 1; i <= totalPages; i++) {
-                const pageBtn = document.createElement('button');
-                pageBtn.className = `pagination-num-btn ${currentPage === i ? 'active' : ''}`;
-                pageBtn.innerText = i;
-                pageBtn.addEventListener('click', () => {
-                    if (currentPage !== i) {
-                        currentPage = i;
-                        filterMovies(false);
-                        scrollToGrid();
-                    }
-                });
-                container.appendChild(pageBtn);
-            }
-
-            // Botón Siguiente
-            const nextBtn = document.createElement('button');
-            nextBtn.className = 'btn btn-secondary';
-            nextBtn.style.padding = '8px 16px';
-            nextBtn.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
-            nextBtn.disabled = currentPage === totalPages;
-            nextBtn.addEventListener('click', () => {
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    filterMovies(false);
-                    scrollToGrid();
-                }
-            });
-            container.appendChild(nextBtn);
-        }
-
-        function scrollToGrid() {
-            const grid = document.getElementById('trailersGrid');
-            if (grid) {
-                grid.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
             }
         }
 
