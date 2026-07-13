@@ -213,6 +213,11 @@ require_once $rootPath . 'includes/navbar.php';
         </div>
 
     <div class="player-wrapper">
+        <div class="player-toolbar">
+            <button type="button" id="cinemaModeBtn" class="btn btn-secondary btn-cinema-mode">
+                <i class="fa-solid fa-moon"></i> <span>Modo Cine</span>
+            </button>
+        </div>
         <div class="video-container">
             <iframe src="<?php echo htmlspecialchars($embedUrl); ?>" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
         </div>
@@ -322,6 +327,9 @@ require_once $rootPath . 'includes/navbar.php';
 
     <a class="volver" href="../index.php">← Volver al catálogo</a>
 
+    <!-- Capa de fondo para el Modo Cine -->
+    <div class="cinema-backdrop" id="cinemaBackdrop"></div>
+
     <!-- Toast Notification Container -->
     <div class="toast-container" id="toastContainer">
         <?php if ($successMsg): ?>
@@ -367,6 +375,35 @@ require_once $rootPath . 'includes/navbar.php';
                     closeToast(toast.id);
                 }, 4000);
             });
+
+            // Lógica del Modo Cine (Apagar Luces)
+            const cinemaBtn = document.getElementById('cinemaModeBtn');
+            const backdrop = document.getElementById('cinemaBackdrop');
+
+            if (cinemaBtn && backdrop) {
+                function toggleCinemaMode() {
+                    const isActive = document.body.classList.toggle('cinema-mode-active');
+                    if (isActive) {
+                        cinemaBtn.innerHTML = '<i class="fa-solid fa-sun"></i> <span>Encender Luces</span>';
+                    } else {
+                        cinemaBtn.innerHTML = '<i class="fa-solid fa-moon"></i> <span>Modo Cine</span>';
+                    }
+                }
+
+                cinemaBtn.addEventListener('click', toggleCinemaMode);
+                backdrop.addEventListener('click', () => {
+                    if (document.body.classList.contains('cinema-mode-active')) {
+                        toggleCinemaMode();
+                    }
+                });
+
+                // Permitir salir de modo cine con la tecla Escape
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && document.body.classList.contains('cinema-mode-active')) {
+                        toggleCinemaMode();
+                    }
+                });
+            }
         });
     </script>
 <?php

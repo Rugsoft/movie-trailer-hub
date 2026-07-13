@@ -2718,3 +2718,61 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   Modo Cine (Cinema Mode)
+   ========================================================================== */
+.cinema-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.85);
+  z-index: 999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+body.cinema-mode-active {
+  overflow: hidden;
+}
+
+body.cinema-mode-active .cinema-backdrop {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Elevamos el reproductor por encima de la capa negra */
+body.cinema-mode-active .player-wrapper {
+  z-index: 1000;
+  position: relative;
+  box-shadow: 0 0 100px rgba(0, 0, 0, 0.95), 0 0 50px var(--primary-glow);
+  border-color: rgba(245, 158, 11, 0.35);
+  background-color: var(--bg-surface-lowest) !important;
+}
+
+body.cinema-mode-active .video-container {
+  z-index: 1001;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 60px rgba(245, 158, 11, 0.4) !important;
+}
+
+.player-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.btn-cinema-mode {
+  font-size: 13px;
+  padding: 6px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
