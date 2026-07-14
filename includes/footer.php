@@ -49,5 +49,152 @@
             </div>
         </div>
     </footer>
+
+    <!-- Contenedor Global de Toasts -->
+    <div class="toast-container" id="toastContainer">
+        <?php if (isset($successMsg) && $successMsg): ?>
+            <div class="toast toast-success" id="successToast">
+                <i class="fa-solid fa-circle-check toast-icon"></i>
+                <div class="toast-message"><?= htmlspecialchars($successMsg) ?></div>
+                <button class="toast-close" onclick="closeToast('successToast')">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        <?php endif; ?>
+        <?php if (isset($errorMsg) && $errorMsg): ?>
+            <div class="toast toast-error" id="errorToast">
+                <i class="fa-solid fa-circle-exclamation toast-icon"></i>
+                <div class="toast-message"><?= htmlspecialchars($errorMsg) ?></div>
+                <button class="toast-close" onclick="closeToast('errorToast')">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <script>
+    function closeToast(id) {
+        const toast = document.getElementById(id);
+        if (toast) {
+            toast.classList.remove('show');
+            toast.classList.add('hide');
+            setTimeout(() => {
+                toast.remove();
+            }, 400);
+        }
+    }
+
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+        
+        const id = 'toast-' + Math.random().toString(36).substr(2, 9);
+        const icon = type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation';
+        const toastClass = type === 'success' ? 'toast-success' : 'toast-error';
+        
+        const toast = document.createElement('div');
+        toast.className = `toast ${toastClass}`;
+        toast.id = id;
+        toast.innerHTML = `
+            <i class="fa-solid ${icon} toast-icon"></i>
+            <div class="toast-message">${message}</div>
+            <button class="toast-close" onclick="closeToast('${id}')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        `;
+        
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 50);
+        
+        setTimeout(() => {
+            closeToast(id);
+        }, 4000);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Animar Toasts autogenerados por PHP
+        const toasts = document.querySelectorAll('.toast');
+        toasts.forEach((toast) => {
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 100);
+
+            setTimeout(() => {
+                closeToast(toast.id);
+            }, 4000);
+        });
+
+        // Manejador Asíncrono Global de Favoritos
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.btn-toggle-favorito, .btn-toggle-favorito-detail, .favorite-heart-btn');
+            if (btn) {
+                e.preventDefault();
+                const url = btn.getAttribute('href');
+                const fetchUrl = url + (url.includes('?') ? '&' : '?') + 'ajax=1';
+
+                fetch(fetchUrl, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        // Caso A: Corazón del catálogo
+                        if (btn.classList.contains('btn-toggle-favorito')) {
+                            if (data.isFavorito) {
+                                btn.classList.add('btn-active-favorito');
+                                btn.title = "Quitar de favoritos";
+                                btn.innerHTML = '<i class="fa-solid fa-heart"></i>';
+                            } else {
+                                btn.classList.remove('btn-active-favorito');
+                                btn.title = "Añadir a favoritos";
+                                btn.innerHTML = '<i class="fa-regular fa-heart"></i>';
+                            }
+                        }
+                        // Caso B: Botón del reproductor
+                        else if (btn.classList.contains('btn-toggle-favorito-detail')) {
+                            if (data.isFavorito) {
+                                btn.className = "btn btn-secondary btn-toggle-favorito-detail btn-active-favorito-reproductor";
+                                btn.innerHTML = '<i class="fa-solid fa-heart"></i> Quitar de Favoritos';
+                            } else {
+                                btn.className = "btn btn-secondary btn-toggle-favorito-detail btn-inline-flex";
+                                btn.innerHTML = '<i class="fa-regular fa-heart"></i> Añadir a Favoritos';
+                            }
+                        }
+                        // Caso C: Corazón en la página de favoritos.php
+                        else if (btn.classList.contains('favorite-heart-btn')) {
+                            const card = btn.closest('article.movie-card');
+                            if (card) {
+                                card.style.transition = 'all 0.3s ease';
+                                card.style.opacity = '0';
+                                card.style.transform = 'scale(0.9)';
+                                setTimeout(() => {
+                                    card.remove();
+                                    const remaining = document.querySelectorAll('article.movie-card');
+                                    if (remaining.length === 0) {
+                                        window.location.reload();
+                                    }
+                                }, 300);
+                            }
+                        }
+                        
+                        showToast(data.message, 'success');
+                    } else if (data.error) {
+                        showToast(data.error, 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    showToast('Error de conexión al actualizar favoritos.', 'error');
+                });
+            }
+        });
+    });
+    </script>
 </body>
 </html>

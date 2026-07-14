@@ -455,11 +455,11 @@ require_once $rootPath . 'includes/navbar.php';
 
                         <?php if (isset($_SESSION['usuario_id'])): ?>
                             <?php if (in_array((int)$trailer['id_trailer'], $userFavorites)): ?>
-                                <a class="btn btn-secondary btn-active-favorito" href="trailers/toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" title="Quitar de favoritos">
+                                <a class="btn btn-secondary btn-toggle-favorito btn-active-favorito" href="trailers/toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" data-id="<?= $trailer['id_trailer'] ?>" title="Quitar de favoritos">
                                     <i class="fa-solid fa-heart"></i>
                                 </a>
                             <?php else: ?>
-                                <a class="btn btn-secondary" href="trailers/toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" title="Añadir a favoritos">
+                                <a class="btn btn-secondary btn-toggle-favorito" href="trailers/toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" data-id="<?= $trailer['id_trailer'] ?>" title="Añadir a favoritos">
                                     <i class="fa-regular fa-heart"></i>
                                 </a>
                             <?php endif; ?>
@@ -730,53 +730,8 @@ require_once $rootPath . 'includes/navbar.php';
         // Inicializar paginación al cargar
         filterMovies(true);
     });
-
-    function closeToast(id) {
-        const toast = document.getElementById(id);
-        if (toast) {
-            toast.classList.remove('show');
-            toast.classList.add('hide');
-            setTimeout(() => {
-                toast.remove();
-            }, 400);
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-        const toasts = document.querySelectorAll('.toast');
-        toasts.forEach((toast) => {
-            setTimeout(() => {
-                toast.classList.add('show');
-            }, 100);
-
-            setTimeout(() => {
-                closeToast(toast.id);
-            }, 4000);
-        });
-    });
 </script>
 
-<!-- Toast Notification Container -->
-<div class="toast-container" id="toastContainer">
-    <?php if ($successMsg): ?>
-        <div class="toast toast-success" id="successToast">
-            <i class="fa-solid fa-circle-check toast-icon"></i>
-            <div class="toast-message"><?= htmlspecialchars($successMsg) ?></div>
-            <button class="toast-close" onclick="closeToast('successToast')">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
-    <?php endif; ?>
-    <?php if ($errorMsg): ?>
-        <div class="toast toast-error" id="errorToast">
-            <i class="fa-solid fa-circle-exclamation toast-icon"></i>
-            <div class="toast-message"><?= htmlspecialchars($errorMsg) ?></div>
-            <button class="toast-close" onclick="closeToast('errorToast')">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
-    <?php endif; ?>
-</div>
 <?php
 require_once $rootPath . 'includes/footer.php';
 ?>

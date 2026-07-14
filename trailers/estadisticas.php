@@ -230,53 +230,6 @@ require_once $rootPath . 'includes/navbar.php';
         </div>
     </main>
 
-    <!-- Toast Notification Container -->
-    <div class="toast-container" id="toastContainer">
-        <?php if ($successMsg): ?>
-            <div class="toast toast-success" id="successToast">
-                <i class="fa-solid fa-circle-check toast-icon"></i>
-                <div class="toast-message"><?= htmlspecialchars($successMsg) ?></div>
-                <button class="toast-close" onclick="closeToast('successToast')">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-        <?php endif; ?>
-        <?php if ($errorMsg): ?>
-            <div class="toast toast-error" id="errorToast">
-                <i class="fa-solid fa-circle-exclamation toast-icon"></i>
-                <div class="toast-message"><?= htmlspecialchars($errorMsg) ?></div>
-                <button class="toast-close" onclick="closeToast('errorToast')">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-        <?php endif; ?>
-    </div>
-
-    <script>
-        function closeToast(id) {
-            const toast = document.getElementById(id);
-            if (toast) {
-                toast.classList.remove('show');
-                toast.classList.add('hide');
-                setTimeout(() => {
-                    toast.remove();
-                }, 400);
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const toasts = document.querySelectorAll('.toast');
-            toasts.forEach((toast) => {
-                setTimeout(() => {
-                    toast.classList.add('show');
-                }, 100);
-
-                setTimeout(() => {
-                    closeToast(toast.id);
-                }, 4000);
-            });
-        });
-    </script>
 <?php
 require_once $rootPath . 'includes/footer.php';
 ?>

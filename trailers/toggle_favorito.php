@@ -54,6 +54,20 @@ if ($isFavorito) {
 
 mysqli_close($conexion);
 
+// Detectar si la petición es AJAX
+$isAjax = (isset($_GET['ajax']) && $_GET['ajax'] == 1) || 
+          (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
+
+if ($isAjax) {
+    header('Content-Type: application/json');
+    echo json_encode([
+        "success" => true,
+        "isFavorito" => !$isFavorito,
+        "message" => !$isFavorito ? "Película añadida a tus favoritos." : "Película eliminada de tus favoritos."
+    ]);
+    exit;
+}
+
 $referer = $_SERVER['HTTP_REFERER'] ?? "../index.php";
 header("Location: " . $referer);
 exit;
