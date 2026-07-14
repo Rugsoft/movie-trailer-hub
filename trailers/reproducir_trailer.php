@@ -214,9 +214,17 @@ $dispositivo = isset($_SERVER['HTTP_USER_AGENT']) ? substr($_SERVER['HTTP_USER_A
 
 $sqlView = "INSERT INTO visualizaciones (id_trailer, id_usuario, ip_direccion, dispositivo) VALUES (?, ?, ?, ?)";
 $stmtView = mysqli_prepare($conexion, $sqlView);
-mysqli_stmt_bind_param($stmtView, "iiss", $id, $id_usuario_view, $ip_direccion, $dispositivo);
-mysqli_stmt_execute($stmtView);
-mysqli_stmt_close($stmtView);
+if ($stmtView) {
+    mysqli_stmt_bind_param($stmtView, "iiss", $id, $id_usuario_view, $ip_direccion, $dispositivo);
+    if (mysqli_stmt_execute($stmtView)) {
+        echo "<!-- DEBUG VISUALIZACION: Insertada con éxito para trailer ID $id y usuario " . ($id_usuario_view ?? 'Invitado') . " -->";
+    } else {
+        echo "<!-- DEBUG VISUALIZACION ERROR EJECUCION: " . htmlspecialchars(mysqli_stmt_error($stmtView)) . " -->";
+    }
+    mysqli_stmt_close($stmtView);
+} else {
+    echo "<!-- DEBUG VISUALIZACION ERROR PREPARACION: " . htmlspecialchars(mysqli_error($conexion)) . " -->";
+}
 
 // Convertir URL a embed
 function getEmbedUrl(string $url): string {
@@ -245,14 +253,19 @@ $sqlReparto = "SELECT r.*, rt.personaje
                JOIN reparto r ON rt.id_reparto = r.id_reparto 
                WHERE rt.id_trailer = ?";
 $stmtReparto = mysqli_prepare($conexion, $sqlReparto);
-mysqli_stmt_bind_param($stmtReparto, "i", $id);
-mysqli_stmt_execute($stmtReparto);
-$resReparto = mysqli_stmt_get_result($stmtReparto);
-$reparto = [];
-while ($row = mysqli_fetch_assoc($resReparto)) {
-    $reparto[] = $row;
+if ($stmtReparto) {
+    mysqli_stmt_bind_param($stmtReparto, "i", $id);
+    mysqli_stmt_execute($stmtReparto);
+    $resReparto = mysqli_stmt_get_result($stmtReparto);
+    $reparto = [];
+    while ($row = mysqli_fetch_assoc($resReparto)) {
+        $reparto[] = $row;
+    }
+    mysqli_stmt_close($stmtReparto);
+    echo "<!-- DEBUG ACTORES: Encontrados " . count($reparto) . " actores para trailer ID $id -->";
+} else {
+    echo "<!-- DEBUG ACTORES ERROR: " . htmlspecialchars(mysqli_error($conexion)) . " -->";
 }
-mysqli_stmt_close($stmtReparto);
 
 $isTrailerFavorito = false;
 if (isset($_SESSION['usuario_id'])) {

@@ -42,3 +42,7 @@ if (!$conexion) {
     die("Error de conexión: " . mysqli_connect_error());
 }
 mysqli_set_charset($conexion, "utf8mb4");
+
+// Configurar la zona horaria del proyecto (España)
+date_default_timezone_set('Europe/Madrid');
+mysqli_query($conexion, "SET time_zone = '+02:00'");
