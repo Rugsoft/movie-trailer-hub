@@ -239,9 +239,9 @@ function importMovieById($conexion, $id) {
             }
         }
 
-        // Procesar Reparto (Top 5 actores)
+        // Procesar Reparto (Top 10 actores)
         if (!empty($movieData['credits']['cast'])) {
-            $topCast = array_slice($movieData['credits']['cast'], 0, 5);
+            $topCast = array_slice($movieData['credits']['cast'], 0, 10);
             foreach ($topCast as $castMember) {
                 $actorName = $castMember['name'];
                 $personaje = trim($castMember['character'] ?? '');
