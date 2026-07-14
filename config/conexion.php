@@ -19,10 +19,20 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$servidor = "localhost";
-$usuario = "root";
-$password = "";
-$base_datos = "movie_trailer_hub";
+// Detectar de forma dinámica si estamos en entorno local (CLI o localhost)
+$isLocal = (php_sapi_name() === 'cli' || (isset($_SERVER['HTTP_HOST']) && ($_SERVER['HTTP_HOST'] === 'localhost' || $_SERVER['HTTP_HOST'] === '127.0.0.1')));
+
+if ($isLocal) {
+    $servidor = "localhost";
+    $usuario = "root";
+    $password = "";
+    $base_datos = "movie_trailer_hub";
+} else {
+    $servidor = "sql108.infinityfree.com";
+    $usuario = "if0_42320411";
+    $password = "KiraKireta3";
+    $base_datos = "if0_42320411_movie_trailer_hub";
+}
 
 // Conexión a la base de datos MySQL
 $conexion = mysqli_connect($servidor, $usuario, $password, $base_datos);
