@@ -147,6 +147,25 @@ if (!$user) {
     die("Usuario no encontrado en el sistema.");
 }
 
+// Obtener el historial de visualizaciones del usuario
+$history = [];
+$sqlHistory = "SELECT v.id_visualizacion, v.fecha_visualizacion, v.dispositivo, t.id_trailer, t.titulo, t.poster_url 
+               FROM visualizaciones v
+               JOIN trailers t ON v.id_trailer = t.id_trailer
+               WHERE v.id_usuario = ?
+               ORDER BY v.fecha_visualizacion DESC
+               LIMIT 20";
+$stmtHistory = mysqli_prepare($conexion, $sqlHistory);
+if ($stmtHistory) {
+    mysqli_stmt_bind_param($stmtHistory, "i", $user_id);
+    mysqli_stmt_execute($stmtHistory);
+    $resHistory = mysqli_stmt_get_result($stmtHistory);
+    while ($row = mysqli_fetch_assoc($resHistory)) {
+        $history[] = $row;
+    }
+    mysqli_stmt_close($stmtHistory);
+}
+
 $pageTitle = "Mi Perfil - Movie Trailer Hub";
 $rootPath = "../";
 require_once $rootPath . 'includes/navbar.php';
@@ -250,6 +269,48 @@ require_once $rootPath . 'includes/navbar.php';
 
     </div>
 
+    <!-- Sección de Historial de Reproducción -->
+    <section class="watch-history-section">
+        <div class="watch-history-header">
+            <h3 class="profile-section-title watch-history-title"><i class="fa-solid fa-clock-rotate-left"></i> Mi Historial de Reproducción</h3>
+            <?php if (!empty($history)): ?>
+                <button id="btnClearHistory" class="btn btn-secondary btn-clear-history">
+                    <i class="fa-solid fa-trash-can"></i> Limpiar Historial
+                </button>
+            <?php endif; ?>
+        </div>
+
+        <?php if (empty($history)): ?>
+            <div class="history-empty-container">
+                <i class="fa-solid fa-video-slash history-empty-icon"></i>
+                <p>No tienes trailers en tu historial de reproducción.</p>
+            </div>
+        <?php else: ?>
+            <div class="history-list">
+                <?php foreach ($history as $item): ?>
+                    <div class="history-item" id="history-item-<?= $item['id_visualizacion'] ?>">
+                        <div class="history-item-left">
+                            <img src="<?= htmlspecialchars($item['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=100') ?>" alt="<?= htmlspecialchars($item['titulo']) ?>" class="history-item-poster">
+                            <div class="history-item-details">
+                                <h4 class="history-item-title">
+                                    <a href="../trailers/reproducir_trailer.php?id=<?= $item['id_trailer'] ?>">
+                                        <?= htmlspecialchars($item['titulo']) ?>
+                                    </a>
+                                </h4>
+                                <div class="history-item-meta">
+                                    <span><i class="fa-regular fa-calendar"></i> <?= date('d/m/Y H:i', strtotime($item['fecha_visualizacion'])) ?></span>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn-delete-history" data-id="<?= $item['id_visualizacion'] ?>" title="Eliminar de mi historial">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </section>
+
     <div style="margin-top: 30px;">
         <a class="volver" href="../index.php">← Volver al inicio</a>
     </div>
@@ -328,6 +389,78 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+
+    // Manejar eliminación individual de historial
+    document.querySelectorAll('.btn-delete-history').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            if (confirm('¿Estás seguro de que quieres eliminar esta visualización de tu historial?')) {
+                fetch('api_historial.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'delete_entry',
+                        id_visualizacion: id
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const row = document.getElementById(`history-item-${id}`);
+                        if (row) {
+                            row.style.opacity = '0';
+                            row.style.transform = 'translateX(20px)';
+                            setTimeout(() => {
+                                row.remove();
+                                const remaining = document.querySelectorAll('.history-item');
+                                if (remaining.length === 0) {
+                                    window.location.reload();
+                                }
+                            }, 300);
+                        }
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    alert('Error al intentar eliminar el registro.');
+                });
+            }
+        });
+    });
+
+    // Manejar limpieza completa del historial
+    const btnClearHistory = document.getElementById('btnClearHistory');
+    if (btnClearHistory) {
+        btnClearHistory.addEventListener('click', function() {
+            if (confirm('¿Estás completamente seguro de que deseas vaciar todo tu historial de reproducción? Esta acción no se puede deshacer.')) {
+                fetch('api_historial.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'clear_history'
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        alert('Error: ' + data.error);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    alert('Error al intentar limpiar el historial.');
+                });
+            }
+        });
+    }
 });
 </script>
 

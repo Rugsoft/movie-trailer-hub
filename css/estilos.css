@@ -2995,3 +2995,141 @@ body.cinema-mode-active .video-container {
   white-space: pre-wrap;
   text-align: left;
 }
+
+/* ==========================================================================
+   Watch History Section (perfil.php)
+   ========================================================================== */
+.watch-history-section {
+  margin-top: 40px;
+  background: var(--bg-surface-low);
+  padding: 30px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+}
+
+.watch-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.watch-history-title {
+  margin: 0 !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+.btn-clear-history {
+  border-color: #ef4444 !important;
+  color: #ef4444 !important;
+  font-size: 13px;
+  padding: 6px 12px;
+  transition: all 0.2s ease;
+}
+
+.btn-clear-history:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: #f87171 !important;
+  color: #f87171 !important;
+}
+
+.history-empty-container {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+}
+
+.history-empty-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-surface-lowest);
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.history-item:hover {
+  border-color: var(--border-color-focus);
+}
+
+.history-item-left {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  min-width: 0;
+  flex: 1;
+}
+
+.history-item-poster {
+  width: 40px;
+  height: 58px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+}
+
+.history-item-details {
+  min-width: 0;
+}
+
+.history-item-title {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.history-item-title a {
+  color: var(--text);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.history-item-title a:hover {
+  color: var(--primary);
+}
+
+.history-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+
+.btn-delete-history {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 8px;
+  font-size: 15px;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-delete-history:hover {
+  color: #ef4444;
+}
