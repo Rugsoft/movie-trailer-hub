@@ -2580,6 +2580,19 @@ a.movie-row-card {
   box-shadow: 0 0 10px var(--primary-glow);
 }
 
+.pagination-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  color: var(--text-muted);
+  font-family: var(--font-headline);
+  font-size: 14px;
+  font-weight: 600;
+  user-select: none;
+}
+
 button:disabled {
   opacity: 0.5;
   cursor: not-allowed;

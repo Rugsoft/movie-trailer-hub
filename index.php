@@ -482,9 +482,20 @@ require_once $rootPath . 'includes/navbar.php';
     <!-- Contenedor de Paginación -->
     <div id="paginationContainer" class="pagination-container">
         <?php if ($totalPages > 1): ?>
+            <!-- Botón Primero -->
+            <?php if ($page > 1): ?>
+                <a href="<?= buildPaginationUrl(1) ?>" class="btn btn-secondary" style="padding: 8px 16px;" title="Ir al principio">
+                    <i class="fa-solid fa-angles-left"></i>
+                </a>
+            <?php else: ?>
+                <button class="btn btn-secondary" style="padding: 8px 16px;" disabled>
+                    <i class="fa-solid fa-angles-left"></i>
+                </button>
+            <?php endif; ?>
+
             <!-- Botón Anterior -->
             <?php if ($page > 1): ?>
-                <a href="<?= buildPaginationUrl($page - 1) ?>" class="btn btn-secondary" style="padding: 8px 16px;">
+                <a href="<?= buildPaginationUrl($page - 1) ?>" class="btn btn-secondary" style="padding: 8px 16px;" title="Anterior">
                     <i class="fa-solid fa-chevron-left"></i>
                 </a>
             <?php else: ?>
@@ -493,21 +504,60 @@ require_once $rootPath . 'includes/navbar.php';
                 </button>
             <?php endif; ?>
 
-            <!-- Números de página -->
-            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                <a href="<?= buildPaginationUrl($i) ?>" class="pagination-num-btn <?= $page === $i ? 'active' : '' ?>">
-                    <?= $i ?>
+            <!-- Números de página con elisión -->
+            <?php
+            $pagesToRender = [1, 2, 3];
+            if ($page > 3 && $page < $totalPages - 2) {
+                $pagesToRender[] = $page - 1;
+                $pagesToRender[] = $page;
+                $pagesToRender[] = $page + 1;
+            }
+            $pagesToRender[] = $totalPages - 2;
+            $pagesToRender[] = $totalPages - 1;
+            $pagesToRender[] = $totalPages;
+
+            // Limpiar valores fuera de rango (por ejemplo, si hay menos de 6 páginas totales)
+            $pagesToRender = array_filter($pagesToRender, function($p) use ($totalPages) {
+                return $p >= 1 && $p <= $totalPages;
+            });
+            $pagesToRender = array_unique($pagesToRender);
+            sort($pagesToRender);
+
+            $lastPagePrinted = 0;
+            foreach ($pagesToRender as $p):
+                if ($lastPagePrinted > 0 && $p - $lastPagePrinted > 1):
+            ?>
+                <span class="pagination-ellipsis">...</span>
+            <?php
+                endif;
+            ?>
+                <a href="<?= buildPaginationUrl($p) ?>" class="pagination-num-btn <?= $page === $p ? 'active' : '' ?>">
+                    <?= $p ?>
                 </a>
-            <?php endfor; ?>
+            <?php
+                $lastPagePrinted = $p;
+            endforeach;
+            ?>
 
             <!-- Botón Siguiente -->
             <?php if ($page < $totalPages): ?>
-                <a href="<?= buildPaginationUrl($page + 1) ?>" class="btn btn-secondary" style="padding: 8px 16px;">
+                <a href="<?= buildPaginationUrl($page + 1) ?>" class="btn btn-secondary" style="padding: 8px 16px;" title="Siguiente">
                     <i class="fa-solid fa-chevron-right"></i>
                 </a>
             <?php else: ?>
                 <button class="btn btn-secondary" style="padding: 8px 16px;" disabled>
                     <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            <?php endif; ?>
+
+            <!-- Botón Último -->
+            <?php if ($page < $totalPages): ?>
+                <a href="<?= buildPaginationUrl($totalPages) ?>" class="btn btn-secondary" style="padding: 8px 16px;" title="Ir al final">
+                    <i class="fa-solid fa-angles-right"></i>
+                </a>
+            <?php else: ?>
+                <button class="btn btn-secondary" style="padding: 8px 16px;" disabled>
+                    <i class="fa-solid fa-angles-right"></i>
                 </button>
             <?php endif; ?>
         <?php endif; ?>
