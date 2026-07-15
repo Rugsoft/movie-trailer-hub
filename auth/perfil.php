@@ -433,33 +433,33 @@ require_once $rootPath . 'includes/navbar.php';
     <!-- Pestaña 2: Estadísticas Cinemáticas (Chart.js) -->
     <div id="tab-stats" class="tab-content">
         <!-- Tarjetas de Resumen (Key Stats) -->
-        <div class="stats-cards-grid">
-            <div class="stats-card">
-                <div class="stats-card-icon"><i class="fa-solid fa-eye"></i></div>
-                <div class="stats-card-info">
-                    <span class="stats-card-value"><?= $totalVistas ?></span>
-                    <span class="stats-card-label">Trailers Vistos</span>
+        <div class="user-stats-cards-grid">
+            <div class="user-stats-card">
+                <div class="user-stats-card-icon"><i class="fa-solid fa-eye"></i></div>
+                <div class="user-stats-card-info">
+                    <span class="user-stats-card-value"><?= $totalVistas ?></span>
+                    <span class="user-stats-card-label">Trailers Vistos</span>
                 </div>
             </div>
-            <div class="stats-card">
-                <div class="stats-card-icon"><i class="fa-solid fa-clock"></i></div>
-                <div class="stats-card-info">
-                    <span class="stats-card-value"><?= $tiempoTrailer ?></span>
-                    <span class="stats-card-label">Tiempo Viendo Trailers</span>
+            <div class="user-stats-card">
+                <div class="user-stats-card-icon"><i class="fa-solid fa-clock"></i></div>
+                <div class="user-stats-card-info">
+                    <span class="user-stats-card-value"><?= $tiempoTrailer ?></span>
+                    <span class="user-stats-card-label">Tiempo Viendo Trailers</span>
                 </div>
             </div>
-            <div class="stats-card">
-                <div class="stats-card-icon"><i class="fa-solid fa-hourglass-half"></i></div>
-                <div class="stats-card-info">
-                    <span class="stats-card-value"><?= $tiempoReproduccion ?></span>
-                    <span class="stats-card-label">Metraje Cine Descubierto</span>
+            <div class="user-stats-card">
+                <div class="user-stats-card-icon"><i class="fa-solid fa-hourglass-half"></i></div>
+                <div class="user-stats-card-info">
+                    <span class="user-stats-card-value"><?= $tiempoReproduccion ?></span>
+                    <span class="user-stats-card-label">Metraje Cine Descubierto</span>
                 </div>
             </div>
-            <div class="stats-card">
-                <div class="stats-card-icon"><i class="fa-solid fa-film"></i></div>
-                <div class="stats-card-info">
-                    <span class="stats-card-value" style="font-size: 16px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;" title="<?= htmlspecialchars($generoFavorito) ?>"><?= htmlspecialchars($generoFavorito) ?></span>
-                    <span class="stats-card-label">Género Favorito</span>
+            <div class="user-stats-card">
+                <div class="user-stats-card-icon"><i class="fa-solid fa-film"></i></div>
+                <div class="user-stats-card-info">
+                    <span class="user-stats-card-value" style="font-size: 16px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;" title="<?= htmlspecialchars($generoFavorito) ?>"><?= htmlspecialchars($generoFavorito) ?></span>
+                    <span class="user-stats-card-label">Género Favorito</span>
                 </div>
             </div>
         </div>
@@ -472,39 +472,39 @@ require_once $rootPath . 'includes/navbar.php';
             </div>
         <?php else: ?>
             <!-- Cuadrícula de Gráficos -->
-            <div class="stats-charts-grid">
+            <div class="user-stats-charts-grid">
                 <!-- Gráfico de Rosca: Distribución de Géneros -->
-                <div class="chart-card">
-                    <h4 class="chart-card-title"><i class="fa-solid fa-chart-pie"></i> Mis Géneros Preferidos</h4>
-                    <div class="chart-container-wrapper">
+                <div class="user-chart-card">
+                    <h4 class="user-chart-card-title"><i class="fa-solid fa-chart-pie"></i> Mis Géneros Preferidos</h4>
+                    <div class="user-chart-container-wrapper">
                         <canvas id="genresChart"></canvas>
                     </div>
                 </div>
 
                 <!-- Gráfico de Líneas: Actividad por Hora del Día -->
-                <div class="chart-card">
-                    <h4 class="chart-card-title"><i class="fa-solid fa-clock"></i> Momentos de Cine (Por Hora)</h4>
-                    <div class="chart-container-wrapper">
+                <div class="user-chart-card">
+                    <h4 class="user-chart-card-title"><i class="fa-solid fa-clock"></i> Momentos de Cine (Por Hora)</h4>
+                    <div class="user-chart-container-wrapper">
                         <canvas id="hourlyChart"></canvas>
                     </div>
                 </div>
             </div>
 
             <!-- Panel de Datos Clave e Insights -->
-            <div class="stats-insights-card">
+            <div class="user-stats-insights-card">
                 <h3 class="profile-section-title" style="margin-bottom: 20px;"><i class="fa-solid fa-lightbulb" style="color: var(--primary);"></i> Cinephile Insights</h3>
                 
-                <div class="insight-item">
-                    <div class="insight-icon"><i class="fa-solid fa-user-tie"></i></div>
-                    <div class="insight-content">
+                <div class="user-insight-item">
+                    <div class="user-insight-icon"><i class="fa-solid fa-user-tie"></i></div>
+                    <div class="user-insight-content">
                         <h4>Director más reproducido</h4>
                         <p>Tu director favorito de cine es <strong><?= htmlspecialchars($directorFavorito) ?></strong>.</p>
                     </div>
                 </div>
 
-                <div class="insight-item">
-                    <div class="insight-icon"><i class="fa-solid fa-mug-hot"></i></div>
-                    <div class="insight-content">
+                <div class="user-insight-item">
+                    <div class="user-insight-icon"><i class="fa-solid fa-mug-hot"></i></div>
+                    <div class="user-insight-content">
                         <h4>Patrón de Visualización</h4>
                         <?php
                         // Analizar el pico de actividad horaria
