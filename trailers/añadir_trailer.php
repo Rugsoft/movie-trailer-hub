@@ -95,11 +95,11 @@ $resDirectores = mysqli_query($conexion, $sqlDirectores);
                 while ($actor = mysqli_fetch_assoc($resReparto)) { ?>
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 6px 0; border-bottom: 1px dashed rgba(216, 195, 173, 0.05);">
                         <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; cursor: pointer; margin: 0; flex: 1;">
-                            <input type="checkbox" name="actores[]" value="<?php echo $actor['id_reparto']; ?>" style="width: auto; height: auto; cursor: pointer; transform: scale(1.1); accent-color: var(--primary);">
+                            <input type="checkbox" name="actores[]" value="<?php echo $actor['id_reparto']; ?>" onchange="toggleActorInput(this)" style="width: auto; height: auto; cursor: pointer; transform: scale(1.1); accent-color: var(--primary);">
                             <img src="<?php echo htmlspecialchars($actor['foto_url'] ?? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200'); ?>" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover; margin-left: 5px; margin-right: 5px;">
                             <span><?php echo htmlspecialchars($actor['nombre'] . ' ' . $actor['apellidos']); ?></span>
                         </label>
-                        <input type="text" name="personajes[<?php echo $actor['id_reparto']; ?>]" placeholder="Nombre del personaje..." style="flex: 1; max-width: 250px; padding: 6px 12px; font-size: 13px; height: auto;">
+                        <input type="text" name="personajes[<?php echo $actor['id_reparto']; ?>]" placeholder="Nombre del personaje..." disabled style="flex: 1; max-width: 250px; padding: 6px 12px; font-size: 13px; height: auto;">
                     </div>
                 <?php }
             } else { ?>
@@ -117,6 +117,16 @@ $resDirectores = mysqli_query($conexion, $sqlDirectores);
 
     <!-- Script de Integración con TMDB -->
     <script>
+        function toggleActorInput(checkbox) {
+            const row = checkbox.closest('div');
+            if (row) {
+                const textInput = row.querySelector('input[type="text"]');
+                if (textInput) {
+                    textInput.disabled = !checkbox.checked;
+                }
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const tmdbQuery = document.getElementById('tmdb_movie_query');
             const btnSearch = document.getElementById('btn_tmdb_movie_search');
@@ -246,7 +256,10 @@ $resDirectores = mysqli_query($conexion, $sqlDirectores);
                         actorCheckboxes.forEach(cb => {
                             cb.checked = false;
                             const charInput = document.getElementsByName(`personajes[${cb.value}]`)[0];
-                            if (charInput) charInput.value = '';
+                            if (charInput) {
+                                charInput.value = '';
+                                charInput.disabled = true;
+                            }
                         });
 
                         if (data.credits && data.credits.cast) {
@@ -268,6 +281,7 @@ $resDirectores = mysqli_query($conexion, $sqlDirectores);
                                             const charInput = document.getElementsByName(`personajes[${cb.value}]`)[0];
                                             if (charInput) {
                                                 charInput.value = castMember.character || '';
+                                                charInput.disabled = false;
                                             }
                                         }
                                     }

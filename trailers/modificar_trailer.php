@@ -131,14 +131,15 @@ require_once $rootPath . 'includes/navbar.php';
                     $actorId = (int)$actor['id_reparto'];
                     $isChecked = in_array($actorId, $selectedActors) ? 'checked' : '';
                     $personajeVal = isset($actorCharacters[$actorId]) ? htmlspecialchars($actorCharacters[$actorId]) : '';
+                    $isDisabled = in_array($actorId, $selectedActors) ? '' : 'disabled';
                 ?>
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 6px 0; border-bottom: 1px dashed rgba(216, 195, 173, 0.05);">
                         <label style="display: flex; align-items: center; gap: 8px; font-weight: normal; cursor: pointer; margin: 0; flex: 1;">
-                            <input type="checkbox" name="actores[]" value="<?php echo $actorId; ?>" <?php echo $isChecked; ?> style="width: auto; height: auto; cursor: pointer; transform: scale(1.1); accent-color: var(--primary);">
+                            <input type="checkbox" name="actores[]" value="<?php echo $actorId; ?>" <?php echo $isChecked; ?> onchange="toggleActorInput(this)" style="width: auto; height: auto; cursor: pointer; transform: scale(1.1); accent-color: var(--primary);">
                             <img src="<?php echo htmlspecialchars($actor['foto_url'] ?? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200'); ?>" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover; margin-left: 5px; margin-right: 5px;">
                             <span><?php echo htmlspecialchars($actor['nombre'] . ' ' . $actor['apellidos']); ?></span>
                         </label>
-                        <input type="text" name="personajes[<?php echo $actorId; ?>]" value="<?php echo $personajeVal; ?>" placeholder="Nombre del personaje..." style="flex: 1; max-width: 250px; padding: 6px 12px; font-size: 13px; height: auto;">
+                        <input type="text" name="personajes[<?php echo $actorId; ?>]" value="<?php echo $personajeVal; ?>" placeholder="Nombre del personaje..." <?php echo $isDisabled; ?> style="flex: 1; max-width: 250px; padding: 6px 12px; font-size: 13px; height: auto;">
                     </div>
                 <?php }
             } else { ?>
@@ -153,6 +154,18 @@ require_once $rootPath . 'includes/navbar.php';
     </form>
 
     <a class="volver" href="listar_trailers.php">← Volver al catálogo</a>
+
+    <script>
+    function toggleActorInput(checkbox) {
+        const row = checkbox.closest('div');
+        if (row) {
+            const textInput = row.querySelector('input[type="text"]');
+            if (textInput) {
+                textInput.disabled = !checkbox.checked;
+            }
+        }
+    }
+    </script>
 <?php
 require_once $rootPath . 'includes/footer.php';
 ?>
