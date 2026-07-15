@@ -186,7 +186,7 @@ if ($stmtSG) {
     mysqli_stmt_close($stmtSG);
 }
 
-// Convertir minutos a formato legible
+// Convertir minutos a formato legible (Largometrajes)
 $totalHoras = floor($totalMinutos / 60);
 $restoMinutos = $totalMinutos % 60;
 $tiempoReproduccion = "";
@@ -194,6 +194,17 @@ if ($totalHoras > 0) {
     $tiempoReproduccion = $totalHoras . " h " . $restoMinutos . " min";
 } else {
     $tiempoReproduccion = $totalMinutos . " min";
+}
+
+// Estimar tiempo real viendo trailers (2.5 minutos de promedio por visualización)
+$minutosTrailerEstimados = round($totalVistas * 2.5);
+$horasTrailer = floor($minutosTrailerEstimados / 60);
+$restoMinutosTrailer = $minutosTrailerEstimados % 60;
+$tiempoTrailer = "";
+if ($horasTrailer > 0) {
+    $tiempoTrailer = $horasTrailer . " h " . $restoMinutosTrailer . " min";
+} else {
+    $tiempoTrailer = $minutosTrailerEstimados . " min";
 }
 
 // 2. Distribución de géneros (Top 5 para el gráfico)
@@ -431,10 +442,17 @@ require_once $rootPath . 'includes/navbar.php';
                 </div>
             </div>
             <div class="stats-card">
+                <div class="stats-card-icon"><i class="fa-solid fa-clock"></i></div>
+                <div class="stats-card-info">
+                    <span class="stats-card-value"><?= $tiempoTrailer ?></span>
+                    <span class="stats-card-label">Tiempo Viendo Trailers</span>
+                </div>
+            </div>
+            <div class="stats-card">
                 <div class="stats-card-icon"><i class="fa-solid fa-hourglass-half"></i></div>
                 <div class="stats-card-info">
                     <span class="stats-card-value"><?= $tiempoReproduccion ?></span>
-                    <span class="stats-card-label">Tiempo de Reproducción</span>
+                    <span class="stats-card-label">Metraje Cine Descubierto</span>
                 </div>
             </div>
             <div class="stats-card">
