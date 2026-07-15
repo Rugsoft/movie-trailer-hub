@@ -166,150 +166,357 @@ if ($stmtHistory) {
     mysqli_stmt_close($stmtHistory);
 }
 
+// === CONSULTAS DE ESTADÍSTICAS PARA EL GRÁFICO (Wrapped) ===
+// 1. Estadísticas generales: total vistas y tiempo acumulado
+$sqlStatsGeneral = "SELECT COUNT(v.id_visualizacion) as total_vistas, COALESCE(SUM(t.duracion), 0) as total_minutos 
+                    FROM visualizaciones v 
+                    JOIN trailers t ON v.id_trailer = t.id_trailer 
+                    WHERE v.id_usuario = ?";
+$stmtSG = mysqli_prepare($conexion, $sqlStatsGeneral);
+$totalVistas = 0;
+$totalMinutos = 0;
+if ($stmtSG) {
+    mysqli_stmt_bind_param($stmtSG, "i", $user_id);
+    mysqli_stmt_execute($stmtSG);
+    $resSG = mysqli_stmt_get_result($stmtSG);
+    if ($rowSG = mysqli_fetch_assoc($resSG)) {
+        $totalVistas = (int)$rowSG['total_vistas'];
+        $totalMinutos = (int)$rowSG['total_minutos'];
+    }
+    mysqli_stmt_close($stmtSG);
+}
+
+// Convertir minutos a formato legible
+$totalHoras = floor($totalMinutos / 60);
+$restoMinutos = $totalMinutos % 60;
+$tiempoReproduccion = "";
+if ($totalHoras > 0) {
+    $tiempoReproduccion = $totalHoras . " h " . $restoMinutos . " min";
+} else {
+    $tiempoReproduccion = $totalMinutos . " min";
+}
+
+// 2. Distribución de géneros (Top 5 para el gráfico)
+$genresData = [];
+$sqlStatsGenres = "SELECT g.nombre as genero, COUNT(*) as cantidad 
+                   FROM visualizaciones v 
+                   JOIN trailers_generos tg ON v.id_trailer = tg.id_trailer 
+                   JOIN generos g ON tg.id_genero = g.id_genero 
+                   WHERE v.id_usuario = ? 
+                   GROUP BY g.id_genero 
+                   ORDER BY cantidad DESC 
+                   LIMIT 5";
+$stmtSGenres = mysqli_prepare($conexion, $sqlStatsGenres);
+if ($stmtSGenres) {
+    mysqli_stmt_bind_param($stmtSGenres, "i", $user_id);
+    mysqli_stmt_execute($stmtSGenres);
+    $resSGenres = mysqli_stmt_get_result($stmtSGenres);
+    while ($rowSG = mysqli_fetch_assoc($resSGenres)) {
+        $genresData[] = $rowSG;
+    }
+    mysqli_stmt_close($stmtSGenres);
+}
+
+$generoFavorito = "Ninguno";
+if (!empty($genresData)) {
+    $generoFavorito = $genresData[0]['genero'];
+}
+
+// 3. Distribución horaria (inicializar 24 slots)
+$hourlyData = array_fill(0, 24, 0);
+$sqlStatsHourly = "SELECT HOUR(v.fecha_visualizacion) as hora, COUNT(*) as cantidad 
+                   FROM visualizaciones v 
+                   WHERE v.id_usuario = ? 
+                   GROUP BY HOUR(v.fecha_visualizacion)";
+$stmtSHourly = mysqli_prepare($conexion, $sqlStatsHourly);
+if ($stmtSHourly) {
+    mysqli_stmt_bind_param($stmtSHourly, "i", $user_id);
+    mysqli_stmt_execute($stmtSHourly);
+    $resSHourly = mysqli_stmt_get_result($stmtSHourly);
+    while ($rowSHourly = mysqli_fetch_assoc($resSHourly)) {
+        $h = (int)$rowSHourly['hora'];
+        $hourlyData[$h] = (int)$rowSHourly['cantidad'];
+    }
+    mysqli_stmt_close($stmtSHourly);
+}
+
+// 4. Director favorito (Insight)
+$directorFavorito = "No identificado";
+$sqlStatsDirector = "SELECT CONCAT(d.nombre, ' ', d.apellidos) as director_nombre, COUNT(*) as cantidad 
+                     FROM visualizaciones v 
+                     JOIN trailers t ON v.id_trailer = t.id_trailer 
+                     JOIN directores d ON t.id_director = d.id_director 
+                     WHERE v.id_usuario = ? 
+                     GROUP BY t.id_director 
+                     ORDER BY cantidad DESC 
+                     LIMIT 1";
+$stmtSDirector = mysqli_prepare($conexion, $sqlStatsDirector);
+if ($stmtSDirector) {
+    mysqli_stmt_bind_param($stmtSDirector, "i", $user_id);
+    mysqli_stmt_execute($stmtSDirector);
+    $resSDirector = mysqli_stmt_get_result($stmtSDirector);
+    if ($rowSD = mysqli_fetch_assoc($resSDirector)) {
+        $directorFavorito = $rowSD['director_nombre'];
+    }
+    mysqli_stmt_close($stmtSDirector);
+}
+
 $pageTitle = "Mi Perfil - Movie Trailer Hub";
 $rootPath = "../";
 require_once $rootPath . 'includes/navbar.php';
 ?>
 
 <main class="app-container" style="margin-top: 30px; margin-bottom: 50px;">
+    <!-- Cargar Chart.js de forma local y global para asegurar su inicialización -->
+    <script src="<?= BASE_PATH ?>js/chart.js"></script>
     
-    <div style="text-align: center; margin-bottom: 30px;">
+    <div style="text-align: center; margin-bottom: 25px;">
         <h1 style="margin-bottom: 8px;">Configuración de la Cuenta</h1>
-        <p style="color: var(--text-muted); margin: 0;">Administra tus datos personales, avatar y credenciales de acceso.</p>
+        <p style="color: var(--text-muted); margin: 0;">Administra tus datos personales, avatar y revisa tus estadísticas cinematográficas.</p>
     </div>
 
-
-
-    <div class="profile-layout">
-        
-        <!-- Tarjeta Lateral Izquierda (Resumen) -->
-        <aside class="profile-sidebar">
-            <div id="avatarPreviewContainer" class="profile-avatar-preview">
-                <?php if (!empty($user['avatar_url'])): ?>
-                    <img id="avatarImg" src="<?php echo htmlspecialchars($user['avatar_url']); ?>" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
-                <?php else: ?>
-                    <i id="avatarIcon" class="fa-solid fa-user"></i>
-                    <img id="avatarImg" src="" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: none;">
-                <?php endif; ?>
-            </div>
-            
-            <h3 class="profile-username"><?php echo htmlspecialchars($user['nombre'] . ' ' . $user['apellidos']); ?></h3>
-            <span class="profile-role-badge"><?php echo htmlspecialchars($user['rol'] === 'admin' ? 'Administrador' : 'Lector'); ?></span>
-            
-            <div class="profile-meta-info">
-                <div class="profile-meta-row">
-                    <span class="profile-meta-label">Usuario:</span>
-                    <span class="profile-meta-value">@<?php echo htmlspecialchars($user['username']); ?></span>
-                </div>
-                <div class="profile-meta-row">
-                    <span class="profile-meta-label">Miembro desde:</span>
-                    <span class="profile-meta-value"><?php echo date('d/m/Y', strtotime($user['fecha_alta'])); ?></span>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Formulario de Configuración -->
-        <section class="profile-form-container">
-            <form action="perfil.php" method="POST" autocomplete="off">
-                
-                <h3 class="profile-section-title"><i class="fa-solid fa-id-card"></i> Datos Personales</h3>
-                
-                <div class="profile-form-grid">
-                    <div>
-                        <label for="nombre">Nombre *</label>
-                        <input type="text" id="nombre" name="nombre" required value="<?php echo htmlspecialchars($user['nombre']); ?>">
-                    </div>
-                    <div>
-                        <label for="apellidos">Apellidos *</label>
-                        <input type="text" id="apellidos" name="apellidos" required value="<?php echo htmlspecialchars($user['apellidos']); ?>">
-                    </div>
-                </div>
-
-                <div class="profile-form-grid" style="margin-top: 15px;">
-                    <div>
-                        <label for="email">Correo Electrónico *</label>
-                        <input type="email" id="email" name="email" required value="<?php echo htmlspecialchars($user['email']); ?>">
-                    </div>
-                    <div>
-                        <label for="telefono">Teléfono</label>
-                        <input type="text" id="telefono" name="telefono" value="<?php echo htmlspecialchars($user['telefono'] ?? ''); ?>" placeholder="Ej: 600123456">
-                    </div>
-                </div>
-
-                <div class="profile-form-grid full-width" style="margin-top: 15px; margin-bottom: 30px;">
-                    <div>
-                        <label for="avatar_url">URL de la Imagen de Avatar</label>
-                        <input type="url" id="avatar_url" name="avatar_url" value="<?php echo htmlspecialchars($user['avatar_url'] ?? ''); ?>" placeholder="Ej: https://enlace-de-imagen.jpg/avatar.png">
-                    </div>
-                </div>
-
-                <h3 class="profile-section-title"><i class="fa-solid fa-lock"></i> Seguridad y Acceso</h3>
-                
-                <div class="profile-form-grid full-width">
-                    <div>
-                        <label for="password_actual">Contraseña Actual (Requerida solo si vas a cambiarla)</label>
-                        <input type="password" id="password_actual" name="password_actual" placeholder="Escribe tu contraseña actual" autocomplete="new-password">
-                    </div>
-                </div>
-
-                <div class="profile-form-grid" style="margin-top: 15px; margin-bottom: 25px;">
-                    <div>
-                        <label for="password_nueva">Nueva Contraseña</label>
-                        <input type="password" id="password_nueva" name="password_nueva" placeholder="Mínimo 6 caracteres">
-                    </div>
-                    <div>
-                        <label for="password_confirm">Confirmar Nueva Contraseña</label>
-                        <input type="password" id="password_confirm" name="password_confirm" placeholder="Repite la nueva contraseña">
-                    </div>
-                </div>
-
-                <button type="submit">Guardar Cambios</button>
-            </form>
-        </section>
-
+    <!-- Pestañas del Perfil (Tabs) -->
+    <div class="profile-tabs">
+        <button class="profile-tab-btn active" data-tab="config">
+            <i class="fa-solid fa-user-gear"></i> Mis Datos
+        </button>
+        <button class="profile-tab-btn" data-tab="stats">
+            <i class="fa-solid fa-chart-pie"></i> Mis Estadísticas
+        </button>
     </div>
 
-    <!-- Sección de Historial de Reproducción -->
-    <section class="watch-history-section">
-        <div class="watch-history-header">
-            <h3 class="profile-section-title watch-history-title"><i class="fa-solid fa-clock-rotate-left"></i> Mi Historial de Reproducción</h3>
-            <?php if (!empty($history)): ?>
-                <button id="btnClearHistory" class="btn btn-secondary btn-clear-history">
-                    <i class="fa-solid fa-trash-can"></i> Limpiar Historial
-                </button>
-            <?php endif; ?>
+    <!-- Pestaña 1: Configuración de Cuenta e Historial -->
+    <div id="tab-config" class="tab-content active">
+        <div class="profile-layout">
+            
+            <!-- Tarjeta Lateral Izquierda (Resumen) -->
+            <aside class="profile-sidebar">
+                <div id="avatarPreviewContainer" class="profile-avatar-preview">
+                    <?php if (!empty($user['avatar_url'])): ?>
+                        <img id="avatarImg" src="<?php echo htmlspecialchars($user['avatar_url']); ?>" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                    <?php else: ?>
+                        <i id="avatarIcon" class="fa-solid fa-user"></i>
+                        <img id="avatarImg" src="" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: none;">
+                    <?php endif; ?>
+                </div>
+                
+                <h3 class="profile-username"><?php echo htmlspecialchars($user['nombre'] . ' ' . $user['apellidos']); ?></h3>
+                <span class="profile-role-badge"><?php echo htmlspecialchars($user['rol'] === 'admin' ? 'Administrador' : 'Lector'); ?></span>
+                
+                <div class="profile-meta-info">
+                    <div class="profile-meta-row">
+                        <span class="profile-meta-label">Usuario:</span>
+                        <span class="profile-meta-value">@<?php echo htmlspecialchars($user['username']); ?></span>
+                    </div>
+                    <div class="profile-meta-row">
+                        <span class="profile-meta-label">Miembro desde:</span>
+                        <span class="profile-meta-value"><?php echo date('d/m/Y', strtotime($user['fecha_alta'])); ?></span>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Formulario de Configuración -->
+            <section class="profile-form-container">
+                <form action="perfil.php" method="POST" autocomplete="off">
+                    
+                    <h3 class="profile-section-title"><i class="fa-solid fa-id-card"></i> Datos Personales</h3>
+                    
+                    <div class="profile-form-grid">
+                        <div>
+                            <label for="nombre">Nombre *</label>
+                            <input type="text" id="nombre" name="nombre" required value="<?php echo htmlspecialchars($user['nombre']); ?>">
+                        </div>
+                        <div>
+                            <label for="apellidos">Apellidos *</label>
+                            <input type="text" id="apellidos" name="apellidos" required value="<?php echo htmlspecialchars($user['apellidos']); ?>">
+                        </div>
+                    </div>
+
+                    <div class="profile-form-grid" style="margin-top: 15px;">
+                        <div>
+                            <label for="email">Correo Electrónico *</label>
+                            <input type="email" id="email" name="email" required value="<?php echo htmlspecialchars($user['email']); ?>">
+                        </div>
+                        <div>
+                            <label for="telefono">Teléfono</label>
+                            <input type="text" id="telefono" name="telefono" value="<?php echo htmlspecialchars($user['telefono'] ?? ''); ?>" placeholder="Ej: 600123456">
+                        </div>
+                    </div>
+
+                    <div class="profile-form-grid full-width" style="margin-top: 15px; margin-bottom: 30px;">
+                        <div>
+                            <label for="avatar_url">URL de la Imagen de Avatar</label>
+                            <input type="url" id="avatar_url" name="avatar_url" value="<?php echo htmlspecialchars($user['avatar_url'] ?? ''); ?>" placeholder="Ej: https://enlace-de-imagen.jpg/avatar.png">
+                        </div>
+                    </div>
+
+                    <h3 class="profile-section-title"><i class="fa-solid fa-lock"></i> Seguridad y Acceso</h3>
+                    
+                    <div class="profile-form-grid full-width">
+                        <div>
+                            <label for="password_actual">Contraseña Actual (Requerida solo si vas a cambiarla)</label>
+                            <input type="password" id="password_actual" name="password_actual" placeholder="Escribe tu contraseña actual" autocomplete="new-password">
+                        </div>
+                    </div>
+
+                    <div class="profile-form-grid" style="margin-top: 15px; margin-bottom: 25px;">
+                        <div>
+                            <label for="password_nueva">Nueva Contraseña</label>
+                            <input type="password" id="password_nueva" name="password_nueva" placeholder="Mínimo 6 caracteres">
+                        </div>
+                        <div>
+                            <label for="password_confirm">Confirmar Nueva Contraseña</label>
+                            <input type="password" id="password_confirm" name="password_confirm" placeholder="Repite la nueva contraseña">
+                        </div>
+                    </div>
+
+                    <button type="submit">Guardar Cambios</button>
+                </form>
+            </section>
+
         </div>
 
-        <?php if (empty($history)): ?>
-            <div class="history-empty-container">
-                <i class="fa-solid fa-video-slash history-empty-icon"></i>
-                <p>No tienes trailers en tu historial de reproducción.</p>
+        <!-- Sección de Historial de Reproducción -->
+        <section class="watch-history-section" style="margin-top: 40px;">
+            <div class="watch-history-header">
+                <h3 class="profile-section-title watch-history-title"><i class="fa-solid fa-clock-rotate-left"></i> Mi Historial de Reproducción</h3>
+                <?php if (!empty($history)): ?>
+                    <button id="btnClearHistory" class="btn btn-secondary btn-clear-history">
+                        <i class="fa-solid fa-trash-can"></i> Limpiar Historial
+                    </button>
+                <?php endif; ?>
             </div>
-        <?php else: ?>
-            <div class="history-list">
-                <?php foreach ($history as $item): ?>
-                    <div class="history-item" id="history-item-<?= $item['id_visualizacion'] ?>">
-                        <div class="history-item-left">
-                            <img src="<?= htmlspecialchars($item['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=100') ?>" alt="<?= htmlspecialchars($item['titulo']) ?>" class="history-item-poster">
-                            <div class="history-item-details">
-                                <h4 class="history-item-title">
-                                    <a href="../trailers/reproducir_trailer.php?id=<?= $item['id_trailer'] ?>">
-                                        <?= htmlspecialchars($item['titulo']) ?>
-                                    </a>
-                                </h4>
-                                <div class="history-item-meta">
-                                    <span><i class="fa-regular fa-calendar"></i> <?= date('d/m/Y H:i', strtotime($item['fecha_visualizacion'])) ?></span>
+
+            <?php if (empty($history)): ?>
+                <div class="history-empty-container">
+                    <i class="fa-solid fa-video-slash history-empty-icon"></i>
+                    <p>No tienes trailers en tu historial de reproducción.</p>
+                </div>
+            <?php else: ?>
+                <div class="history-list">
+                    <?php foreach ($history as $item): ?>
+                        <div class="history-item" id="history-item-<?= $item['id_visualizacion'] ?>">
+                            <div class="history-item-left">
+                                <img src="<?= htmlspecialchars($item['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=100') ?>" alt="<?= htmlspecialchars($item['titulo']) ?>" class="history-item-poster">
+                                <div class="history-item-details">
+                                    <h4 class="history-item-title">
+                                        <a href="../trailers/reproducir_trailer.php?id=<?= $item['id_trailer'] ?>">
+                                            <?= htmlspecialchars($item['titulo']) ?>
+                                        </a>
+                                    </h4>
+                                    <div class="history-item-meta">
+                                        <span><i class="fa-regular fa-calendar"></i> <?= date('d/m/Y H:i', strtotime($item['fecha_visualizacion'])) ?></span>
+                                    </div>
                                 </div>
                             </div>
+                            <button class="btn-delete-history" data-id="<?= $item['id_visualizacion'] ?>" title="Eliminar de mi historial">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
                         </div>
-                        <button class="btn-delete-history" data-id="<?= $item['id_visualizacion'] ?>" title="Eliminar de mi historial">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </section>
+    </div>
+
+    <!-- Pestaña 2: Estadísticas Cinemáticas (Chart.js) -->
+    <div id="tab-stats" class="tab-content">
+        <!-- Tarjetas de Resumen (Key Stats) -->
+        <div class="stats-cards-grid">
+            <div class="stats-card">
+                <div class="stats-card-icon"><i class="fa-solid fa-eye"></i></div>
+                <div class="stats-card-info">
+                    <span class="stats-card-value"><?= $totalVistas ?></span>
+                    <span class="stats-card-label">Trailers Vistos</span>
+                </div>
+            </div>
+            <div class="stats-card">
+                <div class="stats-card-icon"><i class="fa-solid fa-hourglass-half"></i></div>
+                <div class="stats-card-info">
+                    <span class="stats-card-value"><?= $tiempoReproduccion ?></span>
+                    <span class="stats-card-label">Tiempo de Reproducción</span>
+                </div>
+            </div>
+            <div class="stats-card">
+                <div class="stats-card-icon"><i class="fa-solid fa-film"></i></div>
+                <div class="stats-card-info">
+                    <span class="stats-card-value" style="font-size: 16px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;" title="<?= htmlspecialchars($generoFavorito) ?>"><?= htmlspecialchars($generoFavorito) ?></span>
+                    <span class="stats-card-label">Género Favorito</span>
+                </div>
+            </div>
+        </div>
+
+        <?php if ($totalVistas === 0): ?>
+            <div class="history-empty-container" style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 50px 20px; text-align: center;">
+                <i class="fa-solid fa-chart-line history-empty-icon" style="font-size: 48px; color: var(--text-muted); opacity: 0.3; margin-bottom: 15px;"></i>
+                <p style="color: var(--text-muted); margin: 0; font-size: 15px;">No hay suficientes datos de visualizaciones para calcular tus estadísticas de consumo.</p>
+                <p style="color: var(--text-muted); margin-top: 5px; font-size: 13px;">¡Comienza a ver trailers en el catálogo para generar tu infografía personal!</p>
+            </div>
+        <?php else: ?>
+            <!-- Cuadrícula de Gráficos -->
+            <div class="stats-charts-grid">
+                <!-- Gráfico de Rosca: Distribución de Géneros -->
+                <div class="chart-card">
+                    <h4 class="chart-card-title"><i class="fa-solid fa-chart-pie"></i> Mis Géneros Preferidos</h4>
+                    <div class="chart-container-wrapper">
+                        <canvas id="genresChart"></canvas>
                     </div>
-                <?php endforeach; ?>
+                </div>
+
+                <!-- Gráfico de Líneas: Actividad por Hora del Día -->
+                <div class="chart-card">
+                    <h4 class="chart-card-title"><i class="fa-solid fa-clock"></i> Momentos de Cine (Por Hora)</h4>
+                    <div class="chart-container-wrapper">
+                        <canvas id="hourlyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel de Datos Clave e Insights -->
+            <div class="stats-insights-card">
+                <h3 class="profile-section-title" style="margin-bottom: 20px;"><i class="fa-solid fa-lightbulb" style="color: var(--primary);"></i> Cinephile Insights</h3>
+                
+                <div class="insight-item">
+                    <div class="insight-icon"><i class="fa-solid fa-user-tie"></i></div>
+                    <div class="insight-content">
+                        <h4>Director más reproducido</h4>
+                        <p>Tu director favorito de cine es <strong><?= htmlspecialchars($directorFavorito) ?></strong>.</p>
+                    </div>
+                </div>
+
+                <div class="insight-item">
+                    <div class="insight-icon"><i class="fa-solid fa-mug-hot"></i></div>
+                    <div class="insight-content">
+                        <h4>Patrón de Visualización</h4>
+                        <?php
+                        // Analizar el pico de actividad horaria
+                        $maxHourVal = -1;
+                        $peakHour = 0;
+                        foreach ($hourlyData as $hour => $count) {
+                            if ($count > $maxHourVal) {
+                                $maxHourVal = $count;
+                                $peakHour = $hour;
+                            }
+                        }
+                        
+                        $patternLabel = "";
+                        if ($peakHour >= 6 && $peakHour < 12) {
+                            $patternLabel = "Matutino. Te encanta empezar el día enterándote de los próximos estrenos.";
+                        } elseif ($peakHour >= 12 && $peakHour < 17) {
+                            $patternLabel = "De Sobremesa. Disfrutas de tus trailers preferidos en el descanso de la tarde.";
+                        } elseif ($peakHour >= 17 && $peakHour < 21) {
+                            $patternLabel = "Vespertino. Eres de los que desconecta del trabajo o estudios explorando el cine.";
+                        } else {
+                            $patternLabel = "Nocturno. Eres un verdadero búho cinéfilo que busca qué ver a altas horas de la noche.";
+                        }
+                        ?>
+                        <h4>Tu momento favorito del día</h4>
+                        <p>Tu pico de visualizaciones ocurre a las <strong><?= sprintf('%02d:00', $peakHour) ?> h</strong>, lo que define tu patrón de consumo como <strong><?= $patternLabel ?></strong></p>
+                    </div>
+                </div>
             </div>
         <?php endif; ?>
-    </section>
+    </div>
 
     <div style="margin-top: 30px;">
         <a class="volver" href="../index.php">← Volver al inicio</a>
@@ -330,6 +537,139 @@ function closeToast(id) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // === Lógica de Pestañas (Tabs) ===
+    const tabButtons = document.querySelectorAll('.profile-tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+    let chartsInitialized = false;
+
+    function initCharts() {
+        if (typeof Chart === 'undefined') {
+            console.error("Error: La biblioteca Chart.js no se ha cargado correctamente en el cliente.");
+            return;
+        }
+        if (chartsInitialized) return;
+
+        // 1. Gráfico de Rosca de Géneros
+        const genresCtx = document.getElementById('genresChart');
+        if (genresCtx) {
+            <?php
+            $genreLabels = array_column($genresData, 'genero');
+            $genreCounts = array_column($genresData, 'cantidad');
+            ?>
+            new Chart(genresCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: <?= json_encode($genreLabels) ?>,
+                    datasets: [{
+                        label: 'Visualizaciones',
+                        data: <?= json_encode($genreCounts) ?>,
+                        backgroundColor: [
+                            '#f59e0b', // Amber (Primary)
+                            '#dc2626', // Crimson (Secondary)
+                            '#3b82f6', // Azul
+                            '#10b981', // Esmeralda
+                            '#8b5cf6'  // Violeta
+                        ],
+                        borderWidth: 1,
+                        borderColor: '#152031' // Combina con --card-bg
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#d8e3fb', // --text-primary
+                                font: {
+                                    family: 'Montserrat'
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 2. Gráfico de Actividad por Horas (Línea suavizada con relleno)
+        const hourlyCtx = document.getElementById('hourlyChart');
+        if (hourlyCtx) {
+            const hours = Array.from({length: 24}, (_, i) => `${String(i).padStart(2, '0')}:00`);
+            new Chart(hourlyCtx, {
+                type: 'line',
+                data: {
+                    labels: hours,
+                    datasets: [{
+                        label: 'Visualizaciones',
+                        data: <?= json_encode($hourlyData) ?>,
+                        borderColor: '#f59e0b', // Amber
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointBackgroundColor: '#f59e0b',
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(216, 195, 173, 0.05)'
+                            },
+                            ticks: {
+                                color: '#a08e7a' // --text-muted
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(216, 195, 173, 0.05)'
+                            },
+                            ticks: {
+                                color: '#a08e7a',
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        chartsInitialized = true;
+    }
+
+    tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetTab = btn.getAttribute('data-tab');
+
+            // Actualizar botones
+            tabButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Actualizar contenidos
+            tabContents.forEach(content => {
+                if (content.id === `tab-${targetTab}`) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+
+            // Si se activa la pestaña de estadísticas, inicializar gráficos tras un brevísimo retardo
+            if (targetTab === 'stats') {
+                setTimeout(initCharts, 50);
+            }
+        });
+    });
+
     // Inicializar toasts
     const toasts = document.querySelectorAll('.toast');
     toasts.forEach((toast) => {
