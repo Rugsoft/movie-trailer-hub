@@ -18,15 +18,20 @@ mysqli_free_result($resGenres);
 
 // 2. Obtener y validar parámetros de filtros y búsqueda desde $_GET
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
-$genre = isset($_GET['genre']) ? trim($_GET['genre']) : 'Todos';
+$selectedGenres = [];
+if (isset($_GET['genres'])) {
+    $selectedGenres = (array)$_GET['genres'];
+} elseif (isset($_GET['genre']) && $_GET['genre'] !== 'Todos' && $_GET['genre'] !== '') {
+    $selectedGenres = [$_GET['genre']];
+}
 $start_date = isset($_GET['start_date']) ? trim($_GET['start_date']) : '';
 $end_date = isset($_GET['end_date']) ? trim($_GET['end_date']) : '';
 $upcoming = (isset($_GET['upcoming']) && $_GET['upcoming'] === '1') ? 1 : 0;
 
 // Validar que el género exista
-if ($genre !== 'Todos' && !in_array($genre, $genres)) {
-    $genre = 'Todos';
-}
+$selectedGenres = array_filter($selectedGenres, function($g) use ($genres) {
+    return in_array($g, $genres);
+});
 
 // Validar formato básico de fechas
 function isValidDateString($dateStr) {
@@ -61,15 +66,18 @@ if ($search !== '') {
     $paramTypes .= "ssss";
 }
 
-if ($genre !== 'Todos' && $genre !== '') {
+if (!empty($selectedGenres)) {
+    $placeholders = implode(',', array_fill(0, count($selectedGenres), '?'));
     $whereClauses[] = "t.id_trailer IN (
         SELECT tg2.id_trailer 
         FROM trailers_generos tg2 
         JOIN generos g2 ON tg2.id_genero = g2.id_genero 
-        WHERE g2.nombre = ?
+        WHERE g2.nombre IN ($placeholders)
     )";
-    $params[] = $genre;
-    $paramTypes .= "s";
+    foreach ($selectedGenres as $g) {
+        $params[] = $g;
+        $paramTypes .= "s";
+    }
 }
 
 if ($start_date !== '') {
@@ -390,9 +398,9 @@ require_once $rootPath . 'includes/navbar.php';
 
         <div class="filters-container">
             <span class="filter-label">Filtrar por género:</span>
-            <button class="genre-tag <?php echo $genre === 'Todos' ? 'active' : ''; ?>" data-genre="Todos">Todos</button>
+            <button class="genre-tag <?php echo empty($selectedGenres) ? 'active' : ''; ?>" data-genre="Todos">Todos</button>
             <?php foreach ($genres as $g): ?>
-                <button class="genre-tag <?php echo $genre === $g ? 'active' : ''; ?>" data-genre="<?= htmlspecialchars($g) ?>"><?= htmlspecialchars($g) ?></button>
+                <button class="genre-tag <?php echo in_array($g, $selectedGenres) ? 'active' : ''; ?>" data-genre="<?= htmlspecialchars($g) ?>"><?= htmlspecialchars($g) ?></button>
             <?php endforeach; ?>
         </div>
 
@@ -590,11 +598,13 @@ require_once $rootPath . 'includes/navbar.php';
                 urlParams.set('search', searchVal);
             }
 
-            const activeGenreTag = document.querySelector('.genre-tag.active');
-            const genreVal = activeGenreTag ? activeGenreTag.getAttribute('data-genre') : 'Todos';
-            if (genreVal !== 'Todos' && genreVal !== '') {
-                urlParams.set('genre', genreVal);
-            }
+            const activeGenreTags = document.querySelectorAll('.genre-tag.active');
+            activeGenreTags.forEach(tag => {
+                const genreVal = tag.getAttribute('data-genre');
+                if (genreVal !== 'Todos' && genreVal !== '') {
+                    urlParams.append('genres[]', genreVal);
+                }
+            });
 
             const dateStartVal = dateStart.value;
             if (dateStartVal !== '') {
@@ -650,8 +660,21 @@ require_once $rootPath . 'includes/navbar.php';
         // Tags de Género
         genreTags.forEach(tag => {
             tag.addEventListener('click', () => {
-                genreTags.forEach(t => t.classList.remove('active'));
-                tag.classList.add('active');
+                const genreVal = tag.getAttribute('data-genre');
+                if (genreVal === 'Todos') {
+                    genreTags.forEach(t => t.classList.remove('active'));
+                    tag.classList.add('active');
+                } else {
+                    const todosTag = document.querySelector('.genre-tag[data-genre="Todos"]');
+                    if (todosTag) todosTag.classList.remove('active');
+                    
+                    tag.classList.toggle('active');
+                    
+                    const activeTags = document.querySelectorAll('.genre-tag.active');
+                    if (activeTags.length === 0 && todosTag) {
+                        todosTag.classList.add('active');
+                    }
+                }
                 updateFilters();
             });
         });
@@ -677,7 +700,7 @@ require_once $rootPath . 'includes/navbar.php';
                 if (searchSection) {
                     searchSection.scrollIntoView({ behavior: 'auto', block: 'start' });
                 }
-            } else if (urlParams.has('page') || urlParams.has('genre') || urlParams.has('start_date') || urlParams.has('end_date') || urlParams.has('upcoming')) {
+            } else if (urlParams.has('page') || urlParams.has('genre') || urlParams.has('genres[]') || urlParams.has('start_date') || urlParams.has('end_date') || urlParams.has('upcoming')) {
                 const catalogTitle = document.querySelector('.catalog-title-wrapper');
                 if (catalogTitle) {
                     catalogTitle.scrollIntoView({ behavior: 'auto', block: 'start' });
