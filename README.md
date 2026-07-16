@@ -79,10 +79,16 @@ El sistema genera dinámicamente sus tablas y semilla inicial para premiar la re
 * **Gestor de Usuarios**: CRUD completo para que los administradores modifiquen perfiles, actualicen contraseñas, cambien roles o eliminen usuarios.
 * **Importador Automático TMDB**: Buscador que descarga instantáneamente toda la ficha técnica de una película desde TMDB, incluyendo directores y reparto completo, creándolos de forma automática en la base de datos si no existen previamente.
 
+### 7. Sistema de Roles y Permisos
+La plataforma define tres niveles de acceso basados en literales de texto en la base de datos:
+* **`lector` (Lector)**: Rol por defecto. Permite explorar el catálogo, reproducir trailers (con Modo Cine), guardar favoritos, publicar reseñas y consultar estadísticas personales.
+* **`editor` (Editor)**: Permite añadir y modificar trailers, directores y repartos, y utilizar el importador TMDB. **Tiene bloqueada la capacidad de eliminar contenido y el acceso al panel de gestión de usuarios.**
+* **`admin` (Administrador)**: Permisos totales. Acceso a todas las operaciones CRUD (incluyendo eliminación de contenido), gestión de usuarios y cambio de roles del sistema.
+
 ---
 
 ## 🔒 Seguridad e Integridad del Sistema
 1. **Prepared Statements**: Protección estricta contra inyecciones SQL en todas las consultas mysqli dependientes del cliente.
 2. **Control de CSRF**: Uso de tokens CSRF asíncronos (`X-CSRF-Token`) en cabeceras HTTP para operaciones críticas de creación, modificación y eliminación en el panel administrativo.
-3. **Restricción de Autobloqueo**: Salvaguarda en cliente y servidor para evitar que el administrador actual se elimine a sí mismo o se degrade el rol, evitando la pérdida de acceso al sistema.
+3. **Restricción de Autobloqueo**: Salvaguarda en cliente y servidor para evitar que los usuarios administrativos (administradores y editores) puedan degradar su propio rol o eliminarse accidentalmente a sí mismos.
 4. **Claves Ajenas (Cascada)**: Integridad referencial que limpia automáticamente todos los favoritos, reseñas y visualizaciones del usuario cuando su cuenta es dada de baja.
