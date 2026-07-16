@@ -41,6 +41,7 @@ El proyecto se distribuye en módulos limpios y estructurados:
   * [api_badges.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/badges/api_badges.php): Endpoint JSON para el progreso y estado de logros.
 * **`/includes`**:
   * [navbar.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/includes/navbar.php) & [footer.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/includes/footer.php): Componentes comunes del layout del sitio.
+  * [seguridad.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/includes/seguridad.php): Módulo central de seguridad y roles de usuario.
 
 ---
 
@@ -70,7 +71,7 @@ Calcula un puntaje de afinidad en tiempo real al reproducir un trailer para suge
 El sistema genera dinámicamente sus tablas y semilla inicial para premiar la retención del usuario:
 1. **Pionero**: Por registrarse en la plataforma.
 2. **Primer Vistazo**: Al reproducir el primer trailer.
-3. **Maratonista**: Al acumular 30 minutos de trailers visualizados.
+3. **Maratonista**: Al acumular 30 minutos de reproducción de trailers (estimando un promedio de 2.5 minutos reales por reproducción).
 4. **Crítico de Cine**: Al publicar 3 reseñas en la plataforma.
 5. **Coleccionista**: Al guardar 5 trailers en su sección de favoritos.
 6. **Espectador Constante**: Al alcanzar una racha de 3 logins diarios seguidos.
