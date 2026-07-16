@@ -39,6 +39,7 @@ El proyecto se distribuye en módulos limpios y estructurados:
 * **`/badges`**:
   * [gamificacion_helper.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/badges/gamificacion_helper.php): Lógica de asignación de logros, auto-migración de tablas de insignias y control de logins consecutivos.
   * [api_badges.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/badges/api_badges.php): Endpoint JSON para el progreso y estado de logros.
+  * [registrar_evento.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/badges/registrar_evento.php): Endpoint asíncrono para registrar interacciones del frontend que desbloquean insignias.
 * **`/includes`**:
   * [navbar.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/includes/navbar.php) & [footer.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/includes/footer.php): Componentes comunes del layout del sitio.
   * [seguridad.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/includes/seguridad.php): Módulo central de seguridad y roles de usuario.
@@ -68,13 +69,14 @@ Calcula un puntaje de afinidad en tiempo real al reproducir un trailer para suge
 * Restricciones únicas en BD para garantizar que cada usuario pueda dejar solo una valoración por película (con opción de editarla o eliminarla).
 
 ### 5. Gamificación e Insignias (Logros)
-El sistema genera dinámicamente sus tablas y semilla inicial para premiar la retención del usuario:
-1. **Pionero**: Por registrarse en la plataforma.
-2. **Primer Vistazo**: Al reproducir el primer trailer.
-3. **Maratonista**: Al acumular 30 minutos de reproducción de trailers (estimando un promedio de 2.5 minutos reales por reproducción).
-4. **Crítico de Cine**: Al publicar 3 reseñas en la plataforma.
-5. **Coleccionista**: Al guardar 5 trailers en su sección de favoritos.
-6. **Espectador Constante**: Al alcanzar una racha de 3 logins diarios seguidos.
+El sistema genera dinámicamente sus tablas y semilla inicial para premiar la retención del usuario con un catálogo completo de **31 insignias** organizadas en 5 categorías:
+1. **Hitos de Visualización, Trailers y Favoritos**: Insignias por tiempo acumulado (1, 2, 5 horas), conteo de trailers vistos (5, 10, 25) y favoritos (5, 10, 25).
+2. **Especialización de Géneros**: Insignias por ver 5 trailers de categorías específicas (Terror/Suspense, Romance/Drama, Ciencia Ficción/Fantasía, Acción/Aventura, y películas clásicas pre-2000).
+3. **Comunidad e Interacción**: Insignias por activar el Modo Cine, valorar con 1 y 5 estrellas, leer reseñas en 10 películas diferentes, y escribir reseñas de más de 200 caracteres.
+4. **Fidelidad y Tiempo**: Insignias por ver trailers en horario nocturno (00:00 - 05:00), inicios de sesión en fin de semana (sábado y domingo), y rachas de login consecutivas (hasta 7 días).
+5. **Easter Eggs y Hitos Especiales**: Desbloqueos divertidos por buscar fechas exactas del año actual (2026), intentos de acceso no autorizado al panel administrativo, mantener favoritos por más de 30 días, o registrarse en grupo.
+
+* **Notificaciones en Tiempo Real (Toasts)**: El sistema detecta y notifica al instante mediante alertas flotantes en pantalla cuando el usuario consigue desbloquear cualquiera de los logros, tanto en recargas tradicionales de página como en peticiones AJAX interactivas.
 
 ### 6. Panel de Administración y Herramientas TMDB
 * **Gestor de Usuarios**: CRUD completo para que los administradores modifiquen perfiles, actualicen contraseñas, cambien roles o eliminen usuarios.
