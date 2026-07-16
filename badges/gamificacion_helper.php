@@ -133,7 +133,7 @@ function evaluar_requisito($conexion, $id_usuario, $tipo, $valor) {
             return [false, 0, $valor];
 
         case 'minutos_vistos':
-            $sql = "SELECT COALESCE(SUM(t.duracion), 0) as total FROM visualizaciones v JOIN trailers t ON v.id_trailer = t.id_trailer WHERE v.id_usuario = ?";
+            $sql = "SELECT COUNT(*) as total FROM visualizaciones WHERE id_usuario = ?";
             $stmt = mysqli_prepare($conexion, $sql);
             if ($stmt) {
                 mysqli_stmt_bind_param($stmt, "i", $id_usuario);
@@ -141,7 +141,8 @@ function evaluar_requisito($conexion, $id_usuario, $tipo, $valor) {
                 $res = mysqli_stmt_get_result($stmt);
                 $row = mysqli_fetch_assoc($res);
                 mysqli_stmt_close($stmt);
-                $actual = (int)($row['total'] ?? 0);
+                $total_vistas = (int)($row['total'] ?? 0);
+                $actual = (int)round($total_vistas * 2.5);
                 return [$actual >= $valor, $actual, $valor];
             }
             return [false, 0, $valor];
