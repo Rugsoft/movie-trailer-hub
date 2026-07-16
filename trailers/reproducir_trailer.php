@@ -393,14 +393,16 @@ require_once $rootPath . 'includes/navbar.php';
 
             <!-- Sección de Reseñas y Comentarios -->
             <div class="reviews-section">
-                <h3 class="info-cast-title">
-                    <i class="fa-solid fa-comments"></i> Reseñas y Valoraciones (<?= count($resenas) ?>)
+                <h3 class="info-cast-title" style="cursor: pointer;" id="toggleReviewsHeader">
+                    <i class="fa-solid fa-comments"></i> Reseñas y Valoraciones (<?= count($resenas) ?>) <span style="font-size: 13px; color: var(--text-muted); font-weight: normal; margin-left: 10px;">(Clic para desplegar)</span>
                     <?php if ($avgRating > 0): ?>
                         <span class="reviews-avg-rating">
                             <i class="fa-solid fa-star"></i> <?= $avgRating ?> / 5 promedio
                         </span>
                     <?php endif; ?>
                 </h3>
+                
+                <div id="reviewsCollapsibleContent" style="display: none; margin-top: 15px;">
                 
                 <!-- Formulario para escribir/editar reseña (si está logueado) -->
                 <?php if (isset($_SESSION['usuario_id'])): ?>
@@ -505,6 +507,7 @@ require_once $rootPath . 'includes/navbar.php';
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
+                </div> <!-- Closes #reviewsCollapsibleContent -->
             </div>
         </div>
     </div>
@@ -570,6 +573,19 @@ require_once $rootPath . 'includes/navbar.php';
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Lógica para desplegar reseñas asíncronamente
+            const toggleReviewsHeader = document.getElementById('toggleReviewsHeader');
+            const reviewsContent = document.getElementById('reviewsCollapsibleContent');
+            if (toggleReviewsHeader && reviewsContent) {
+                toggleReviewsHeader.addEventListener('click', () => {
+                    const isCollapsed = reviewsContent.style.display === 'none';
+                    reviewsContent.style.display = isCollapsed ? 'block' : 'none';
+                    if (isCollapsed) {
+                        fetch('../badges/registrar_evento.php?action=leer_resenas&id_trailer=<?= $id ?>');
+                    }
+                });
+            }
+
             // Lógica del Modo Cine (Apagar Luces)
             const cinemaBtn = document.getElementById('cinemaModeBtn');
             const backdrop = document.getElementById('cinemaBackdrop');
@@ -579,6 +595,7 @@ require_once $rootPath . 'includes/navbar.php';
                     const isActive = document.body.classList.toggle('cinema-mode-active');
                     if (isActive) {
                         cinemaBtn.innerHTML = '<i class="fa-solid fa-sun"></i> <span>Encender Luces</span>';
+                        fetch('../badges/registrar_evento.php?action=modo_cine');
                     } else {
                         cinemaBtn.innerHTML = '<i class="fa-solid fa-moon"></i> <span>Modo Cine</span>';
                     }

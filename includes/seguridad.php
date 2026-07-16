@@ -27,6 +27,22 @@ function require_role($allowedRoles, $redirectUrl = '../index.php', $errorMessag
     }
 
     if (!in_array($userRole, (array)$allowedRoles, true)) {
+        if (isset($_SESSION['usuario_id'])) {
+            global $conexion;
+            if (!isset($conexion)) {
+                $configPath = __DIR__ . '/../config/conexion.php';
+                if (file_exists($configPath)) {
+                    require_once $configPath;
+                }
+            }
+            if (isset($conexion)) {
+                $id_usuario = (int)$_SESSION['usuario_id'];
+                mysqli_query($conexion, "INSERT INTO usuario_gamificacion_stats (id_usuario, intentos_fallidos_admin) 
+                                         VALUES ($id_usuario, 1) 
+                                         ON DUPLICATE KEY UPDATE intentos_fallidos_admin = 1");
+            }
+        }
+
         if ($isAjax) {
             http_response_code(403);
             echo json_encode(['error' => $errorMessage]);

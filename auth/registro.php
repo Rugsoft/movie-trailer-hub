@@ -49,7 +49,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 mysqli_stmt_bind_param($stmtInsert, "ssssssss", $username, $passwordHash, $nombre, $apellidos, $email, $telefono, $rol, $fecha_alta);
             
             if (mysqli_stmt_execute($stmtInsert)) {
+                $new_id = mysqli_insert_id($conexion);
                 mysqli_stmt_close($stmtInsert);
+                
+                $codigo = trim($_POST["codigo_invitacion"] ?? "");
+                $has_invitation = ($codigo !== "") ? 1 : 0;
+                
+                mysqli_query($conexion, "INSERT INTO usuario_gamificacion_stats (id_usuario, registro_invitacion) 
+                                         VALUES ($new_id, $has_invitation) 
+                                         ON DUPLICATE KEY UPDATE registro_invitacion = $has_invitation");
+
                 $_SESSION["success"] = "¡Registro exitoso! Ya puedes iniciar sesión.";
                 header("Location: login.php");
                 exit;
@@ -95,6 +104,9 @@ require_once $rootPath . 'includes/navbar.php';
 
         <label for="telefono">Teléfono:</label>
         <input type="text" id="telefono" name="telefono" placeholder="Ej: 600123456">
+
+        <label for="codigo_invitacion">Código de Invitación (Opcional):</label>
+        <input type="text" id="codigo_invitacion" name="codigo_invitacion" placeholder="Ej: COMUNIDAD">
 
         <label for="password">Contraseña *</label>
         <input type="password" id="password" name="password" required placeholder="Crea una contraseña segura">

@@ -19,6 +19,16 @@ mysqli_free_result($resGenres);
 
 // 2. Obtener y validar parámetros de filtros y búsqueda desde $_GET
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+if ($search !== '') {
+    if (preg_match('/^2026-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/', $search)) {
+        if (isset($_SESSION['usuario_id'])) {
+            $id_usuario = (int)$_SESSION['usuario_id'];
+            mysqli_query($conexion, "INSERT INTO usuario_gamificacion_stats (id_usuario, busquedas_fecha_actual) 
+                                     VALUES ($id_usuario, 1) 
+                                     ON DUPLICATE KEY UPDATE busquedas_fecha_actual = 1");
+        }
+    }
+}
 $selectedGenres = [];
 if (isset($_GET['genres'])) {
     $selectedGenres = (array)$_GET['genres'];
