@@ -1,10 +1,7 @@
 <?php
 require_once "../config/conexion.php";
-if (!isset($_SESSION['rol']) || ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'editor')) {
-    $_SESSION['error'] = "Acceso denegado. Se requieren permisos de administrador o editor.";
-    header("Location: ../index.php");
-    exit;
-}
+require_once __DIR__ . "/../includes/seguridad.php";
+require_admin_or_editor('../index.php');
 define('BASE_PATH', '../');
 
 $id_director = isset($_POST["id_director"]) ? (int)$_POST["id_director"] : 0;

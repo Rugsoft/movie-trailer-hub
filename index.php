@@ -1,5 +1,6 @@
 <?php
 include "config/conexion.php";
+require_once __DIR__ . "/includes/seguridad.php";
 define('BASE_PATH', '');
 
 // Mensajes de éxito o error redireccionados
@@ -471,12 +472,12 @@ require_once $rootPath . 'includes/navbar.php';
                                     <i class="fa-regular fa-heart"></i>
                                 </a>
                             <?php endif; ?>
-                            <?php if (isset($_SESSION['rol']) && ($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'editor')): ?>
+                            <?php if (has_role(['admin', 'editor'])): ?>
                                 <a class="btn btn-secondary btn-modificar" href="trailers/modificar_trailer.php?id=<?= $trailer['id_trailer'] ?>">
                                     <i class="fa-solid fa-pen-to-square"></i> Editar
                                 </a>
                             <?php endif; ?>
-                            <?php if (isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin'): ?>
+                            <?php if (has_role('admin')): ?>
                                 <a class="btn btn-danger btn-eliminar" href="trailers/eliminar_trailer.php?id=<?= $trailer['id_trailer'] ?>" onclick="return confirm('¿Estás seguro de que deseas eliminar este trailer?');">
                                     <i class="fa-solid fa-trash"></i> Borrar
                                 </a>

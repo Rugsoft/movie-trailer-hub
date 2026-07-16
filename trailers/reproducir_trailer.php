@@ -1,5 +1,6 @@
 <?php
 require_once "../config/conexion.php";
+require_once __DIR__ . "/../includes/seguridad.php";
 define('BASE_PATH', '../');
 
 // Auto-migración: Crear tabla de reseñas si no existe
@@ -44,11 +45,7 @@ if (!$trailer) {
 
 // Procesar el envío de una nueva reseña o actualización/eliminación de una existente
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-    if (!isset($_SESSION['usuario_id'])) {
-        $_SESSION['error'] = "Debes iniciar sesión para publicar o modificar una reseña.";
-        header("Location: reproducir_trailer.php?id=" . $id);
-        exit;
-    }
+    require_login("reproducir_trailer.php?id=" . $id, "Debes iniciar sesión para publicar o modificar una reseña.");
     
     $id_usuario = (int)$_SESSION['usuario_id'];
     

@@ -1,16 +1,13 @@
 <?php
 require_once "../config/conexion.php";
+require_once __DIR__ . "/../includes/seguridad.php";
 define('BASE_PATH', '../');
 
 $successMsg = $_SESSION['success'] ?? null;
 $errorMsg = $_SESSION['error'] ?? null;
 unset($_SESSION['success'], $_SESSION['error']);
 
-if (!isset($_SESSION['usuario_id'])) {
-    $_SESSION['error'] = "Debes iniciar sesión para acceder a tus favoritos.";
-    header("Location: ../auth/login.php");
-    exit;
-}
+require_login('../index.php', "Debes iniciar sesión para acceder a tus favoritos.");
 
 $id_usuario = $_SESSION['usuario_id'];
 
@@ -92,12 +89,12 @@ require_once $rootPath . 'includes/navbar.php';
                                     <i class="fa-solid fa-heart"></i>
                                 </a>
 
-                                <?php if (isset($_SESSION['rol']) && ($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'editor')): ?>
+                                 <?php if (has_role(['admin', 'editor'])): ?>
                                      <a class="btn btn-secondary btn-modificar" href="modificar_trailer.php?id=<?= $trailer['id_trailer'] ?>">
                                          <i class="fa-solid fa-pen-to-square"></i> Editar
                                      </a>
                                  <?php endif; ?>
-                                 <?php if (isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin'): ?>
+                                 <?php if (has_role('admin')): ?>
                                      <a class="btn btn-danger btn-eliminar" href="eliminar_trailer.php?id=<?= $trailer['id_trailer'] ?>" onclick="return confirm('¿Estás seguro de que deseas eliminar este trailer?');">
                                          <i class="fa-solid fa-trash"></i> Borrar
                                      </a>

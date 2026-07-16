@@ -1,15 +1,12 @@
 <?php
 // auth/api_usuarios.php
 require_once "../config/conexion.php";
+require_once __DIR__ . "/../includes/seguridad.php";
 
 header('Content-Type: application/json; charset=utf-8');
 
 // 1. Validar que el usuario esté autenticado y tenga rol de admin
-if (!isset($_SESSION['rol']) || $_SESSION['rol'] !== 'admin') {
-    http_response_code(403);
-    echo json_encode(['error' => 'Acceso denegado. Se requieren permisos de administrador.']);
-    exit;
-}
+require_admin();
 
 // 2. Validar token CSRF para operaciones de modificación/creación/eliminación
 $action = $_GET['action'] ?? '';
@@ -174,11 +171,7 @@ switch ($action) {
         }
 
         // Validación crítica: Un administrador no puede cambiarse su propio rol
-        if ($id_usuario === (int)$_SESSION['usuario_id'] && $rol !== 'admin') {
-            http_response_code(403);
-            echo json_encode(['error' => 'No puedes cambiar tu propio rol de administrador para evitar bloquear tu acceso.']);
-            exit;
-        }
+        prevent_self_action($id_usuario, 'demote', $rol);
 
         // Verificar que el correo electrónico no esté registrado por otro usuario
         $sqlEmail = "SELECT id_usuario FROM usuarios WHERE email = ? AND id_usuario != ? LIMIT 1";
@@ -252,11 +245,7 @@ switch ($action) {
         }
 
         // Validación crítica: Un administrador no puede eliminarse a sí mismo
-        if ($id_usuario === (int)$_SESSION['usuario_id']) {
-            http_response_code(403);
-            echo json_encode(['error' => 'No puedes eliminar tu propia cuenta de administrador.']);
-            exit;
-        }
+        prevent_self_action($id_usuario, 'delete');
 
         $sqlDel = "DELETE FROM usuarios WHERE id_usuario = ?";
         $stmtDel = mysqli_prepare($conexion, $sqlDel);

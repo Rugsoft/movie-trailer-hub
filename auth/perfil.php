@@ -1,12 +1,9 @@
 <?php
 require_once "../config/conexion.php";
+require_once __DIR__ . "/../includes/seguridad.php";
 
 // 1. Validar que el usuario esté autenticado
-if (!isset($_SESSION['usuario_id'])) {
-    $_SESSION['error'] = "Debes iniciar sesión para acceder a tu perfil.";
-    header("Location: login.php");
-    exit;
-}
+require_login('login.php', "Debes iniciar sesión para acceder a tu perfil.");
 
 define('BASE_PATH', '../');
 
