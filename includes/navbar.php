@@ -39,6 +39,9 @@
                                 <a href="<?php echo $rootPath; ?>trailers/listar_trailers.php" class="dropdown-item">
                                     <i class="fa-solid fa-list"></i> Administrar Trailers
                                 </a>
+                                <a href="<?php echo $rootPath; ?>auth/gestion_usuarios.php" class="dropdown-item">
+                                    <i class="fa-solid fa-users"></i> Administrar Usuarios
+                                </a>
                                 <a href="<?php echo $rootPath; ?>trailers/importar_tmdb_auto.php" class="dropdown-item">
                                     <i class="fa-solid fa-cloud-arrow-down"></i> Importador TMDB Auto
                                 </a>
