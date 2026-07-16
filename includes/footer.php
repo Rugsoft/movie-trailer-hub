@@ -1,3 +1,40 @@
+<?php
+if (isset($_SESSION['usuario_id'])) {
+    global $conexion;
+    $is_closed = false;
+    try {
+        if (!isset($conexion) || !($conexion instanceof mysqli) || !@mysqli_ping($conexion)) {
+            $is_closed = true;
+        }
+    } catch (Error $e) {
+        $is_closed = true;
+    }
+
+    if ($is_closed) {
+        if (defined('DB_HOST')) {
+            $conexion = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+            if ($conexion) {
+                mysqli_set_charset($conexion, "utf8mb4");
+                mysqli_query($conexion, "SET time_zone = '+02:00'");
+            }
+        }
+    }
+
+    $is_active = false;
+    try {
+        if (isset($conexion) && $conexion instanceof mysqli && @mysqli_ping($conexion)) {
+            $is_active = true;
+        }
+    } catch (Error $e) {
+        $is_active = false;
+    }
+
+    if ($is_active) {
+        require_once __DIR__ . '/../badges/gamificacion_helper.php';
+        procesar_y_obtener_badges($conexion, $_SESSION['usuario_id']);
+    }
+}
+?>
     <!-- Pie de página (Footer) -->
     <footer class="main-footer">
         <div class="app-container footer-content">
@@ -127,6 +164,14 @@
             }, 4000);
         });
 
+        // Mostrar notificaciones de insignias desbloqueadas en esta carga de página
+        <?php if (isset($_SESSION['nuevos_logros_desbloqueados']) && !empty($_SESSION['nuevos_logros_desbloqueados'])): ?>
+            <?php foreach ($_SESSION['nuevos_logros_desbloqueados'] as $logro): ?>
+                showToast("🏆 ¡Logro desbloqueado: <?= htmlspecialchars($logro['nombre'], ENT_QUOTES) ?>! - <?= htmlspecialchars($logro['descripcion'], ENT_QUOTES) ?>", 'success');
+            <?php endforeach; ?>
+            <?php unset($_SESSION['nuevos_logros_desbloqueados']); ?>
+        <?php endif; ?>
+
         // Manejador Asíncrono Global de Favoritos
         document.addEventListener('click', function(e) {
             const btn = e.target.closest('.btn-toggle-favorito, .btn-toggle-favorito-detail, .favorite-heart-btn');
@@ -184,6 +229,13 @@
                         }
                         
                         showToast(data.message, 'success');
+
+                        // Notificar logros desbloqueados por favoritos en AJAX
+                        if (data.nuevos_logros && data.nuevos_logros.length > 0) {
+                            data.nuevos_logros.forEach(logro => {
+                                showToast(`🏆 ¡Logro desbloqueado: ${logro.nombre}! - ${logro.descripcion}`, 'success');
+                            });
+                        }
                     } else if (data.error) {
                         showToast(data.error, 'error');
                     }

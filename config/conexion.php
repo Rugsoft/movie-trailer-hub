@@ -37,6 +37,13 @@ if ($isLocal) {
 // Conexión a la base de datos MySQL
 $conexion = mysqli_connect($servidor, $usuario, $password, $base_datos);
 
+if ($conexion) {
+    if (!defined('DB_HOST')) define('DB_HOST', $servidor);
+    if (!defined('DB_USER')) define('DB_USER', $usuario);
+    if (!defined('DB_PASS')) define('DB_PASS', $password);
+    if (!defined('DB_NAME')) define('DB_NAME', $base_datos);
+}
+
 // Verificar la conexión
 if (!$conexion) {
     die("Error de conexión: " . mysqli_connect_error());

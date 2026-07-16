@@ -581,7 +581,16 @@ require_once $rootPath . 'includes/navbar.php';
                     const isCollapsed = reviewsContent.style.display === 'none';
                     reviewsContent.style.display = isCollapsed ? 'block' : 'none';
                     if (isCollapsed) {
-                        fetch('../badges/registrar_evento.php?action=leer_resenas&id_trailer=<?= $id ?>');
+                        fetch('../badges/registrar_evento.php?action=leer_resenas&id_trailer=<?= $id ?>')
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.nuevos_logros && data.nuevos_logros.length > 0) {
+                                data.nuevos_logros.forEach(logro => {
+                                    showToast(`🏆 ¡Logro desbloqueado: ${logro.nombre}! - ${logro.descripcion}`, 'success');
+                                });
+                            }
+                        })
+                        .catch(err => console.error(err));
                     }
                 });
             }
@@ -595,7 +604,16 @@ require_once $rootPath . 'includes/navbar.php';
                     const isActive = document.body.classList.toggle('cinema-mode-active');
                     if (isActive) {
                         cinemaBtn.innerHTML = '<i class="fa-solid fa-sun"></i> <span>Encender Luces</span>';
-                        fetch('../badges/registrar_evento.php?action=modo_cine');
+                        fetch('../badges/registrar_evento.php?action=modo_cine')
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.nuevos_logros && data.nuevos_logros.length > 0) {
+                                data.nuevos_logros.forEach(logro => {
+                                    showToast(`🏆 ¡Logro desbloqueado: ${logro.nombre}! - ${logro.descripcion}`, 'success');
+                                });
+                            }
+                        })
+                        .catch(err => console.error(err));
                     } else {
                         cinemaBtn.innerHTML = '<i class="fa-solid fa-moon"></i> <span>Modo Cine</span>';
                     }

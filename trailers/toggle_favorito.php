@@ -52,6 +52,9 @@ if ($isFavorito) {
     $_SESSION['success'] = "Película añadida a tus favoritos.";
 }
 
+require_once __DIR__ . '/../badges/gamificacion_helper.php';
+procesar_y_obtener_badges($conexion, $id_usuario);
+
 mysqli_close($conexion);
 
 // Detectar si la petición es AJAX
@@ -60,10 +63,13 @@ $isAjax = (isset($_GET['ajax']) && $_GET['ajax'] == 1) ||
 
 if ($isAjax) {
     header('Content-Type: application/json');
+    $nuevosLogros = $_SESSION['nuevos_logros_desbloqueados'] ?? [];
+    unset($_SESSION['nuevos_logros_desbloqueados']);
     echo json_encode([
         "success" => true,
         "isFavorito" => !$isFavorito,
-        "message" => !$isFavorito ? "Película añadida a tus favoritos." : "Película eliminada de tus favoritos."
+        "message" => !$isFavorito ? "Película añadida a tus favoritos." : "Película eliminada de tus favoritos.",
+        "nuevos_logros" => $nuevosLogros
     ]);
     exit;
 }

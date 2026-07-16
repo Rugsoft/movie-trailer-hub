@@ -2,6 +2,7 @@
 // badges/registrar_evento.php
 require_once "../config/conexion.php";
 require_once "../includes/seguridad.php";
+require_once "gamificacion_helper.php";
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -23,7 +24,15 @@ if ($action === 'modo_cine') {
         mysqli_stmt_bind_param($stmt, "i", $id_usuario);
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
-        echo json_encode(['success' => true]);
+        
+        procesar_y_obtener_badges($conexion, $id_usuario);
+        $nuevosLogros = $_SESSION['nuevos_logros_desbloqueados'] ?? [];
+        unset($_SESSION['nuevos_logros_desbloqueados']);
+        
+        echo json_encode([
+            'success' => true,
+            'nuevos_logros' => $nuevosLogros
+        ]);
     } else {
         http_response_code(500);
         echo json_encode(['error' => 'Error de base de datos']);
@@ -40,7 +49,15 @@ if ($action === 'leer_resenas') {
             mysqli_stmt_bind_param($stmt, "ii", $id_usuario, $id_trailer);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
-            echo json_encode(['success' => true]);
+            
+            procesar_y_obtener_badges($conexion, $id_usuario);
+            $nuevosLogros = $_SESSION['nuevos_logros_desbloqueados'] ?? [];
+            unset($_SESSION['nuevos_logros_desbloqueados']);
+            
+            echo json_encode([
+                'success' => true,
+                'nuevos_logros' => $nuevosLogros
+            ]);
         } else {
             http_response_code(500);
             echo json_encode(['error' => 'Error de base de datos']);

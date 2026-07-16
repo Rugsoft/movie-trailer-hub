@@ -567,6 +567,13 @@ function procesar_y_obtener_badges($conexion, $id_usuario) {
             
             $desbloqueado = true;
             $fechaDesbloqueo = date('Y-m-d H:i:s');
+
+            if (session_status() === PHP_SESSION_ACTIVE || session_status() === PHP_SESSION_NONE) {
+                $_SESSION['nuevos_logros_desbloqueados'][] = [
+                    'nombre' => $badge['nombre'],
+                    'descripcion' => $badge['descripcion']
+                ];
+            }
         }
         
         $badgesConProgreso[] = [
