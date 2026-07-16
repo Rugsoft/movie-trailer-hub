@@ -93,7 +93,7 @@ switch ($action) {
             exit;
         }
 
-        if ($rol !== 'admin' && $rol !== 'lector') {
+        if ($rol !== 'admin' && $rol !== 'editor' && $rol !== 'lector') {
             http_response_code(400);
             echo json_encode(['error' => 'El rol seleccionado no es válido.']);
             exit;
@@ -167,7 +167,7 @@ switch ($action) {
             exit;
         }
 
-        if ($rol !== 'admin' && $rol !== 'lector') {
+        if ($rol !== 'admin' && $rol !== 'editor' && $rol !== 'lector') {
             http_response_code(400);
             echo json_encode(['error' => 'El rol seleccionado no es válido.']);
             exit;

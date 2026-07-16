@@ -2,10 +2,10 @@
 require_once "../config/conexion.php";
 require_once "../config/tmdb_config.php";
 
-// Restringir el acceso a administradores autenticados
-if (!isset($_SESSION['rol']) || $_SESSION['rol'] !== 'admin') {
+// Restringir el acceso a administradores o editores autenticados
+if (!isset($_SESSION['rol']) || ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'editor')) {
     http_response_code(403);
-    echo json_encode(["error" => "Acceso denegado. Se requieren permisos de administrador."]);
+    echo json_encode(["error" => "Acceso denegado. Se requieren permisos de administrador o editor."]);
     exit;
 }
 

@@ -92,14 +92,16 @@ require_once $rootPath . 'includes/navbar.php';
                                     <i class="fa-solid fa-heart"></i>
                                 </a>
 
-                                <?php if (isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin'): ?>
-                                    <a class="btn btn-secondary btn-modificar" href="modificar_trailer.php?id=<?= $trailer['id_trailer'] ?>">
-                                        <i class="fa-solid fa-pen-to-square"></i> Editar
-                                    </a>
-                                    <a class="btn btn-danger btn-eliminar" href="eliminar_trailer.php?id=<?= $trailer['id_trailer'] ?>" onclick="return confirm('¿Estás seguro de que deseas eliminar este trailer?');">
-                                        <i class="fa-solid fa-trash"></i> Borrar
-                                    </a>
-                                <?php endif; ?>
+                                <?php if (isset($_SESSION['rol']) && ($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'editor')): ?>
+                                     <a class="btn btn-secondary btn-modificar" href="modificar_trailer.php?id=<?= $trailer['id_trailer'] ?>">
+                                         <i class="fa-solid fa-pen-to-square"></i> Editar
+                                     </a>
+                                 <?php endif; ?>
+                                 <?php if (isset($_SESSION['rol']) && $_SESSION['rol'] === 'admin'): ?>
+                                     <a class="btn btn-danger btn-eliminar" href="eliminar_trailer.php?id=<?= $trailer['id_trailer'] ?>" onclick="return confirm('¿Estás seguro de que deseas eliminar este trailer?');">
+                                         <i class="fa-solid fa-trash"></i> Borrar
+                                     </a>
+                                 <?php endif; ?>
                             </div>
                         </div>
                     </article>

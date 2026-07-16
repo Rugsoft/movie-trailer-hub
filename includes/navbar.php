@@ -30,7 +30,7 @@
                         <i class="fa-solid fa-heart"></i> Mis Favoritos
                     </a>
 
-                    <?php if ($_SESSION['rol'] === 'admin'): ?>
+                    <?php if ($_SESSION['rol'] === 'admin' || $_SESSION['rol'] === 'editor'): ?>
                         <div class="dropdown">
                             <button class="btn btn-secondary dropdown-toggle">
                                 <i class="fa-solid fa-gear"></i> Gestión
@@ -39,9 +39,11 @@
                                 <a href="<?php echo $rootPath; ?>trailers/listar_trailers.php" class="dropdown-item">
                                     <i class="fa-solid fa-list"></i> Administrar Trailers
                                 </a>
-                                <a href="<?php echo $rootPath; ?>auth/gestion_usuarios.php" class="dropdown-item">
-                                    <i class="fa-solid fa-users"></i> Administrar Usuarios
-                                </a>
+                                <?php if ($_SESSION['rol'] === 'admin'): ?>
+                                    <a href="<?php echo $rootPath; ?>auth/gestion_usuarios.php" class="dropdown-item">
+                                        <i class="fa-solid fa-users"></i> Administrar Usuarios
+                                    </a>
+                                <?php endif; ?>
                                 <a href="<?php echo $rootPath; ?>trailers/importar_tmdb_auto.php" class="dropdown-item">
                                     <i class="fa-solid fa-cloud-arrow-down"></i> Importador TMDB Auto
                                 </a>

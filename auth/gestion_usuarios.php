@@ -116,6 +116,11 @@ require_once $rootPath . 'includes/navbar.php';
         color: var(--text-primary);
         border: 1px solid rgba(216, 227, 251, 0.15);
     }
+    .role-editor {
+        background: rgba(59, 130, 246, 0.15);
+        color: #60a5fa;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+    }
     
     /* Estilos del modal dinámico */
     .modal-overlay {
@@ -270,6 +275,7 @@ require_once $rootPath . 'includes/navbar.php';
             <select id="userRoleFilter" class="filter-select" onchange="applyFilters()">
                 <option value="todos">Todos los roles</option>
                 <option value="admin">Administrador</option>
+                <option value="editor">Editor</option>
                 <option value="lector">Lector</option>
             </select>
         </div>
@@ -333,8 +339,8 @@ require_once $rootPath . 'includes/navbar.php';
                         </td>
                         <td>
                             <span class="role-badge role-<?= $user['rol'] ?>">
-                                <i class="fa-solid <?= $user['rol'] === 'admin' ? 'fa-shield-halved' : 'fa-user' ?>"></i>
-                                <?= $user['rol'] === 'admin' ? 'Administrador' : 'Lector' ?>
+                                <i class="fa-solid <?= $user['rol'] === 'admin' ? 'fa-shield-halved' : ($user['rol'] === 'editor' ? 'fa-user-pen' : 'fa-user') ?>"></i>
+                                <?= $user['rol'] === 'admin' ? 'Administrador' : ($user['rol'] === 'editor' ? 'Editor' : 'Lector') ?>
                             </span>
                         </td>
                         <td><?= date('d/m/Y', strtotime($user['fecha_alta'])) ?></td>
@@ -385,6 +391,7 @@ require_once $rootPath . 'includes/navbar.php';
                     <label for="formRol">Rol del Sistema *</label>
                     <select id="formRol" name="rol" required>
                         <option value="lector">Lector</option>
+                        <option value="editor">Editor</option>
                         <option value="admin">Administrador</option>
                     </select>
                 </div>

@@ -1,7 +1,7 @@
 <?php
 include "../config/conexion.php";
-if (!isset($_SESSION['rol']) || $_SESSION['rol'] !== 'admin') {
-    $_SESSION['error'] = "Acceso denegado. Se requieren permisos de administrador.";
+if (!isset($_SESSION['rol']) || ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'editor')) {
+    $_SESSION['error'] = "Acceso denegado. Se requieren permisos de administrador o editor.";
     header("Location: ../index.php");
     exit;
 }
@@ -57,7 +57,9 @@ require_once $rootPath . 'includes/navbar.php';
                         <td class="text-center nowrap">
                             <a class="btn-tabla btn-devolver" href="reproducir_trailer.php?id=<?php echo $trailer['id_trailer']; ?>">Ver</a>
                             <a class="btn-tabla btn-modificar" href="modificar_trailer.php?id=<?php echo $trailer['id_trailer']; ?>">Modificar</a>
-                            <a class="btn-tabla btn-eliminar" href="eliminar_trailer.php?id=<?php echo $trailer['id_trailer']; ?>" onclick="return confirm('¿Estás seguro de que deseas eliminar este trailer?');">Eliminar</a>
+                            <?php if ($_SESSION['rol'] === 'admin'): ?>
+                                <a class="btn-tabla btn-eliminar" href="eliminar_trailer.php?id=<?php echo $trailer['id_trailer']; ?>" onclick="return confirm('¿Estás seguro de que deseas eliminar este trailer?');">Eliminar</a>
+                            <?php endif; ?>
                         </td>
                     </tr>
                 <?php } ?>

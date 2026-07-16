@@ -1,7 +1,7 @@
 <?php
 include "../config/conexion.php";
-if (!isset($_SESSION['rol']) || $_SESSION['rol'] !== 'admin') {
-    $_SESSION['error'] = "Acceso denegado. Se requieren permisos de administrador.";
+if (!isset($_SESSION['rol']) || ($_SESSION['rol'] !== 'admin' && $_SESSION['rol'] !== 'editor')) {
+    $_SESSION['error'] = "Acceso denegado. Se requieren permisos de administrador o editor.";
     header("Location: ../index.php");
     exit;
 }
@@ -41,7 +41,9 @@ require_once $rootPath . 'includes/navbar.php';
                         <td class="text-center nowrap">
                             <a class="btn-tabla btn-devolver" href="director_peliculas.php?id=<?php echo $director['id_director']; ?>">Ver Perfil</a>
                             <a class="btn-tabla btn-modificar" href="modificar_director.php?id=<?php echo $director['id_director']; ?>">Modificar</a>
-                            <a class="btn-tabla btn-eliminar" href="eliminar_director.php?id=<?php echo $director['id_director']; ?>" onclick="return confirm('¿Estás seguro de que deseas eliminar este director? Se desvinculará de todos sus trailers.');">Eliminar</a>
+                            <?php if ($_SESSION['rol'] === 'admin'): ?>
+                                <a class="btn-tabla btn-eliminar" href="eliminar_director.php?id=<?php echo $director['id_director']; ?>" onclick="return confirm('¿Estás seguro de que deseas eliminar este director? Se desvinculará de todos sus trailers.');">Eliminar</a>
+                            <?php endif; ?>
                         </td>
                     </tr>
                 <?php } ?>
