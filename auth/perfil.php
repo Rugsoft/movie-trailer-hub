@@ -294,6 +294,9 @@ require_once $rootPath . 'includes/navbar.php';
         <button class="profile-tab-btn" data-tab="stats">
             <i class="fa-solid fa-chart-pie"></i> Mis Estadísticas
         </button>
+        <button class="profile-tab-btn" data-tab="badges">
+            <i class="fa-solid fa-trophy"></i> Mis Logros
+        </button>
     </div>
 
     <!-- Pestaña 1: Configuración de Cuenta e Historial -->
@@ -428,6 +431,17 @@ require_once $rootPath . 'includes/navbar.php';
                 </div>
             <?php endif; ?>
         </section>
+    </div>
+
+    <!-- Pestaña 3: Mis Logros (Badges de Gamificación) -->
+    <div id="tab-badges" class="tab-content">
+        <div class="badges-info-header" style="margin-bottom: 25px; text-align: center;">
+            <h3 class="profile-section-title" style="justify-content: center; margin-bottom: 8px;"><i class="fa-solid fa-medal"></i> Vitrina de Insignias</h3>
+            <p style="color: var(--text-muted); margin: 0;">Desbloquea logros interactuando con la web, viendo trailers y aportando reseñas.</p>
+        </div>
+        <div class="badges-grid" id="badgesContainer">
+            <!-- Renderizado dinámico de badges con JavaScript -->
+        </div>
     </div>
 
     <!-- Pestaña 2: Estadísticas Cinemáticas (Chart.js) -->
@@ -685,6 +699,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (targetTab === 'stats') {
                 setTimeout(initCharts, 50);
             }
+
+            // Si se activa la pestaña de logros, cargar insignias
+            if (targetTab === 'badges') {
+                cargarBadges();
+            }
         });
     });
 
@@ -818,6 +837,72 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         });
+    }
+
+    // --- Lógica del Sistema de Gamificación (Badges) ---
+    const badgesContainer = document.getElementById('badgesContainer');
+    let badgesLoaded = false;
+
+    function cargarBadges() {
+        if (badgesLoaded) return;
+        
+        badgesContainer.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
+                <i class="fa-solid fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 10px;"></i>
+                <p>Cargando tus logros...</p>
+            </div>
+        `;
+        
+        fetch('../badges/api_badges.php')
+            .then(response => {
+                if (!response.ok) throw new Error('Error al cargar badges');
+                return response.json();
+            })
+            .then(data => {
+                badgesContainer.innerHTML = '';
+                if (data.length === 0) {
+                    badgesContainer.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: var(--text-muted);">No hay badges configurados en el sistema.</p>';
+                    return;
+                }
+                
+                data.forEach(badge => {
+                    const card = document.createElement('div');
+                    card.className = `badge-card ${badge.desbloqueado ? 'unlocked' : 'locked'}`;
+                    
+                    const progressPercentage = Math.min(100, Math.max(0, (badge.progreso_actual / badge.requisito_valor) * 100));
+                    
+                    card.innerHTML = `
+                        <div class="badge-icon-circle">
+                            <i class="fa-solid ${badge.icono}"></i>
+                        </div>
+                        <span class="badge-title-label">${badge.nombre}</span>
+                        
+                        <div class="badge-tooltip">
+                            <div class="tooltip-title">${badge.nombre}</div>
+                            <div class="tooltip-status ${badge.desbloqueado ? 'status-unlocked' : 'status-locked'}">
+                                ${badge.desbloqueado ? '<i class="fa-solid fa-circle-check"></i> Conseguido' : '<i class="fa-solid fa-lock"></i> Bloqueado'}
+                            </div>
+                            <div class="tooltip-desc">${badge.descripcion}</div>
+                            <div class="tooltip-progress-section">
+                                <div class="tooltip-progress-label">
+                                    <span>Progreso</span>
+                                    <span>${badge.progreso_actual} / ${badge.requisito_valor}</span>
+                                </div>
+                                <div class="tooltip-progress-bar">
+                                    <div class="tooltip-progress-fill" style="width: ${progressPercentage}%"></div>
+                                </div>
+                            </div>
+                            ${badge.desbloqueado ? `<div class="tooltip-date">Desbloqueado el: ${new Date(badge.fecha_desbloqueo).toLocaleDateString()}</div>` : ''}
+                        </div>
+                    `;
+                    badgesContainer.appendChild(card);
+                });
+                badgesLoaded = true;
+            })
+            .catch(err => {
+                console.error(err);
+                badgesContainer.innerHTML = '<p style="grid-column: 1 / -1; text-align: center; color: var(--secondary);">Error al conectar con la API de Gamificación.</p>';
+            });
     }
 });
 </script>

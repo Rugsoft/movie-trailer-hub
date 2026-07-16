@@ -46,3 +46,13 @@ mysqli_set_charset($conexion, "utf8mb4");
 // Configurar la zona horaria del proyecto (España)
 date_default_timezone_set('Europe/Madrid');
 mysqli_query($conexion, "SET time_zone = '+02:00'");
+
+if (isset($_SESSION['usuario_id'])) {
+    // Optimización: verificar racha solo una vez por día en la sesión
+    if (!isset($_SESSION['racha_verificada_hoy']) || $_SESSION['racha_verificada_hoy'] !== date('Y-m-d')) {
+        require_once __DIR__ . '/../badges/gamificacion_helper.php';
+        actualizar_racha_login($conexion, $_SESSION['usuario_id']);
+        $_SESSION['racha_verificada_hoy'] = date('Y-m-d');
+    }
+}
+
