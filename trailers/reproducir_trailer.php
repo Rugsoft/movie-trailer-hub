@@ -8,7 +8,7 @@ $sqlMigrateResenas = "CREATE TABLE IF NOT EXISTS resenas (
     id_resena INT AUTO_INCREMENT PRIMARY KEY,
     id_trailer INT NOT NULL,
     id_usuario INT NOT NULL,
-    valoracion INT NOT NULL,
+    valoracion DECIMAL(2,1) NOT NULL,
     comentario TEXT DEFAULT NULL,
     fecha_alta DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uq_trailer_usuario (id_trailer, id_usuario),
@@ -16,6 +16,14 @@ $sqlMigrateResenas = "CREATE TABLE IF NOT EXISTS resenas (
     CONSTRAINT fk_resenas_usuarios FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
 mysqli_query($conexion, $sqlMigrateResenas);
+
+// Asegurar que la columna valoracion en resenas sea DECIMAL(2,1)
+$checkColType = mysqli_query($conexion, "SHOW COLUMNS FROM resenas LIKE 'valoracion'");
+if ($checkColType && $rowCol = mysqli_fetch_assoc($checkColType)) {
+    if (stripos($rowCol['Type'], 'int') !== false) {
+        mysqli_query($conexion, "ALTER TABLE resenas MODIFY COLUMN valoracion DECIMAL(2,1) NOT NULL");
+    }
+}
 
 $successMsg = $_SESSION['success'] ?? null;
 $errorMsg = $_SESSION['error'] ?? null;
@@ -50,11 +58,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $id_usuario = (int)$_SESSION['usuario_id'];
     
     if ($_POST['action'] === 'guardar_resena') {
-        $valoracion = isset($_POST['valoracion']) ? (int)$_POST['valoracion'] : 0;
+        $valoracion = isset($_POST['valoracion']) ? (float)$_POST['valoracion'] : 0.0;
         $comentario = isset($_POST['comentario']) ? trim($_POST['comentario']) : '';
         
-        if ($valoracion < 1 || $valoracion > 5) {
-            $_SESSION['error'] = "Por favor selecciona una valoración entre 1 y 5 estrellas.";
+        $commentLength = mb_strlen($comentario);
+        if ($commentLength < 25 || $commentLength > 2000) {
+            $_SESSION['error'] = "La reseña debe tener entre 25 y 2000 caracteres.";
+            header("Location: reproducir_trailer.php?id=" . $id);
+            exit;
+        }
+        
+        if ($valoracion < 0.5 || $valoracion > 5.0) {
+            $_SESSION['error'] = "Por favor selecciona una valoración entre 0.5 y 5 estrellas.";
             header("Location: reproducir_trailer.php?id=" . $id);
             exit;
         }
@@ -64,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     ON DUPLICATE KEY UPDATE valoracion = VALUES(valoracion), comentario = VALUES(comentario), fecha_alta = NOW()";
         $stmtSave = mysqli_prepare($conexion, $sqlSave);
         if ($stmtSave) {
-            mysqli_stmt_bind_param($stmtSave, "iiis", $id, $id_usuario, $valoracion, $comentario);
+            mysqli_stmt_bind_param($stmtSave, "iids", $id, $id_usuario, $valoracion, $comentario);
             if (mysqli_stmt_execute($stmtSave)) {
                 $_SESSION['success'] = "¡Tu reseña ha sido guardada con éxito!";
             } else {
@@ -311,7 +326,7 @@ $avgRating = 0;
 if (!empty($resenas)) {
     $totalRating = 0;
     foreach ($resenas as $r) {
-        $totalRating += (int)$r['valoracion'];
+        $totalRating += (float)$r['valoracion'];
     }
     $avgRating = round($totalRating / count($resenas), 1);
 }
@@ -419,18 +434,26 @@ require_once $rootPath . 'includes/navbar.php';
                                 <span>Tu valoración:</span>
                                 <div class="star-rating">
                                     <?php 
-                                    $userRating = $userReview ? (int)$userReview['valoracion'] : 0;
-                                    for ($i = 5; $i >= 1; $i--): 
+                                    $userRating = $userReview ? (float)$userReview['valoracion'] : 0.0;
+                                    for ($i = 50; $i >= 5; $i -= 5): 
+                                        $val = $i / 10;
+                                        $isHalf = (fmod($val, 1) !== 0.0);
+                                        $class = $isHalf ? 'star-half-left' : 'star-half-right';
                                     ?>
-                                        <input type="radio" id="star-<?= $i ?>" name="valoracion" value="<?= $i ?>" style="display: none;" <?= $userRating === $i ? 'checked' : '' ?> required>
-                                        <label for="star-<?= $i ?>" class="star-label" title="<?= $i ?> estrellas">
+                                        <input type="radio" id="star-<?= $val ?>" name="valoracion" value="<?= $val ?>" style="display: none;" <?= $userRating === $val ? 'checked' : '' ?> required>
+                                        <label for="star-<?= $val ?>" class="<?= $class ?>" title="<?= $val ?> estrellas">
                                             <i class="fa-solid fa-star"></i>
                                         </label>
                                     <?php endfor; ?>
                                 </div>
                             </div>
                             
-                            <textarea name="comentario" rows="3" placeholder="Escribe tu reseña u opinión sobre este trailer (opcional)..." required><?= $userReview ? htmlspecialchars($userReview['comentario']) : '' ?></textarea>
+                            <textarea name="comentario" id="reviewComentario" rows="3" placeholder="Escribe tu reseña u opinión sobre este trailer (mín. 25 y máx. 2000 caracteres)..." minlength="25" maxlength="2000" required><?= $userReview ? htmlspecialchars($userReview['comentario']) : '' ?></textarea>
+                            
+                            <?php 
+                            $currentLength = $userReview ? mb_strlen($userReview['comentario']) : 0;
+                            ?>
+                            <div class="review-char-counter" id="reviewCharCounter"><?= $currentLength ?> / 2000</div>
                             
                             <div class="review-form-actions">
                                 <?php if ($userReview): ?>
@@ -493,9 +516,18 @@ require_once $rootPath . 'includes/navbar.php';
                                     
                                     <!-- Estrellas -->
                                     <div class="review-stars">
-                                        <?php for ($k = 1; $k <= 5; $k++): ?>
-                                            <i class="<?= $k <= (int)$resena['valoracion'] ? 'fa-solid' : 'fa-regular' ?> fa-star"></i>
-                                        <?php endfor; ?>
+                                        <?php 
+                                        $rating = (float)$resena['valoracion'];
+                                        for ($k = 1; $k <= 5; $k++): 
+                                            if ($rating >= $k) {
+                                                echo '<i class="fa-solid fa-star"></i>';
+                                            } elseif ($rating >= $k - 0.5) {
+                                                echo '<i class="fa-solid fa-star-half-stroke"></i>';
+                                            } else {
+                                                echo '<i class="fa-regular fa-star"></i>';
+                                            }
+                                        endfor; 
+                                        ?>
                                     </div>
                                     
                                     <!-- Comentario -->
@@ -632,6 +664,33 @@ require_once $rootPath . 'includes/navbar.php';
                         toggleCinemaMode();
                     }
                 });
+            }
+
+            // Lógica para el contador de caracteres y validación de reseñas
+            const reviewTextarea = document.getElementById('reviewComentario');
+            const reviewCounter = document.getElementById('reviewCharCounter');
+            const submitBtn = document.querySelector('.write-review-card button[type="submit"]:not([name="delete_btn"])');
+
+            if (reviewTextarea && reviewCounter && submitBtn) {
+                const updateCounter = () => {
+                    const length = reviewTextarea.value.length;
+                    reviewCounter.textContent = `${length} / 2000`;
+                    
+                    if (length === 0) {
+                        reviewCounter.className = 'review-char-counter';
+                        submitBtn.disabled = true;
+                    } else if (length < 25 || length > 2000) {
+                        reviewCounter.className = 'review-char-counter invalid';
+                        submitBtn.disabled = true;
+                    } else {
+                        reviewCounter.className = 'review-char-counter valid';
+                        submitBtn.disabled = false;
+                    }
+                };
+
+                reviewTextarea.addEventListener('input', updateCounter);
+                // Ejecución inicial para textos pre-cargados (editar reseña)
+                updateCounter();
             }
         });
     </script>
