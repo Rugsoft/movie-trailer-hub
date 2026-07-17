@@ -12,29 +12,64 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $password = trim($_POST["password"] ?? "");
     
     if ($username !== "" && $password !== "") {
-        $sql = "SELECT * FROM usuarios WHERE username = ? LIMIT 1";
-        $stmt = mysqli_prepare($conexion, $sql);
-        if (!$stmt) {
-            die("Error al preparar la consulta de inicio de sesión: " . mysqli_error($conexion));
-        }
-        mysqli_stmt_bind_param($stmt, "s", $username);
-        mysqli_stmt_execute($stmt);
-        $res = mysqli_stmt_get_result($stmt);
-        $usuario = mysqli_fetch_assoc($res);
-        mysqli_stmt_close($stmt);
-        
-        if ($usuario && password_verify($password, $usuario["password_hash"])) {
-            $_SESSION["usuario_id"] = $usuario["id_usuario"];
-            $_SESSION["username"] = $usuario["username"];
-            $_SESSION["nombre"] = $usuario["nombre"];
-            $_SESSION["rol"] = $usuario["rol"];
-            $_SESSION["avatar_url"] = $usuario["avatar_url"] ?? null;
-            
-            $_SESSION["success"] = "¡Bienvenido de nuevo, " . $usuario["nombre"] . "!";
-            header("Location: ../index.php");
-            exit;
-        } else {
-            $error = "Nombre de usuario o contraseña incorrectos.";
+        try {
+            ensure_login_attempts_table($conexion);
+
+            if (is_login_rate_limited($conexion, $username)) {
+                $error = "No se pudo iniciar sesión. Inténtalo de nuevo más tarde.";
+            } else {
+                $sql = "SELECT id_usuario, username, password_hash, nombre, rol, avatar_url
+                        FROM usuarios
+                        WHERE username = ?
+                        LIMIT 1";
+                $stmt = mysqli_prepare($conexion, $sql);
+
+                if (!$stmt) {
+                    throw new RuntimeException("No se pudo preparar el inicio de sesión: " . mysqli_error($conexion));
+                }
+
+                mysqli_stmt_bind_param($stmt, "s", $username);
+
+                if (!mysqli_stmt_execute($stmt)) {
+                    $databaseError = mysqli_stmt_error($stmt);
+                    mysqli_stmt_close($stmt);
+                    throw new RuntimeException("No se pudo consultar el usuario: " . $databaseError);
+                }
+
+                $res = mysqli_stmt_get_result($stmt);
+                $usuario = $res ? mysqli_fetch_assoc($res) : null;
+                mysqli_stmt_close($stmt);
+
+                $passwordHash = $usuario["password_hash"]
+                    ?? '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.';
+                $passwordIsValid = password_verify($password, $passwordHash);
+
+                if ($usuario && $passwordIsValid) {
+                    clear_login_failures($conexion, $username);
+                    session_regenerate_id(true);
+
+                    $_SESSION["usuario_id"] = $usuario["id_usuario"];
+                    $_SESSION["username"] = $usuario["username"];
+                    $_SESSION["nombre"] = $usuario["nombre"];
+                    $_SESSION["rol"] = $usuario["rol"];
+                    $_SESSION["avatar_url"] = $usuario["avatar_url"] ?? null;
+
+                    $now = time();
+                    $_SESSION['auth_started_at'] = $now;
+                    $_SESSION['last_activity_at'] = $now;
+
+                    $_SESSION["success"] = "¡Bienvenido de nuevo, " . $usuario["nombre"] . "!";
+                    header("Location: ../index.php");
+                    exit;
+                }
+
+                register_login_failure($conexion, $username);
+                $error = "Nombre de usuario o contraseña incorrectos.";
+            }
+        } catch (RuntimeException $exception) {
+            error_log($exception->getMessage());
+            http_response_code(503);
+            $error = "No se pudo procesar el inicio de sesión. Inténtalo de nuevo más tarde.";
         }
     } else {
         $error = "Por favor, completa todos los campos.";

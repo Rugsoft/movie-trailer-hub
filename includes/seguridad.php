@@ -1,8 +1,197 @@
 <?php
 // includes/seguridad.php
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+require_once __DIR__ . '/../config/sesion.php';
+
+const SESSION_IDLE_TIMEOUT = 1800;
+const SESSION_ABSOLUTE_TIMEOUT = 28800;
+const LOGIN_MAX_FAILED_ATTEMPTS = 5;
+const LOGIN_ATTEMPT_WINDOW = 900;
+const LOGIN_BLOCK_DURATION = 900;
+
+/**
+ * Cierra la autenticación conservando una sesión anónima para el mensaje.
+ */
+function expire_authenticated_session(string $message): void {
+    $_SESSION = [];
+    session_regenerate_id(true);
+    $_SESSION['error'] = $message;
+}
+
+/**
+ * Limita la sesión autenticada por inactividad y por duración absoluta.
+ */
+function enforce_session_lifetime(): void {
+    if (!isset($_SESSION['usuario_id'])) {
+        return;
+    }
+
+    $now = time();
+
+    if (!isset($_SESSION['auth_started_at'], $_SESSION['last_activity_at'])) {
+        $_SESSION['auth_started_at'] = $now;
+        $_SESSION['last_activity_at'] = $now;
+        return;
+    }
+
+    $startedAt = (int)$_SESSION['auth_started_at'];
+    $lastActivityAt = (int)$_SESSION['last_activity_at'];
+
+    if (($now - $startedAt) >= SESSION_ABSOLUTE_TIMEOUT) {
+        expire_authenticated_session('Tu sesión ha alcanzado su duración máxima. Inicia sesión de nuevo.');
+        return;
+    }
+
+    if (($now - $lastActivityAt) >= SESSION_IDLE_TIMEOUT) {
+        expire_authenticated_session('Tu sesión ha caducado por inactividad. Inicia sesión de nuevo.');
+        return;
+    }
+
+    $_SESSION['last_activity_at'] = $now;
+}
+
+enforce_session_lifetime();
+
+/**
+ * Genera una clave no reversible para limitar intentos por usuario e IP.
+ */
+function login_attempt_key(string $username): string {
+    $normalizedUsername = strtolower(trim($username));
+    $remoteAddress = (string)($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+
+    return hash('sha256', $normalizedUsername . "\0" . $remoteAddress);
+}
+
+/**
+ * Crea la tabla del limitador cuando todavía no existe.
+ */
+function ensure_login_attempts_table(mysqli $conexion): void {
+    $sql = "CREATE TABLE IF NOT EXISTS intentos_login (
+        clave_intento CHAR(64) PRIMARY KEY,
+        intentos_fallidos TINYINT UNSIGNED NOT NULL DEFAULT 0,
+        inicio_ventana BIGINT UNSIGNED NOT NULL,
+        bloqueado_hasta BIGINT UNSIGNED DEFAULT NULL,
+        actualizado_en BIGINT UNSIGNED NOT NULL,
+        INDEX idx_intentos_login_actualizado (actualizado_en)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
+
+    if (!mysqli_query($conexion, $sql)) {
+        throw new RuntimeException('No se pudo inicializar el limitador de acceso: ' . mysqli_error($conexion));
+    }
+}
+
+/**
+ * Indica si la combinación de usuario e IP sigue bloqueada.
+ */
+function is_login_rate_limited(mysqli $conexion, string $username): bool {
+    $attemptKey = login_attempt_key($username);
+    $sql = 'SELECT bloqueado_hasta FROM intentos_login WHERE clave_intento = ? LIMIT 1';
+    $stmt = mysqli_prepare($conexion, $sql);
+
+    if (!$stmt) {
+        throw new RuntimeException('No se pudo consultar el limitador de acceso: ' . mysqli_error($conexion));
+    }
+
+    mysqli_stmt_bind_param($stmt, 's', $attemptKey);
+
+    if (!mysqli_stmt_execute($stmt)) {
+        $error = mysqli_stmt_error($stmt);
+        mysqli_stmt_close($stmt);
+        throw new RuntimeException('No se pudo consultar el limitador de acceso: ' . $error);
+    }
+
+    $result = mysqli_stmt_get_result($stmt);
+    $attempt = $result ? mysqli_fetch_assoc($result) : null;
+    mysqli_stmt_close($stmt);
+
+    return isset($attempt['bloqueado_hasta'])
+        && (int)$attempt['bloqueado_hasta'] > time();
+}
+
+/**
+ * Registra un fallo y activa el bloqueo al alcanzar el límite.
+ */
+function register_login_failure(mysqli $conexion, string $username): void {
+    $attemptKey = login_attempt_key($username);
+    $now = time();
+    $windowLimit = $now - LOGIN_ATTEMPT_WINDOW;
+    $blockedUntil = $now + LOGIN_BLOCK_DURATION;
+
+    $sql = 'INSERT INTO intentos_login (
+                clave_intento,
+                intentos_fallidos,
+                inicio_ventana,
+                bloqueado_hasta,
+                actualizado_en
+            ) VALUES (?, 1, ?, NULL, ?)
+            ON DUPLICATE KEY UPDATE
+                bloqueado_hasta = CASE
+                    WHEN inicio_ventana <= ? THEN NULL
+                    WHEN intentos_fallidos + 1 >= ? THEN ?
+                    ELSE bloqueado_hasta
+                END,
+                intentos_fallidos = CASE
+                    WHEN inicio_ventana <= ? THEN 1
+                    ELSE LEAST(intentos_fallidos + 1, 255)
+                END,
+                inicio_ventana = CASE
+                    WHEN inicio_ventana <= ? THEN ?
+                    ELSE inicio_ventana
+                END,
+                actualizado_en = ?';
+
+    $stmt = mysqli_prepare($conexion, $sql);
+
+    if (!$stmt) {
+        throw new RuntimeException('No se pudo registrar el intento de acceso: ' . mysqli_error($conexion));
+    }
+
+    $maxFailedAttempts = LOGIN_MAX_FAILED_ATTEMPTS;
+
+    mysqli_stmt_bind_param(
+        $stmt,
+        'siiiiiiiii',
+        $attemptKey,
+        $now,
+        $now,
+        $windowLimit,
+        $maxFailedAttempts,
+        $blockedUntil,
+        $windowLimit,
+        $windowLimit,
+        $now,
+        $now
+    );
+
+    if (!mysqli_stmt_execute($stmt)) {
+        $error = mysqli_stmt_error($stmt);
+        mysqli_stmt_close($stmt);
+        throw new RuntimeException('No se pudo registrar el intento de acceso: ' . $error);
+    }
+
+    mysqli_stmt_close($stmt);
+}
+
+/**
+ * Elimina los fallos acumulados después de una autenticación correcta.
+ */
+function clear_login_failures(mysqli $conexion, string $username): void {
+    $attemptKey = login_attempt_key($username);
+    $stmt = mysqli_prepare($conexion, 'DELETE FROM intentos_login WHERE clave_intento = ?');
+
+    if (!$stmt) {
+        throw new RuntimeException('No se pudo limpiar el limitador de acceso: ' . mysqli_error($conexion));
+    }
+
+    mysqli_stmt_bind_param($stmt, 's', $attemptKey);
+
+    if (!mysqli_stmt_execute($stmt)) {
+        $error = mysqli_stmt_error($stmt);
+        mysqli_stmt_close($stmt);
+        throw new RuntimeException('No se pudo limpiar el limitador de acceso: ' . $error);
+    }
+
+    mysqli_stmt_close($stmt);
 }
 
 /**
@@ -119,7 +308,7 @@ function require_role($allowedRoles, $redirectUrl = '../index.php', $errorMessag
             echo json_encode(['error' => $errorMessage]);
             exit;
         } else {
-            $_SESSION['error'] = $errorMessage;
+            $_SESSION['error'] ??= $errorMessage;
             header("Location: " . $redirectUrl);
             exit;
         }

@@ -6,8 +6,7 @@ require_post();
 require_csrf();
 
 $_SESSION = [];
-session_destroy();
-session_start();
+session_regenerate_id(true);
 $_SESSION["success"] = "Sesión cerrada correctamente.";
 header("Location: ../index.php");
 exit;

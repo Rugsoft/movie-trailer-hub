@@ -659,6 +659,22 @@ CREATE TABLE `usuarios` (
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `intentos_login`
+--
+
+CREATE TABLE IF NOT EXISTS `intentos_login` (
+  `clave_intento` char(64) NOT NULL,
+  `intentos_fallidos` tinyint unsigned NOT NULL DEFAULT 0,
+  `inicio_ventana` bigint unsigned NOT NULL,
+  `bloqueado_hasta` bigint unsigned DEFAULT NULL,
+  `actualizado_en` bigint unsigned NOT NULL,
+  PRIMARY KEY (`clave_intento`),
+  KEY `idx_intentos_login_actualizado` (`actualizado_en`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `visualizaciones`
 --
 

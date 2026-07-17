@@ -79,7 +79,7 @@
                         Hola, <?= htmlspecialchars($_SESSION['username']) ?>
                     </a>
 
-                    <form action="<?php echo $rootPath; ?>auth/logout.php" method="POST" style="display: inline;">
+                    <form action="<?php echo $rootPath; ?>auth/logout.php" method="POST" class="navbar-action-form">
                         <?= csrf_field() ?>
                         <button type="submit" class="btn btn-secondary">
                             <i class="fa-solid fa-right-from-bracket"></i> Salir
