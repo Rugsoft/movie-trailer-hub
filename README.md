@@ -52,6 +52,7 @@ El proyecto se distribuye en módulos limpios y estructurados:
 * Paginación interactiva de **15 trailers por página** en el catálogo principal.
 * Filtrado dinámico client-side y server-side combinando texto (título, sinopsis, directores, actores), géneros y rangos de fechas de estreno.
 * Carrusel interactivo en el banner principal con los próximos estrenos en taquilla.
+* **Doble Puntuación Simultánea:** Visualización unificada del rating importado de TMDB (escala 0-10) y la valoración de la comunidad (escala 0.5-5.0) en posters, grids, tablas de administración y perfiles.
 
 ### 2. Reproductor y Modo Cine
 * Conversor de URLs de YouTube y Vimeo a formato seguro incrustado (`/embed/`) con auto-reproducción.
@@ -64,7 +65,8 @@ Calcula un puntaje de afinidad en tiempo real al reproducir un trailer para suge
 * **Géneros en Común**: +1 punto por género.
 
 ### 4. Sistema de Reseñas y Valoraciones
-* Selector dinámico e interactivo de **1 a 5 estrellas** con comentarios de texto.
+* Selector dinámico e interactivo con pasos de **0.5 estrellas (medias estrellas)** de 0.5 a 5.0.
+* **Contador de Caracteres Reactivo:** Cuadro de texto para comentarios con contador visual (`X / 2000`), imponiendo límites mínimos (25 caracteres) y máximos (2000 caracteres) tanto en cliente como en servidor.
 * Promedio dinámico de calificación de la película actualizado de forma instantánea.
 * Restricciones únicas en BD para garantizar que cada usuario pueda dejar solo una valoración por película (con opción de editarla o eliminarla).
 
