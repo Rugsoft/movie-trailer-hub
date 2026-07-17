@@ -439,119 +439,136 @@ $rootPath = "../";
 require_once $rootPath . 'includes/navbar.php';
 ?>
 
-    <main class="app-container">
+    <main class="app-container" style="max-width: 1450px; width: 95%;">
         <div class="reproducer-header">
             <h1>Reproductor de Trailers</h1>
             <p>Disfruta del trailer oficial de la película seleccionada.</p>
         </div>
 
-    <div class="player-wrapper">
-        <div class="player-toolbar">
-            <button type="button" id="cinemaModeBtn" class="btn btn-secondary btn-cinema-mode">
-                <i class="fa-solid fa-moon"></i> <span>Modo Cine</span>
-            </button>
-        </div>
-        <div class="video-container">
-            <iframe src="<?php echo htmlspecialchars($embedUrl); ?>" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-        </div>
-
-        <div class="info-container">
-            <h2><?php echo htmlspecialchars($trailer['titulo']); ?></h2>
-            <div class="info-meta">
-                <span>Director: <strong>
-                    <?php if (isset($trailer['id_director'])): ?>
-                        <a href="director_peliculas.php?id=<?= $trailer['id_director'] ?>" class="director-link">
-                            <?= htmlspecialchars($trailer['director_nombre'] . ' ' . $trailer['director_apellidos']); ?>
-                        </a>
-                    <?php else: ?>
-                        No especificado
-                    <?php endif; ?>
-                </strong></span>
-                <span>Fecha de Estreno: <strong><?php echo date('d/m/Y', strtotime($trailer['release_date'])); ?></strong></span>
-                <span>Género: <strong><?php echo htmlspecialchars($trailer['genero']); ?></strong></span>
-                <span>Duración: <strong><?php echo htmlspecialchars((string)$trailer['duracion']); ?> min</strong></span>
-                <span>Valoración TMDB: <strong>⭐ <?php echo htmlspecialchars((string)$trailer['valoracion']); ?>/10</strong></span>
-                <span id="communityRatingMeta" style="<?= (isset($trailer['promedio_resenas']) && $trailer['promedio_resenas'] > 0) ? '' : 'display: none;' ?>">
-                    Valoración Comunidad: <strong><i class="fa-solid fa-comments"></i> <span id="communityRatingValue"><?= htmlspecialchars((string)$trailer['promedio_resenas']) ?></span>/5</strong>
-                </span>
-            </div>
-            
-            <?php if (isset($_SESSION['usuario_id'])): ?>
-                <div class="text-center mb-24">
-                    <?php if ($isTrailerFavorito): ?>
-                        <a href="toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" class="btn btn-secondary btn-toggle-favorito-detail btn-active-favorito-reproductor" data-id="<?= $trailer['id_trailer'] ?>">
-                            <i class="fa-solid fa-heart"></i> Quitar de Favoritos
-                        </a>
-                    <?php else: ?>
-                        <a href="toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" class="btn btn-secondary btn-toggle-favorito-detail btn-inline-flex" data-id="<?= $trailer['id_trailer'] ?>">
-                            <i class="fa-regular fa-heart"></i> Añadir a Favoritos
-                        </a>
-                    <?php endif; ?>
+    <div class="cinema-player-layout" <?= !isset($_SESSION['usuario_id']) ? 'style="grid-template-columns: 1fr;"' : '' ?>>
+        <!-- Columna Izquierda: Reproductor -->
+        <div class="cinema-player-column">
+            <div class="player-wrapper" style="margin-bottom: 0; padding: 0; background: transparent !important; border: none; box-shadow: none; max-width: 100%;">
+                <div class="player-toolbar">
+                    <button type="button" id="cinemaModeBtn" class="btn btn-secondary btn-cinema-mode">
+                        <i class="fa-solid fa-moon"></i> <span>Modo Cine</span>
+                    </button>
                 </div>
-            <?php endif; ?>
-
-            <div class="info-synopsis">
-                <p><?php echo htmlspecialchars($trailer['sinopsis'] ?? 'Sin sinopsis o descripción disponible.'); ?></p>
+                <div class="video-container" style="margin-bottom: 0;">
+                    <iframe src="<?php echo htmlspecialchars($embedUrl); ?>" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
             </div>
+        </div>
 
-            <?php if (!empty($reparto)): ?>
-                <div class="info-cast">
-                    <h3 class="info-cast-title">Reparto / Elenco</h3>
-                    <div class="cast-grid">
-                        <?php foreach ($reparto as $actor): ?>
-                            <a href="actor_peliculas.php?id=<?php echo $actor['id_reparto']; ?>" class="actor-card">
-                                <img src="<?php echo htmlspecialchars($actor['foto_url'] ?? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200'); ?>" alt="<?php echo htmlspecialchars($actor['nombre']); ?>">
-                                <div class="actor-card-info">
-                                    <span class="actor-card-name"><?php echo htmlspecialchars($actor['nombre'] . ' ' . $actor['apellidos']); ?></span>
-                                    <span class="actor-card-role"><?php echo htmlspecialchars($actor['personaje'] !== '' ? $actor['personaje'] : 'N/A'); ?></span>
-                                </div>
-                            </a>
-                        <?php endforeach; ?>
+        <!-- Columna Derecha: Bitácora Personal -->
+        <?php if (isset($_SESSION['usuario_id'])): ?>
+            <div class="cinema-bitacora-column">
+                <!-- Tarjeta: Mi Lista -->
+                <div class="bitacora-card">
+                    <h3 class="bitacora-title">Mi Lista</h3>
+                    <div class="list-status-tiles">
+                        <button type="button" class="tile-btn btn-inline-list-status <?= $myListStatus === null ? 'active' : '' ?>" data-status="none">
+                            <i class="fa-solid fa-circle-plus"></i>
+                            <span class="status-label"><?= $myListStatus === null ? 'No en lista' : 'En la lista' ?></span>
+                        </button>
+                        <button type="button" class="tile-btn btn-inline-list-status <?= $myListStatus === 'por_ver' ? 'active' : '' ?>" data-status="por_ver">
+                            <i class="fa-solid fa-bookmark"></i>
+                            <span>Por Ver</span>
+                        </button>
+                        <button type="button" class="tile-btn btn-inline-list-status <?= $myListStatus === 'vista' ? 'active' : '' ?>" data-status="vista">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>Vista</span>
+                        </button>
                     </div>
                 </div>
-            <?php endif; ?>
 
-            <!-- Bitácora Personal (Listas y Notas Privadas) -->
-            <?php if (isset($_SESSION['usuario_id'])): ?>
-                <div class="write-review-card" style="background: var(--bg-surface-elevated); padding: 20px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 30px;">
-                    <h3 class="info-cast-title" style="margin-top: 0; margin-bottom: 15px;"><i class="fa-solid fa-book-bookmark" style="color: var(--primary);"></i> Mi Bitácora Personal</h3>
+                <!-- Tarjeta: Nota Privada -->
+                <div class="bitacora-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 class="bitacora-title">Nota Privada</h3>
+                        <i class="fa-solid fa-lock" style="color: var(--text-muted); opacity: 0.6; font-size: 14px;"></i>
+                    </div>
+                    <textarea id="privateNoteTextarea" class="private-note-textarea" placeholder="Escribe tu análisis privado sobre el tráiler o la película aquí..."><?= htmlspecialchars($myPrivateComment) ?></textarea>
                     
-                    <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 15px; flex-wrap: wrap;">
-                        <span style="font-size: 13px; color: var(--text-muted);">Estado en mis listas:</span>
-                        <div style="display: flex; gap: 10px;">
-                            <button type="button" class="btn btn-secondary btn-inline-list-status <?= $myListStatus === null ? 'btn-active-status' : '' ?>" data-status="none" style="padding: 6px 12px; font-size: 12px; cursor: pointer; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: transparent; color: var(--text-primary);">
-                                No en mis listas
-                            </button>
-                            <button type="button" class="btn btn-secondary btn-inline-list-status <?= $myListStatus === 'por_ver' ? 'btn-active-status' : '' ?>" data-status="por_ver" style="padding: 6px 12px; font-size: 12px; cursor: pointer; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: transparent; color: var(--text-primary);">
-                                <i class="fa-regular fa-clock"></i> Por Ver
-                            </button>
-                            <button type="button" class="btn btn-secondary btn-inline-list-status <?= $myListStatus === 'vista' ? 'btn-active-status' : '' ?>" data-status="vista" style="padding: 6px 12px; font-size: 12px; cursor: pointer; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: transparent; color: var(--text-primary);">
-                                <i class="fa-solid fa-circle-check"></i> Vista
-                            </button>
-                        </div>
-                    </div>
+                    <button type="button" id="btnSavePrivateNote" class="btn-save-note-full">
+                        <i class="fa-solid fa-save"></i> Guardar Nota
+                    </button>
+                </div>
 
-                    <div>
-                        <label for="privateNoteTextarea" style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-muted);">Mi Comentario Privado (Solo tú puedes verlo):</label>
-                        <textarea id="privateNoteTextarea" rows="3" placeholder="Escribe aquí tu opinión, análisis o notas privadas sobre esta película..." style="width: 100%; padding: 12px; background: var(--bg-base); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 13px; resize: vertical; margin-bottom: 12px;"><?= htmlspecialchars($myPrivateComment) ?></textarea>
-                        
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                            <button type="button" id="btnSavePrivateNote" class="btn btn-primary" style="padding: 8px 16px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; background: var(--primary); color: #000; border-radius: var(--radius-sm);">
-                                <i class="fa-solid fa-save"></i> Guardar Nota Privada
-                            </button>
-                            <button type="button" id="btnTogglePrivateHistory" class="btn btn-secondary" style="padding: 8px 16px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border-color); background: transparent; color: var(--text-primary); border-radius: var(--radius-sm);">
-                                <i class="fa-solid fa-history"></i> Historial de Cambios
-                            </button>
-                        </div>
+                <!-- Acordeón: Historial de Cambios -->
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div id="btnTogglePrivateHistory" class="history-accordion-bar">
+                        <span>
+                            <i class="fa-solid fa-history"></i> Historial de Cambios
+                        </span>
+                        <i class="fa-solid fa-chevron-down toggle-arrow"></i>
                     </div>
-
+                    
                     <!-- Historial colapsable -->
-                    <div id="privateNoteHistoryContainer" style="display: none; margin-top: 15px; border-top: 1px solid rgba(216, 195, 173, 0.1); padding-top: 15px;">
-                        <h5 style="margin: 0 0 8px 0; font-size: 12px; color: var(--text-muted);"><i class="fa-solid fa-history"></i> Versiones anteriores:</h5>
+                    <div id="privateNoteHistoryContainer" style="display: none; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 15px; background: rgba(8, 20, 37, 0.2);">
                         <div id="privateNoteHistoryList" style="display: flex; flex-direction: column; gap: 8px;"></div>
                     </div>
                 </div>
-            <?php endif; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- Info Container below layout -->
+    <div class="info-container" style="width: 100%;">
+        <h2><?php echo htmlspecialchars($trailer['titulo']); ?></h2>
+        <div class="info-meta">
+            <span>Director: <strong>
+                <?php if (isset($trailer['id_director'])): ?>
+                    <a href="director_peliculas.php?id=<?= $trailer['id_director'] ?>" class="director-link">
+                        <?= htmlspecialchars($trailer['director_nombre'] . ' ' . $trailer['director_apellidos']); ?>
+                    </a>
+                <?php else: ?>
+                    No especificado
+                <?php endif; ?>
+            </strong></span>
+            <span>Fecha de Estreno: <strong><?php echo date('d/m/Y', strtotime($trailer['release_date'])); ?></strong></span>
+            <span>Género: <strong><?php echo htmlspecialchars($trailer['genero']); ?></strong></span>
+            <span>Duración: <strong><?php echo htmlspecialchars((string)$trailer['duracion']); ?> min</strong></span>
+            <span>Valoración TMDB: <strong>⭐ <?php echo htmlspecialchars((string)$trailer['valoracion']); ?>/10</strong></span>
+            <span id="communityRatingMeta" style="<?= (isset($trailer['promedio_resenas']) && $trailer['promedio_resenas'] > 0) ? '' : 'display: none;' ?>">
+                Valoración Comunidad: <strong><i class="fa-solid fa-comments"></i> <span id="communityRatingValue"><?= htmlspecialchars((string)$trailer['promedio_resenas']) ?></span>/5</strong>
+            </span>
+        </div>
+        
+        <?php if (isset($_SESSION['usuario_id'])): ?>
+            <div class="text-center mb-24" style="margin-top: 15px; margin-bottom: 20px;">
+                <?php if ($isTrailerFavorito): ?>
+                    <a href="toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" class="btn btn-secondary btn-toggle-favorito-detail btn-active-favorito-reproductor" data-id="<?= $trailer['id_trailer'] ?>">
+                        <i class="fa-solid fa-heart"></i> Quitar de Favoritos
+                    </a>
+                <?php else: ?>
+                    <a href="toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" class="btn btn-secondary btn-toggle-favorito-detail btn-inline-flex" data-id="<?= $trailer['id_trailer'] ?>">
+                        <i class="fa-regular fa-heart"></i> Añadir a Favoritos
+                    </a>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+
+        <div class="info-synopsis">
+            <p><?php echo htmlspecialchars($trailer['sinopsis'] ?? 'Sin sinopsis o descripción disponible.'); ?></p>
+        </div>
+
+        <?php if (!empty($reparto)): ?>
+            <div class="info-cast" style="margin-bottom: 30px;">
+                <h3 class="info-cast-title">Reparto / Elenco</h3>
+                <div class="cast-grid">
+                    <?php foreach ($reparto as $actor): ?>
+                        <a href="actor_peliculas.php?id=<?php echo $actor['id_reparto']; ?>" class="actor-card">
+                            <img src="<?php echo htmlspecialchars($actor['foto_url'] ?? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200'); ?>" alt="<?php echo htmlspecialchars($actor['nombre']); ?>">
+                            <div class="actor-card-info">
+                                <span class="actor-card-name"><?php echo htmlspecialchars($actor['nombre'] . ' ' . $actor['apellidos']); ?></span>
+                                <span class="actor-card-role"><?php echo htmlspecialchars($actor['personaje'] !== '' ? $actor['personaje'] : 'N/A'); ?></span>
+                            </div>
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        <?php endif; ?>
 
             <!-- Sección de Reseñas y Comentarios -->
             <div class="reviews-section">
@@ -696,7 +713,6 @@ require_once $rootPath . 'includes/navbar.php';
                 </div> <!-- Closes #reviewsCollapsibleContent -->
             </div>
         </div>
-    </div>
 
     <!-- Sección de Recomendaciones -->
     <?php if (!empty($recommendations)): ?>
@@ -912,8 +928,19 @@ require_once $rootPath . 'includes/navbar.php';
                 btn.addEventListener('click', () => {
                     const status = btn.getAttribute('data-status');
                     let action = 'add_to_list';
+                    let targetStatus = status;
+
                     if (status === 'none') {
-                        action = 'remove_from_list';
+                        // El primer botón actúa como toggle:
+                        // Si está activo (el elemento NO está en la lista), al hacer clic lo AÑADE como 'por_ver'
+                        if (btn.classList.contains('active')) {
+                            action = 'add_to_list';
+                            targetStatus = 'por_ver';
+                        } else {
+                            // Si NO está activo (el elemento ya está en alguna lista), al hacer clic lo QUITA de la lista
+                            action = 'remove_from_list';
+                            targetStatus = 'none';
+                        }
                     }
 
                     fetch('../auth/api_listas.php', {
@@ -925,16 +952,34 @@ require_once $rootPath . 'includes/navbar.php';
                         body: JSON.stringify({
                             action: action,
                             id_trailer: currentTrailerId,
-                            estado: status
+                            estado: targetStatus
                         })
                     })
                     .then(res => res.json())
                     .then(data => {
                         if (data.success) {
                             showToast('¡Lista actualizada!', 'success');
-                            // Actualizar clase activa visual
-                            listStatusButtons.forEach(b => b.classList.remove('btn-active-status'));
-                            btn.classList.add('btn-active-status');
+                            
+                            // Actualizar clases activas de los botones de forma inteligente
+                            listStatusButtons.forEach(b => b.classList.remove('active'));
+                            
+                            const firstBtn = document.querySelector('.btn-inline-list-status[data-status="none"]');
+                            const firstBtnLabel = firstBtn ? firstBtn.querySelector('span') : null;
+                            const porVerBtn = document.querySelector('.btn-inline-list-status[data-status="por_ver"]');
+                            const vistaBtn = document.querySelector('.btn-inline-list-status[data-status="vista"]');
+
+                            if (action === 'remove_from_list') {
+                                if (firstBtn) firstBtn.classList.add('active');
+                                if (firstBtnLabel) firstBtnLabel.textContent = 'No en lista';
+                            } else {
+                                // Se añadió a la lista
+                                if (firstBtnLabel) firstBtnLabel.textContent = 'En la lista';
+                                if (targetStatus === 'por_ver' && porVerBtn) {
+                                    porVerBtn.classList.add('active');
+                                } else if (targetStatus === 'vista' && vistaBtn) {
+                                    vistaBtn.classList.add('active');
+                                }
+                            }
                         } else {
                             showToast(data.error, 'error');
                         }
@@ -971,6 +1016,7 @@ require_once $rootPath . 'includes/navbar.php';
                             showToast('¡Nota privada guardada!', 'success');
                             // Ocultar historial para forzar recarga de nuevas versiones
                             document.getElementById('privateNoteHistoryContainer').style.display = 'none';
+                            if (btnTogglePrivateHistory) btnTogglePrivateHistory.classList.remove('active');
                         } else {
                             showToast(data.error, 'error');
                         }
@@ -1031,6 +1077,7 @@ require_once $rootPath . 'includes/navbar.php';
                                     });
                                 }
                                 privateNoteHistoryContainer.style.display = 'block';
+                                btnTogglePrivateHistory.classList.add('active');
                             } else {
                                 showToast(data.error, 'error');
                             }
@@ -1041,6 +1088,7 @@ require_once $rootPath . 'includes/navbar.php';
                         });
                     } else {
                         privateNoteHistoryContainer.style.display = 'none';
+                        btnTogglePrivateHistory.classList.remove('active');
                     }
                 });
             }

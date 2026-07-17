@@ -307,11 +307,15 @@ if ($stmtSDirector) {
 
 // Consultar las películas en las listas personales del usuario
 $myList = [];
-$sqlMyList = "SELECT lp.*, t.titulo, t.poster_url, cp.comentario
+$sqlMyList = "SELECT lp.*, t.titulo, t.poster_url, t.release_date, cp.comentario,
+                     GROUP_CONCAT(g.nombre SEPARATOR ', ') as genero
               FROM listas_personales lp
               JOIN trailers t ON lp.id_trailer = t.id_trailer
+              LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
+              LEFT JOIN generos g ON tg.id_genero = g.id_genero
               LEFT JOIN comentarios_privados cp ON lp.id_trailer = cp.id_trailer AND cp.id_usuario = lp.id_usuario
               WHERE lp.id_usuario = ?
+              GROUP BY lp.id_lista
               ORDER BY lp.fecha_adicion DESC";
 $stmtMyList = mysqli_prepare($conexion, $sqlMyList);
 if ($stmtMyList) {
@@ -322,6 +326,53 @@ if ($stmtMyList) {
         $myList[] = $row;
     }
     mysqli_stmt_close($stmtMyList);
+}
+
+// Consultar las películas favoritas del usuario
+$myFavorites = [];
+$sqlMyFavorites = "SELECT f.*, t.titulo, t.poster_url, t.release_date, lp.estado, cp.comentario,
+                          GROUP_CONCAT(g.nombre SEPARATOR ', ') as genero
+                   FROM favoritos f
+                   JOIN trailers t ON f.id_trailer = t.id_trailer
+                   LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
+                   LEFT JOIN generos g ON tg.id_genero = g.id_genero
+                   LEFT JOIN listas_personales lp ON f.id_trailer = lp.id_trailer AND lp.id_usuario = f.id_usuario
+                   LEFT JOIN comentarios_privados cp ON f.id_trailer = cp.id_trailer AND cp.id_usuario = f.id_usuario
+                   WHERE f.id_usuario = ?
+                   GROUP BY f.id_trailer
+                   ORDER BY f.fecha_adicion DESC";
+$stmtMyFavorites = mysqli_prepare($conexion, $sqlMyFavorites);
+if ($stmtMyFavorites) {
+    mysqli_stmt_bind_param($stmtMyFavorites, "i", $user_id);
+    mysqli_stmt_execute($stmtMyFavorites);
+    $resMyFavorites = mysqli_stmt_get_result($stmtMyFavorites);
+    while ($row = mysqli_fetch_assoc($resMyFavorites)) {
+        $myFavorites[] = $row;
+    }
+    mysqli_stmt_close($stmtMyFavorites);
+}
+
+// Consultar todos los comentarios privados del usuario
+$myComments = [];
+$sqlMyComments = "SELECT cp.*, t.titulo, t.poster_url, t.release_date, lp.estado,
+                         GROUP_CONCAT(g.nombre SEPARATOR ', ') as genero
+                  FROM comentarios_privados cp
+                  JOIN trailers t ON cp.id_trailer = t.id_trailer
+                  LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
+                  LEFT JOIN generos g ON tg.id_genero = g.id_genero
+                  LEFT JOIN listas_personales lp ON cp.id_trailer = lp.id_trailer AND lp.id_usuario = cp.id_usuario
+                  WHERE cp.id_usuario = ?
+                  GROUP BY cp.id_comentario_privado
+                  ORDER BY cp.id_comentario_privado DESC";
+$stmtMyComments = mysqli_prepare($conexion, $sqlMyComments);
+if ($stmtMyComments) {
+    mysqli_stmt_bind_param($stmtMyComments, "i", $user_id);
+    mysqli_stmt_execute($stmtMyComments);
+    $resMyComments = mysqli_stmt_get_result($stmtMyComments);
+    while ($row = mysqli_fetch_assoc($resMyComments)) {
+        $myComments[] = $row;
+    }
+    mysqli_stmt_close($stmtMyComments);
 }
 
 // Consultar todas las películas no añadidas aún para el buscador del panel
@@ -505,154 +556,238 @@ require_once $rootPath . 'includes/navbar.php';
         </section>
     </div>
 
-    <!-- Pestaña: Mis Películas (Listas Personales y Notas Privadas) -->
+    <!-- Pestaña: Mis Películas (Mi Gestión) -->
     <div id="tab-movies" class="tab-content">
-        <!-- Selector para añadir películas -->
-        <div class="write-review-card" style="background: var(--bg-surface-elevated); padding: 20px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 30px;">
-            <h3 class="profile-section-title" style="margin-bottom: 12px;"><i class="fa-solid fa-square-plus" style="color: var(--primary);"></i> Añadir Película a mis Listas</h3>
-            <form id="addMovieForm" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; margin: 0;">
-                <input type="hidden" name="csrf_token" id="moviesCsrfToken" value="<?= $_SESSION['csrf_token'] ?>">
-                <div style="flex: 1; min-width: 200px;">
-                    <label for="addMovieSelect" style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-muted);">Selecciona una película del catálogo:</label>
-                    <select id="addMovieSelect" required style="width: 100%; padding: 10px; background: var(--bg-base); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-family: var(--font-body);">
-                        <option value="">-- Elige una película --</option>
-                        <?php foreach ($allTrailersOption as $tOpt): ?>
-                            <option value="<?= $tOpt['id_trailer'] ?>"><?= htmlspecialchars($tOpt['titulo']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
+
+        <!-- Estructura de Dos Columnas: Sidebar + Contenidos de Gestión -->
+        <div class="management-layout">
+            <!-- Sidebar Izquierdo -->
+            <aside class="management-sidebar">
+                <div class="sidebar-header">
+                    <h4>MI GESTIÓN</h4>
+                    <span>Listas y Notas</span>
                 </div>
-                <div style="min-width: 150px;">
-                    <label for="addMovieStatus" style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-muted);">Estado:</label>
-                    <select id="addMovieStatus" style="width: 100%; padding: 10px; background: var(--bg-base); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-family: var(--font-body);">
-                        <option value="por_ver">Por Ver (Watchlist)</option>
-                        <option value="vista">Vista (Watched)</option>
-                    </select>
+                <nav class="sidebar-nav">
+                    <button type="button" class="sidebar-tab-btn active" data-subtab="biblioteca">
+                        <i class="fa-solid fa-folder-open"></i> MI BIBLIOTECA
+                    </button>
+                    <button type="button" class="sidebar-tab-btn" data-subtab="por-ver">
+                        <i class="fa-solid fa-clock"></i> POR VER
+                    </button>
+                    <button type="button" class="sidebar-tab-btn" data-subtab="vistas">
+                        <i class="fa-solid fa-eye"></i> VISTAS
+                    </button>
+                    <button type="button" class="sidebar-tab-btn" data-subtab="favoritos">
+                        <i class="fa-solid fa-heart"></i> FAVORITOS
+                    </button>
+                    <button type="button" class="sidebar-tab-btn" data-subtab="notas">
+                        <i class="fa-solid fa-note-sticky"></i> NOTAS PRIVADAS
+                    </button>
+                </nav>
+            </aside>
+
+            <!-- Área de Contenido Derecha -->
+            <div class="management-content">
+                
+                <!-- Subpestaña 1: Mi Biblioteca -->
+                <div id="subtab-content-biblioteca" class="management-subtab-content active">
+                    <h2>Mi Biblioteca</h2>
+                    <p class="subtab-desc">Gestiona tus películas favoritas, marca las que has visto y organiza tus maratones.</p>
+                    
+                    <div class="management-grid">
+                        <?php if (empty($myList)): ?>
+                            <div class="login-prompt-card" style="grid-column: 1 / -1; padding: 30px; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.01); width: 100%;">
+                                <p style="color: var(--text-muted); margin: 0;"><i class="fa-solid fa-info-circle" style="color: var(--primary); margin-right: 6px;"></i> Tu biblioteca está vacía. Selecciona una película arriba para añadirla.</p>
+                            </div>
+                        <?php else: ?>
+                            <?php foreach ($myList as $movie): ?>
+                                <div class="management-card" id="movie-card-<?= $movie['id_trailer'] ?>">
+                                    <div class="card-media-container">
+                                        <img src="<?= htmlspecialchars($movie['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=200') ?>" alt="<?= htmlspecialchars($movie['titulo']) ?>">
+                                        
+                                        <!-- Badge de estado -->
+                                        <span class="card-status-badge <?= $movie['estado'] ?>">
+                                            <?= $movie['estado'] === 'por_ver' ? 'Por Ver' : 'Vista' ?>
+                                        </span>
+
+                                        <!-- Barra de herramientas flotante -->
+                                        <div class="card-media-overlay-bar">
+                                            <a href="../trailers/reproducir_trailer.php?id=<?= $movie['id_trailer'] ?>" class="overlay-bar-btn" title="Reproducir"><i class="fa-solid fa-play"></i></a>
+                                            <div class="overlay-bar-right">
+                                                <button type="button" class="overlay-bar-btn btn-open-note-modal" data-id="<?= $movie['id_trailer'] ?>" data-title="<?= htmlspecialchars($movie['titulo']) ?>" data-comment="<?= htmlspecialchars($movie['comentario'] ?? '') ?>" title="Nota Privada">@</button>
+                                                <button type="button" class="overlay-bar-btn btn-remove-list-item" data-id="<?= $movie['id_trailer'] ?>" title="Quitar de la lista"><i class="fa-solid fa-trash"></i></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-movie-info">
+                                        <h4 class="card-movie-title" title="<?= htmlspecialchars($movie['titulo']) ?>"><?= htmlspecialchars($movie['titulo']) ?></h4>
+                                        <p class="card-movie-meta"><?= date('Y', strtotime($movie['release_date'])) ?> • <?= htmlspecialchars($movie['genero']) ?></p>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
                 </div>
-                <button type="submit" class="btn btn-primary" style="padding: 10px 20px; border-radius: var(--radius-sm); height: 40px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; cursor: pointer; border: none; background: var(--primary); color: #000;">
-                    <i class="fa-solid fa-plus"></i> Añadir
-                </button>
-            </form>
-        </div>
 
-        <!-- Listas separadas en pestañas secundarias -->
-        <div class="movie-list-tabs" style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-            <button class="btn btn-secondary subtab-btn active" data-subtab="por-ver" style="background: var(--bg-surface-elevated); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: var(--radius-sm); color: var(--text-primary); cursor: pointer;">
-                <i class="fa-regular fa-clock"></i> Por Ver (Watchlist)
-            </button>
-            <button class="btn btn-secondary subtab-btn" data-subtab="vistas" style="background: var(--bg-surface-elevated); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: var(--radius-sm); color: var(--text-primary); cursor: pointer;">
-                <i class="fa-solid fa-circle-check"></i> Vistas (Watched)
-            </button>
-        </div>
-
-        <!-- Contenido Subtab: Por Ver -->
-        <div id="subtab-por-ver" class="subtab-content active-subtab">
-            <div class="movies-list-container" style="display: grid; gap: 15px;">
-                <?php 
-                $porVerList = array_filter($myList, fn($item) => $item['estado'] === 'por_ver');
-                if (empty($porVerList)): 
-                ?>
-                    <div class="login-prompt-card" style="padding: 30px; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.01);">
-                        <p style="color: var(--text-muted); margin: 0;"><i class="fa-solid fa-info-circle" style="color: var(--primary); margin-right: 6px;"></i> No tienes películas en tu lista de "Por Ver".</p>
-                    </div>
-                <?php else: ?>
-                    <?php foreach ($porVerList as $item): ?>
-                        <div class="movie-row-card" style="background: var(--bg-surface-elevated); border: 1px solid var(--border-color); padding: 15px; border-radius: var(--radius-md); display: flex; gap: 20px; flex-wrap: wrap;" id="movie-item-<?= $item['id_trailer'] ?>">
-                            <img src="<?= htmlspecialchars($item['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=200') ?>" style="width: 80px; height: 120px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
-                            <div style="flex: 1; min-width: 250px;">
-                                <h4 style="margin: 0 0 6px 0; font-size: 16px; font-weight: 700;">
-                                    <a href="../trailers/reproducir_trailer.php?id=<?= $item['id_trailer'] ?>" style="color: var(--text-primary); text-decoration: none;">
-                                        <?= htmlspecialchars($item['titulo']) ?>
-                                    </a>
-                                </h4>
-                                <span style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 12px;">Añadida el: <?= date('d/m/Y H:i', strtotime($item['fecha_adicion'])) ?></span>
-                                
-                                <!-- Comentario privado form -->
-                                <div style="margin-bottom: 10px;">
-                                    <textarea class="private-comment-textarea" placeholder="Escribe un comentario privado sobre esta película..." style="width: 100%; height: 50px; padding: 8px; background: var(--bg-base); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 12px; resize: vertical;"><?= htmlspecialchars($item['comentario'] ?? '') ?></textarea>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                                    <div style="display: flex; gap: 8px;">
-                                        <button class="btn btn-primary btn-save-comment" data-id="<?= $item['id_trailer'] ?>" style="padding: 6px 12px; font-size: 11px; font-weight: 600; cursor: pointer; border-radius: var(--radius-sm); background: var(--primary); border: none; color: #000;">
-                                            <i class="fa-solid fa-save"></i> Guardar Nota
-                                        </button>
-                                        <button class="btn btn-secondary btn-view-history" data-id="<?= $item['id_trailer'] ?>" style="padding: 6px 12px; font-size: 11px; font-weight: 600; cursor: pointer; border-radius: var(--radius-sm); background: var(--bg-base); border: 1px solid var(--border-color); color: var(--text-primary);">
-                                            <i class="fa-solid fa-history"></i> Historial
-                                        </button>
-                                    </div>
-                                    <div style="display: flex; gap: 8px;">
-                                        <button class="btn btn-secondary btn-change-status" data-id="<?= $item['id_trailer'] ?>" data-status="vista" style="padding: 6px 12px; font-size: 11px; font-weight: 600; cursor: pointer; border-radius: var(--radius-sm); background: var(--bg-base); border: 1px solid var(--border-color); color: var(--text-primary);">
-                                            <i class="fa-solid fa-check"></i> Marcar Vista
-                                        </button>
-                                        <button class="btn btn-secondary btn-remove-list" data-id="<?= $item['id_trailer'] ?>" style="padding: 6px 12px; font-size: 11px; font-weight: 600; cursor: pointer; border-radius: var(--radius-sm); background: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.3); color: #ef4444;">
-                                            <i class="fa-solid fa-trash"></i> Quitar
-                                        </button>
-                                    </div>
-                                </div>
-                                <!-- Historial colapsable -->
-                                <div class="comment-history-container" id="history-container-<?= $item['id_trailer'] ?>" style="display: none; margin-top: 15px; border-top: 1px solid rgba(216, 195, 173, 0.1); padding-top: 12px;">
-                                    <h5 style="margin: 0 0 8px 0; font-size: 12px; color: var(--text-muted);"><i class="fa-solid fa-history"></i> Versiones anteriores:</h5>
-                                    <div class="history-list-box" style="display: flex; flex-direction: column; gap: 8px;"></div>
-                                </div>
+                <!-- Subpestaña 2: Por Ver -->
+                <div id="subtab-content-por-ver" class="management-subtab-content">
+                    <h2>Por Ver</h2>
+                    <p class="subtab-desc">Tu lista de reproducción de películas pendientes por ver.</p>
+                    
+                    <div class="management-grid">
+                        <?php 
+                        $porVerList = array_filter($myList, fn($item) => $item['estado'] === 'por_ver');
+                        if (empty($porVerList)): 
+                        ?>
+                            <div class="login-prompt-card" style="grid-column: 1 / -1; padding: 30px; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.01); width: 100%;">
+                                <p style="color: var(--text-muted); margin: 0;"><i class="fa-solid fa-info-circle" style="color: var(--primary); margin-right: 6px;"></i> No tienes películas pendientes en tu lista "Por Ver".</p>
                             </div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-        </div>
+                        <?php else: ?>
+                            <?php foreach ($porVerList as $movie): ?>
+                                <div class="management-card" id="movie-card-por-ver-<?= $movie['id_trailer'] ?>">
+                                    <div class="card-media-container">
+                                        <img src="<?= htmlspecialchars($movie['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=200') ?>" alt="<?= htmlspecialchars($movie['titulo']) ?>">
+                                        
+                                        <span class="card-status-badge por_ver">Por Ver</span>
 
-        <!-- Contenido Subtab: Vistas -->
-        <div id="subtab-vistas" class="subtab-content">
-            <div class="movies-list-container" style="display: grid; gap: 15px;">
-                <?php 
-                $vistasList = array_filter($myList, fn($item) => $item['estado'] === 'vista');
-                if (empty($vistasList)): 
-                ?>
-                    <div class="login-prompt-card" style="padding: 30px; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.01);">
-                        <p style="color: var(--text-muted); margin: 0;"><i class="fa-solid fa-info-circle" style="color: var(--primary); margin-right: 6px;"></i> No tienes películas en tu lista de "Vistas".</p>
+                                        <div class="card-media-overlay-bar">
+                                            <a href="../trailers/reproducir_trailer.php?id=<?= $movie['id_trailer'] ?>" class="overlay-bar-btn" title="Reproducir"><i class="fa-solid fa-play"></i></a>
+                                            <div class="overlay-bar-right">
+                                                <button type="button" class="overlay-bar-btn btn-open-note-modal" data-id="<?= $movie['id_trailer'] ?>" data-title="<?= htmlspecialchars($movie['titulo']) ?>" data-comment="<?= htmlspecialchars($movie['comentario'] ?? '') ?>" title="Nota Privada">@</button>
+                                                <button type="button" class="overlay-bar-btn btn-remove-list-item" data-id="<?= $movie['id_trailer'] ?>" title="Quitar de la lista"><i class="fa-solid fa-trash"></i></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-movie-info">
+                                        <h4 class="card-movie-title" title="<?= htmlspecialchars($movie['titulo']) ?>"><?= htmlspecialchars($movie['titulo']) ?></h4>
+                                        <p class="card-movie-meta"><?= date('Y', strtotime($movie['release_date'])) ?> • <?= htmlspecialchars($movie['genero']) ?></p>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </div>
-                <?php else: ?>
-                    <?php foreach ($vistasList as $item): ?>
-                        <div class="movie-row-card" style="background: var(--bg-surface-elevated); border: 1px solid var(--border-color); padding: 15px; border-radius: var(--radius-md); display: flex; gap: 20px; flex-wrap: wrap;" id="movie-item-<?= $item['id_trailer'] ?>">
-                            <img src="<?= htmlspecialchars($item['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=200') ?>" style="width: 80px; height: 120px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
-                            <div style="flex: 1; min-width: 250px;">
-                                <h4 style="margin: 0 0 6px 0; font-size: 16px; font-weight: 700;">
-                                    <a href="../trailers/reproducir_trailer.php?id=<?= $item['id_trailer'] ?>" style="color: var(--text-primary); text-decoration: none;">
-                                        <?= htmlspecialchars($item['titulo']) ?>
-                                    </a>
-                                </h4>
-                                <span style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 12px;">Añadida el: <?= date('d/m/Y H:i', strtotime($item['fecha_adicion'])) ?></span>
-                                
-                                <!-- Comentario privado form -->
-                                <div style="margin-bottom: 10px;">
-                                    <textarea class="private-comment-textarea" placeholder="Escribe un comentario privado sobre esta película..." style="width: 100%; height: 50px; padding: 8px; background: var(--bg-base); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 12px; resize: vertical;"><?= htmlspecialchars($item['comentario'] ?? '') ?></textarea>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                                    <div style="display: flex; gap: 8px;">
-                                        <button class="btn btn-primary btn-save-comment" data-id="<?= $item['id_trailer'] ?>" style="padding: 6px 12px; font-size: 11px; font-weight: 600; cursor: pointer; border-radius: var(--radius-sm); background: var(--primary); border: none; color: #000;">
-                                            <i class="fa-solid fa-save"></i> Guardar Nota
-                                        </button>
-                                        <button class="btn btn-secondary btn-view-history" data-id="<?= $item['id_trailer'] ?>" style="padding: 6px 12px; font-size: 11px; font-weight: 600; cursor: pointer; border-radius: var(--radius-sm); background: var(--bg-base); border: 1px solid var(--border-color); color: var(--text-primary);">
-                                            <i class="fa-solid fa-history"></i> Historial
-                                        </button>
-                                    </div>
-                                    <div style="display: flex; gap: 8px;">
-                                        <button class="btn btn-secondary btn-change-status" data-id="<?= $item['id_trailer'] ?>" data-status="por_ver" style="padding: 6px 12px; font-size: 11px; font-weight: 600; cursor: pointer; border-radius: var(--radius-sm); background: var(--bg-base); border: 1px solid var(--border-color); color: var(--text-primary);">
-                                            <i class="fa-solid fa-history"></i> Marcar Por Ver
-                                        </button>
-                                        <button class="btn btn-secondary btn-remove-list" data-id="<?= $item['id_trailer'] ?>" style="padding: 6px 12px; font-size: 11px; font-weight: 600; cursor: pointer; border-radius: var(--radius-sm); background: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.3); color: #ef4444;">
-                                            <i class="fa-solid fa-trash"></i> Quitar
-                                        </button>
-                                    </div>
-                                </div>
-                                <!-- Historial colapsable -->
-                                <div class="comment-history-container" id="history-container-<?= $item['id_trailer'] ?>" style="display: none; margin-top: 15px; border-top: 1px solid rgba(216, 195, 173, 0.1); padding-top: 12px;">
-                                    <h5 style="margin: 0 0 8px 0; font-size: 12px; color: var(--text-muted);"><i class="fa-solid fa-history"></i> Versiones anteriores:</h5>
-                                    <div class="history-list-box" style="display: flex; flex-direction: column; gap: 8px;"></div>
-                                </div>
+                </div>
+
+                <!-- Subpestaña 3: Vistas -->
+                <div id="subtab-content-vistas" class="management-subtab-content">
+                    <h2>Vistas</h2>
+                    <p class="subtab-desc">Películas que ya has completado y valorado.</p>
+                    
+                    <div class="management-grid">
+                        <?php 
+                        $vistasList = array_filter($myList, fn($item) => $item['estado'] === 'vista');
+                        if (empty($vistasList)): 
+                        ?>
+                            <div class="login-prompt-card" style="grid-column: 1 / -1; padding: 30px; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.01); width: 100%;">
+                                <p style="color: var(--text-muted); margin: 0;"><i class="fa-solid fa-info-circle" style="color: var(--primary); margin-right: 6px;"></i> No tienes ninguna película registrada como "Vista".</p>
                             </div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
+                        <?php else: ?>
+                            <?php foreach ($vistasList as $movie): ?>
+                                <div class="management-card" id="movie-card-vistas-<?= $movie['id_trailer'] ?>">
+                                    <div class="card-media-container">
+                                        <img src="<?= htmlspecialchars($movie['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=200') ?>" alt="<?= htmlspecialchars($movie['titulo']) ?>">
+                                        
+                                        <span class="card-status-badge vista">Vista</span>
+
+                                        <div class="card-media-overlay-bar">
+                                            <a href="../trailers/reproducir_trailer.php?id=<?= $movie['id_trailer'] ?>" class="overlay-bar-btn" title="Reproducir"><i class="fa-solid fa-play"></i></a>
+                                            <div class="overlay-bar-right">
+                                                <button type="button" class="overlay-bar-btn btn-open-note-modal" data-id="<?= $movie['id_trailer'] ?>" data-title="<?= htmlspecialchars($movie['titulo']) ?>" data-comment="<?= htmlspecialchars($movie['comentario'] ?? '') ?>" title="Nota Privada">@</button>
+                                                <button type="button" class="overlay-bar-btn btn-remove-list-item" data-id="<?= $movie['id_trailer'] ?>" title="Quitar de la lista"><i class="fa-solid fa-trash"></i></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-movie-info">
+                                        <h4 class="card-movie-title" title="<?= htmlspecialchars($movie['titulo']) ?>"><?= htmlspecialchars($movie['titulo']) ?></h4>
+                                        <p class="card-movie-meta"><?= date('Y', strtotime($movie['release_date'])) ?> • <?= htmlspecialchars($movie['genero']) ?></p>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Subpestaña 4: Favoritos -->
+                <div id="subtab-content-favoritos" class="management-subtab-content">
+                    <h2>Favoritos</h2>
+                    <p class="subtab-desc">Tus películas favoritas marcadas en el portal de trailers.</p>
+                    
+                    <div class="management-grid">
+                        <?php if (empty($myFavorites)): ?>
+                            <div class="login-prompt-card" style="grid-column: 1 / -1; padding: 30px; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.01); width: 100%;">
+                                <p style="color: var(--text-muted); margin: 0;"><i class="fa-solid fa-info-circle" style="color: var(--primary); margin-right: 6px;"></i> No has añadido ninguna película a favoritos todavía.</p>
+                            </div>
+                        <?php else: ?>
+                            <?php foreach ($myFavorites as $movie): ?>
+                                <div class="management-card" id="movie-card-fav-<?= $movie['id_trailer'] ?>">
+                                    <div class="card-media-container">
+                                        <img src="<?= htmlspecialchars($movie['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=200') ?>" alt="<?= htmlspecialchars($movie['titulo']) ?>">
+                                        
+                                        <?php if ($movie['estado']): ?>
+                                            <span class="card-status-badge <?= $movie['estado'] ?>">
+                                                <?= $movie['estado'] === 'por_ver' ? 'Por Ver' : 'Vista' ?>
+                                            </span>
+                                        <?php endif; ?>
+
+                                        <div class="card-media-overlay-bar">
+                                            <a href="../trailers/reproducir_trailer.php?id=<?= $movie['id_trailer'] ?>" class="overlay-bar-btn" title="Reproducir"><i class="fa-solid fa-play"></i></a>
+                                            <div class="overlay-bar-right">
+                                                <button type="button" class="overlay-bar-btn btn-open-note-modal" data-id="<?= $movie['id_trailer'] ?>" data-title="<?= htmlspecialchars($movie['titulo']) ?>" data-comment="<?= htmlspecialchars($movie['comentario'] ?? '') ?>" title="Nota Privada">@</button>
+                                                <button type="button" class="overlay-bar-btn btn-remove-favorite" data-id="<?= $movie['id_trailer'] ?>" title="Quitar de favoritos"><i class="fa-solid fa-trash"></i></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-movie-info">
+                                        <h4 class="card-movie-title" title="<?= htmlspecialchars($movie['titulo']) ?>"><?= htmlspecialchars($movie['titulo']) ?></h4>
+                                        <p class="card-movie-meta"><?= date('Y', strtotime($movie['release_date'])) ?> • <?= htmlspecialchars($movie['genero']) ?></p>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Subpestaña 5: Notas Privadas -->
+                <div id="subtab-content-notas" class="management-subtab-content">
+                    <h2>Notas Privadas</h2>
+                    <p class="subtab-desc">Tus anotaciones personales e historial de ediciones de cada película.</p>
+                    
+                    <div class="management-grid">
+                        <?php if (empty($myComments)): ?>
+                            <div class="login-prompt-card" style="grid-column: 1 / -1; padding: 30px; text-align: center; border: 1px dashed var(--border-color); border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.01); width: 100%;">
+                                <p style="color: var(--text-muted); margin: 0;"><i class="fa-solid fa-info-circle" style="color: var(--primary); margin-right: 6px;"></i> No has redactado notas privadas en tus películas.</p>
+                            </div>
+                        <?php else: ?>
+                            <?php foreach ($myComments as $movie): ?>
+                                <div class="management-card" id="movie-card-note-<?= $movie['id_trailer'] ?>">
+                                    <div class="card-media-container">
+                                        <img src="<?= htmlspecialchars($movie['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=200') ?>" alt="<?= htmlspecialchars($movie['titulo']) ?>">
+                                        
+                                        <?php if ($movie['estado']): ?>
+                                            <span class="card-status-badge <?= $movie['estado'] ?>">
+                                                <?= $movie['estado'] === 'por_ver' ? 'Por Ver' : 'Vista' ?>
+                                            </span>
+                                        <?php endif; ?>
+
+                                        <div class="card-media-overlay-bar">
+                                            <a href="../trailers/reproducir_trailer.php?id=<?= $movie['id_trailer'] ?>" class="overlay-bar-btn" title="Reproducir"><i class="fa-solid fa-play"></i></a>
+                                            <div class="overlay-bar-right">
+                                                <button type="button" class="overlay-bar-btn btn-open-note-modal" data-id="<?= $movie['id_trailer'] ?>" data-title="<?= htmlspecialchars($movie['titulo']) ?>" data-comment="<?= htmlspecialchars($movie['comentario'] ?? '') ?>" title="Nota Privada">@</button>
+                                                <button type="button" class="overlay-bar-btn btn-remove-comment" data-id="<?= $movie['id_trailer'] ?>" title="Eliminar nota"><i class="fa-solid fa-trash"></i></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-movie-info">
+                                        <h4 class="card-movie-title" title="<?= htmlspecialchars($movie['titulo']) ?>"><?= htmlspecialchars($movie['titulo']) ?></h4>
+                                        <p class="card-movie-meta" style="color: var(--primary); margin-bottom: 6px;"><i class="fa-solid fa-comment-dots"></i> Nota Guardada</p>
+                                        <p class="card-movie-meta" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="<?= htmlspecialchars($movie['comentario']) ?>"><?= htmlspecialchars($movie['comentario']) ?></p>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -779,6 +914,55 @@ require_once $rootPath . 'includes/navbar.php';
     </div>
 
 </main>
+<!-- Backdrop del Panel Lateral -->
+<div id="drawerBackdrop" class="drawer-backdrop"></div>
+
+<!-- Side Drawer para Detalle y Gestión de Películas -->
+<div id="movieDrawer" class="side-drawer">
+    <div class="drawer-content">
+        <input type="hidden" id="moviesCsrfToken" value="<?= $_SESSION['csrf_token'] ?>">
+        <div class="drawer-header">
+            <h3 id="drawerMovieTitle">Título de la Película</h3>
+            <button type="button" class="close-drawer-btn" id="closeDrawerBtn">&times;</button>
+        </div>
+        <span class="drawer-badge">Película</span>
+
+        <!-- Botones de conmutación de estado -->
+        <div class="drawer-status-toggle">
+            <button type="button" class="status-toggle-btn" id="btnTogglePorVer">
+                <i class="fa-solid fa-clock"></i> POR VER
+            </button>
+            <button type="button" class="status-toggle-btn" id="btnToggleVistas">
+                <i class="fa-solid fa-eye"></i> VISTAS
+            </button>
+        </div>
+
+        <!-- Sección de Notas Privadas -->
+        <div class="drawer-section-title">
+            <span><i class="fa-solid fa-note-sticky"></i> Notas Privadas (Bitácora)</span>
+            <span id="charCounter" style="color: var(--text-muted); font-size: 11px;">0 / 2000</span>
+        </div>
+        <input type="hidden" id="drawerMovieId" value="">
+        <textarea id="drawerNoteTextarea" class="drawer-textarea" placeholder="Escribe tus impresiones sobre el tráiler o la película aquí..." maxlength="2000"></textarea>
+
+        <button type="button" id="btnSaveDrawerNote" class="drawer-save-btn">
+            <i class="fa-solid fa-save"></i> GUARDAR NOTA
+        </button>
+
+        <!-- Acordeón del Historial de Cambios -->
+        <div class="drawer-history-accordion" id="drawerHistoryAccordion">
+            <div class="accordion-header" id="accordionHeaderBtn">
+                <h4><i class="fa-solid fa-history"></i> HISTORIAL DE CAMBIOS</h4>
+                <i class="fa-solid fa-chevron-down arrow-icon"></i>
+            </div>
+            <div class="accordion-content">
+                <div id="drawerHistoryList" style="display: flex; flex-direction: column;">
+                    <!-- Se carga dinámicamente por JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
 function closeToast(id) {
@@ -1063,71 +1247,177 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // === Lógica de sub-pestañas de películas ===
-    const subtabButtons = document.querySelectorAll('.subtab-btn');
-    const subtabContents = document.querySelectorAll('.subtab-content');
-    subtabButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const target = btn.getAttribute('data-subtab');
-            subtabButtons.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            subtabContents.forEach(c => {
-                if (c.id === `subtab-${target}`) {
-                    c.style.display = 'grid';
-                } else {
-                    c.style.display = 'none';
-                }
-            });
+    // === Lógica de sub-pestañas de películas (Mi Gestión Sidebar) ===
+    const sidebarBtns = document.querySelectorAll('.sidebar-tab-btn');
+    const subtabContents = document.querySelectorAll('.management-subtab-content');
+
+    sidebarBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            sidebarBtns.forEach(b => b.classList.remove('active'));
+            subtabContents.forEach(c => c.classList.remove('active'));
+
+            this.classList.add('active');
+            const targetSubtab = this.getAttribute('data-subtab');
+            const targetContent = document.getElementById(`subtab-content-${targetSubtab}`);
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
         });
     });
 
-    const addMovieForm = document.getElementById('addMovieForm');
-    if (addMovieForm) {
-        addMovieForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const id_trailer = document.getElementById('addMovieSelect').value;
-            const estado = document.getElementById('addMovieStatus').value;
-            const csrfToken = document.getElementById('moviesCsrfToken').value;
 
-            fetch('api_listas.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': csrfToken
-                },
-                body: JSON.stringify({
-                    action: 'add_to_list',
-                    id_trailer: id_trailer,
-                    estado: estado
-                })
+
+    // Side Drawer de Película y Gestión de Notas
+    const movieDrawer = document.getElementById('movieDrawer');
+    const drawerBackdrop = document.getElementById('drawerBackdrop');
+    const drawerMovieTitle = document.getElementById('drawerMovieTitle');
+    const drawerMovieId = document.getElementById('drawerMovieId');
+    const drawerNoteTextarea = document.getElementById('drawerNoteTextarea');
+    const charCounter = document.getElementById('charCounter');
+    const btnTogglePorVer = document.getElementById('btnTogglePorVer');
+    const btnToggleVistas = document.getElementById('btnToggleVistas');
+    const btnSaveDrawerNote = document.getElementById('btnSaveDrawerNote');
+    const drawerHistoryAccordion = document.getElementById('drawerHistoryAccordion');
+    const accordionHeaderBtn = document.getElementById('accordionHeaderBtn');
+    const drawerHistoryList = document.getElementById('drawerHistoryList');
+    const closeDrawerBtn = document.getElementById('closeDrawerBtn');
+    const moviesCsrfToken = document.getElementById('moviesCsrfToken').value;
+
+    function openMovieDrawer(id_trailer, titulo, status, currentComment) {
+        drawerMovieId.value = id_trailer;
+        drawerMovieTitle.textContent = titulo;
+        drawerNoteTextarea.value = currentComment;
+        charCounter.textContent = `${currentComment.length} / 2000`;
+        
+        // Resetear acordeón
+        drawerHistoryAccordion.classList.remove('open');
+        drawerHistoryList.innerHTML = '<p style="color: var(--text-muted); font-size: 11px; padding: 12px 16px; margin: 0;">Cargando historial...</p>';
+
+        // Activar botón del estado correcto
+        if (status === 'por_ver') {
+            btnTogglePorVer.classList.add('active');
+            btnToggleVistas.classList.remove('active');
+        } else {
+            btnTogglePorVer.classList.remove('active');
+            btnToggleVistas.classList.add('active');
+        }
+
+        // Mostrar Drawer
+        movieDrawer.classList.add('open');
+        drawerBackdrop.classList.add('show');
+
+        // Cargar historial asíncronamente
+        fetch('api_listas.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': moviesCsrfToken
+            },
+            body: JSON.stringify({
+                action: 'get_history',
+                id_trailer: id_trailer
             })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.reload();
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                drawerHistoryList.innerHTML = '';
+                if (data.history.length === 0) {
+                    drawerHistoryList.innerHTML = '<p style="color: var(--text-muted); font-size: 11px; padding: 12px 16px; margin: 0;">No hay cambios registrados en tu nota.</p>';
                 } else {
-                    alert('Error: ' + data.error);
+                    data.history.forEach(h => {
+                        const entry = document.createElement('div');
+                        entry.className = 'history-entry-box';
+                        entry.style.borderLeft = '2px solid var(--primary)';
+                        entry.innerHTML = `
+                            <div class="history-entry-date">Edición: ${h.fecha_cambio}</div>
+                            <div class="history-entry-text">${escapeHtml(h.comentario_anterior)}</div>
+                        `;
+                        drawerHistoryList.appendChild(entry);
+                    });
                 }
-            })
-            .catch(err => {
-                console.error(err);
-                alert('Error al agregar la película.');
-            });
+            } else {
+                drawerHistoryList.innerHTML = '<p style="color: #ef4444; font-size: 11px; padding: 12px 16px; margin: 0;">Error al cargar historial.</p>';
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            drawerHistoryList.innerHTML = '<p style="color: #ef4444; font-size: 11px; padding: 12px 16px; margin: 0;">Error de conexión.</p>';
         });
     }
 
-    document.querySelectorAll('.btn-save-comment').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const id_trailer = this.getAttribute('data-id');
-            const card = document.getElementById(`movie-item-${id_trailer}`);
-            const commentText = card.querySelector('.private-comment-textarea').value;
-            const csrfToken = document.getElementById('moviesCsrfToken').value;
+    function closeMovieDrawer() {
+        movieDrawer.classList.remove('open');
+        drawerBackdrop.classList.remove('show');
+    }
+
+    // Delegación de clic en las tarjetas de película
+    document.addEventListener('click', function(e) {
+        const card = e.target.closest('.management-card');
+        const actionBtn = e.target.closest('.overlay-bar-btn, .btn-remove-list-item, .btn-remove-favorite, .btn-remove-comment');
+        
+        // Si hace clic en la tarjeta pero no en una acción directa
+        if (card && !actionBtn) {
+            const id_trailer = card.getAttribute('id').replace(/[^\d]/g, '');
+            const title = card.querySelector('.card-movie-title').textContent;
+            
+            // Determinar estado a partir del badge o buscar
+            let status = 'por_ver';
+            const badge = card.querySelector('.card-status-badge');
+            if (badge) {
+                status = badge.classList.contains('vista') ? 'vista' : 'por_ver';
+            }
+            
+            // Buscar comentario en la propia tarjeta o en los datos del modal nota anterior si existiera
+            let comment = '';
+            const oldNoteBtn = card.querySelector('.btn-open-note-modal');
+            if (oldNoteBtn) {
+                comment = oldNoteBtn.getAttribute('data-comment') || '';
+            }
+            
+            openMovieDrawer(id_trailer, title, status, comment);
+        }
+    });
+
+    if (closeDrawerBtn) {
+        closeDrawerBtn.addEventListener('click', closeMovieDrawer);
+    }
+    if (drawerBackdrop) {
+        drawerBackdrop.addEventListener('click', closeMovieDrawer);
+    }
+
+    // Cerrar también con la tecla Esc
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeMovieDrawer();
+        }
+    });
+
+    // Contador de caracteres dinámico
+    if (drawerNoteTextarea) {
+        drawerNoteTextarea.addEventListener('input', function() {
+            charCounter.textContent = `${this.value.length} / 2000`;
+        });
+    }
+
+    // Acordeón del Historial
+    if (accordionHeaderBtn) {
+        accordionHeaderBtn.addEventListener('click', () => {
+            drawerHistoryAccordion.classList.toggle('open');
+        });
+    }
+
+    // Guardar Nota desde el Drawer
+    if (btnSaveDrawerNote) {
+        btnSaveDrawerNote.addEventListener('click', () => {
+            const id_trailer = drawerMovieId.value;
+            const commentText = drawerNoteTextarea.value;
 
             fetch('api_listas.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-Token': csrfToken
+                    'X-CSRF-Token': moviesCsrfToken
                 },
                 body: JSON.stringify({
                     action: 'save_comment',
@@ -1138,62 +1428,83 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    alert('¡Comentario privado guardado!');
+                    closeMovieDrawer();
+                    showToast('¡Nota guardada con éxito!', 'success');
+                    setTimeout(() => window.location.reload(), 800);
                 } else {
-                    alert('Error: ' + data.error);
+                    showToast(data.error, 'error');
                 }
             })
             .catch(err => {
                 console.error(err);
-                alert('Error al guardar comentario.');
+                showToast('Error al guardar comentario.', 'error');
             });
         });
-    });
+    }
 
-    document.querySelectorAll('.btn-change-status').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const id_trailer = this.getAttribute('data-id');
-            const nextStatus = this.getAttribute('data-status');
-            const csrfToken = document.getElementById('moviesCsrfToken').value;
-
-            fetch('api_listas.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': csrfToken
-                },
-                body: JSON.stringify({
-                    action: 'update_status',
-                    id_trailer: id_trailer,
-                    estado: nextStatus
-                })
+    // Conmutación rápida de estado (watchlist vs watched)
+    function changeMovieStatus(nextStatus) {
+        const id_trailer = drawerMovieId.value;
+        fetch('api_listas.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': moviesCsrfToken
+            },
+            body: JSON.stringify({
+                action: 'update_status',
+                id_trailer: id_trailer,
+                estado: nextStatus
             })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.reload();
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                showToast('¡Estado de la película actualizado!', 'success');
+                if (nextStatus === 'por_ver') {
+                    btnTogglePorVer.classList.add('active');
+                    btnToggleVistas.classList.remove('active');
                 } else {
-                    alert('Error: ' + data.error);
+                    btnTogglePorVer.classList.remove('active');
+                    btnToggleVistas.classList.add('active');
                 }
-            })
-            .catch(err => {
-                console.error(err);
-                alert('Error al cambiar de lista.');
-            });
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                showToast(data.error, 'error');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            showToast('Error al cambiar de lista.', 'error');
         });
-    });
+    }
 
-    document.querySelectorAll('.btn-remove-list').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const id_trailer = this.getAttribute('data-id');
-            const csrfToken = document.getElementById('moviesCsrfToken').value;
+    if (btnTogglePorVer) {
+        btnTogglePorVer.addEventListener('click', () => {
+            if (!btnTogglePorVer.classList.contains('active')) {
+                changeMovieStatus('por_ver');
+            }
+        });
+    }
+    if (btnToggleVistas) {
+        btnToggleVistas.addEventListener('click', () => {
+            if (!btnToggleVistas.classList.contains('active')) {
+                changeMovieStatus('vista');
+            }
+        });
+    }
 
+    // Eliminar película de la lista
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-remove-list-item');
+        if (btn) {
+            const id_trailer = btn.getAttribute('data-id');
             if (confirm('¿Estás seguro de que quieres quitar esta película de tus listas?')) {
                 fetch('api_listas.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-Token': csrfToken
+                        'X-CSRF-Token': moviesCsrfToken
                     },
                     body: JSON.stringify({
                         action: 'remove_from_list',
@@ -1203,72 +1514,77 @@ document.addEventListener('DOMContentLoaded', () => {
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        window.location.reload();
+                        showToast('¡Película eliminada de tus listas!', 'success');
+                        setTimeout(() => window.location.reload(), 800);
                     } else {
-                        alert('Error: ' + data.error);
+                        showToast(data.error, 'error');
                     }
                 })
                 .catch(err => {
                     console.error(err);
-                    alert('Error al eliminar de la lista.');
+                    showToast('Error al eliminar de la lista.', 'error');
                 });
             }
-        });
+        }
     });
 
-    document.querySelectorAll('.btn-view-history').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const id_trailer = this.getAttribute('data-id');
-            const historyContainer = document.getElementById(`history-container-${id_trailer}`);
-            const historyList = historyContainer.querySelector('.history-list-box');
-            const csrfToken = document.getElementById('moviesCsrfToken').value;
+    // Eliminar película de favoritos
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-remove-favorite');
+        if (btn) {
+            const id_trailer = btn.getAttribute('data-id');
+            if (confirm('¿Estás seguro de que quieres quitar esta película de tus favoritos?')) {
+                fetch(`../trailers/toggle_favorito.php?id=${id_trailer}&ajax=1`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('¡Película eliminada de tus favoritos!', 'success');
+                        setTimeout(() => window.location.reload(), 800);
+                    } else {
+                        showToast('Error al quitar de favoritos.', 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    showToast('Error de conexión.', 'error');
+                });
+            }
+        }
+    });
 
-            if (historyContainer.style.display === 'none') {
+    // Eliminar nota privada
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-remove-comment');
+        if (btn) {
+            const id_trailer = btn.getAttribute('data-id');
+            if (confirm('¿Estás seguro de que quieres eliminar tu nota privada de esta película?')) {
                 fetch('api_listas.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-Token': csrfToken
+                        'X-CSRF-Token': moviesCsrfToken
                     },
                     body: JSON.stringify({
-                        action: 'get_history',
-                        id_trailer: id_trailer
+                        action: 'save_comment',
+                        id_trailer: id_trailer,
+                        comentario: ''
                     })
                 })
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        historyList.innerHTML = '';
-                        if (data.history.length === 0) {
-                            historyList.innerHTML = '<p style="color: var(--text-muted); font-size: 11px; margin: 0;">No hay cambios registrados en tu nota.</p>';
-                        } else {
-                            data.history.forEach(h => {
-                                const entry = document.createElement('div');
-                                entry.style.background = 'rgba(255, 255, 255, 0.02)';
-                                entry.style.padding = '8px';
-                                entry.style.borderLeft = '2px solid var(--primary)';
-                                entry.style.borderRadius = 'var(--radius-sm)';
-                                entry.style.fontSize = '11px';
-                                entry.innerHTML = `
-                                    <div style="color: var(--text-muted); font-size: 10px; margin-bottom: 4px;">Edición: ${h.fecha_cambio}</div>
-                                    <div style="color: var(--text-primary); white-space: pre-wrap;">${escapeHtml(h.comentario_anterior)}</div>
-                                `;
-                                historyList.appendChild(entry);
-                            });
-                        }
-                        historyContainer.style.display = 'block';
+                        showToast('¡Nota privada eliminada!', 'success');
+                        setTimeout(() => window.location.reload(), 800);
                     } else {
-                        alert('Error: ' + data.error);
+                        showToast(data.error, 'error');
                     }
                 })
                 .catch(err => {
                     console.error(err);
-                    alert('Error al cargar historial.');
+                    showToast('Error al eliminar la nota.', 'error');
                 });
-            } else {
-                historyContainer.style.display = 'none';
             }
-        });
+        }
     });
 
     function escapeHtml(text) {
