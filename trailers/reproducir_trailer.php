@@ -32,7 +32,8 @@ unset($_SESSION['success'], $_SESSION['error']);
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 $sql = "SELECT t.*, GROUP_CONCAT(g.nombre SEPARATOR ', ') as genero,
-               d.nombre as director_nombre, d.apellidos as director_apellidos, d.id_director
+               d.nombre as director_nombre, d.apellidos as director_apellidos, d.id_director,
+               COALESCE((SELECT ROUND(AVG(valoracion), 1) FROM resenas WHERE id_trailer = t.id_trailer), 0) as promedio_resenas
         FROM trailers t
         LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
         LEFT JOIN generos g ON tg.id_genero = g.id_genero
@@ -192,7 +193,8 @@ $joinsSql = implode("\n", $joins);
 $sqlRecs = "SELECT t.id_trailer, t.titulo, t.poster_url, t.valoracion, t.release_date, t.duracion,
                    GROUP_CONCAT(DISTINCT g.nombre SEPARATOR ', ') as genero,
                    CONCAT(d.nombre, ' ', d.apellidos) as director,
-                   ($scoreExpr) as recommendation_score
+                   ($scoreExpr) as recommendation_score,
+                   COALESCE((SELECT ROUND(AVG(valoracion), 1) FROM resenas WHERE id_trailer = t.id_trailer), 0) as promedio_resenas
             FROM trailers t
             LEFT JOIN directores d ON t.id_director = d.id_director
             LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
@@ -368,7 +370,10 @@ require_once $rootPath . 'includes/navbar.php';
                 <span>Fecha de Estreno: <strong><?php echo date('d/m/Y', strtotime($trailer['release_date'])); ?></strong></span>
                 <span>Género: <strong><?php echo htmlspecialchars($trailer['genero']); ?></strong></span>
                 <span>Duración: <strong><?php echo htmlspecialchars((string)$trailer['duracion']); ?> min</strong></span>
-                <span>Valoración: <strong>⭐ <?php echo htmlspecialchars((string)$trailer['valoracion']); ?>/10</strong></span>
+                <span>Valoración TMDB: <strong>⭐ <?php echo htmlspecialchars((string)$trailer['valoracion']); ?>/10</strong></span>
+                <?php if (isset($trailer['promedio_resenas']) && $trailer['promedio_resenas'] > 0): ?>
+                    <span>Valoración Comunidad: <strong><i class="fa-solid fa-comments"></i> <?php echo htmlspecialchars((string)$trailer['promedio_resenas']); ?>/5</strong></span>
+                <?php endif; ?>
             </div>
             
             <?php if (isset($_SESSION['usuario_id'])): ?>
@@ -560,9 +565,14 @@ require_once $rootPath . 'includes/navbar.php';
                                 </div>
                             </div>
 
-                            <div class="rating-badge">
+                            <div class="rating-badge" title="Valoración TMDB / Comunidad">
                                 <i class="fa-solid fa-star"></i>
                                 <span><?= htmlspecialchars((string)$rec['valoracion']) ?></span>
+                                <?php if (isset($rec['promedio_resenas']) && $rec['promedio_resenas'] > 0): ?>
+                                    <span style="border-left: 1px solid rgba(216, 195, 173, 0.25); padding-left: 4px; margin-left: 2px;">
+                                        <i class="fa-solid fa-comments"></i> <?= htmlspecialchars((string)$rec['promedio_resenas']) ?>
+                                    </span>
+                                <?php endif; ?>
                             </div>
 
                             <div class="genre-badge">

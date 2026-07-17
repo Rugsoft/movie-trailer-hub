@@ -11,7 +11,8 @@ $resultado = null;
 
 if ($genero_seleccionado !== "") {
     $sql = "SELECT t.*, GROUP_CONCAT(g2.nombre SEPARATOR ', ') as genero,
-                   CONCAT(d.nombre, ' ', d.apellidos) as director
+                   CONCAT(d.nombre, ' ', d.apellidos) as director,
+                   COALESCE((SELECT ROUND(AVG(valoracion), 1) FROM resenas WHERE id_trailer = t.id_trailer), 0) as promedio_resenas
             FROM trailers t
             JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
             JOIN generos g ON tg.id_genero = g.id_genero
@@ -76,7 +77,12 @@ require_once $rootPath . 'includes/navbar.php';
                                 <td><?php echo htmlspecialchars($trailer["director"] ?? 'N/A'); ?></td>
                                 <td><?php echo date('d/m/Y', strtotime($trailer["release_date"])); ?></td>
                                 <td><?php echo htmlspecialchars((string)$trailer["duracion"]); ?> min</td>
-                                <td>⭐ <?php echo htmlspecialchars((string)$trailer["valoracion"]); ?>/10</td>
+                                <td>
+                                    ⭐ TMDB: <?php echo htmlspecialchars((string)$trailer["valoracion"]); ?>/10
+                                    <?php if (isset($trailer['promedio_resenas']) && $trailer['promedio_resenas'] > 0): ?>
+                                        <br><i class="fa-solid fa-comments"></i> Comunidad: <?php echo htmlspecialchars((string)$trailer['promedio_resenas']); ?>/5
+                                    <?php endif; ?>
+                                </td>
                                 <td class="text-center nowrap">
                                     <a class="btn-tabla btn-devolver" href="reproducir_trailer.php?id=<?php echo $trailer['id_trailer']; ?>">Ver</a>
                                     <a class="btn-tabla btn-modificar" href="modificar_trailer.php?id=<?php echo $trailer['id_trailer']; ?>">Modificar</a>

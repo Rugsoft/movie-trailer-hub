@@ -19,7 +19,8 @@ if (!$actor) {
 }
 
 // Query movies they appeared in
-$sqlMovies = "SELECT t.*, rt.personaje, GROUP_CONCAT(g.nombre SEPARATOR ', ') as genero
+$sqlMovies = "SELECT t.*, rt.personaje, GROUP_CONCAT(g.nombre SEPARATOR ', ') as genero,
+                     COALESCE((SELECT ROUND(AVG(valoracion), 1) FROM resenas WHERE id_trailer = t.id_trailer), 0) as promedio_resenas
               FROM reparto_trailers rt
               JOIN trailers t ON rt.id_trailer = t.id_trailer
               LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
@@ -74,7 +75,12 @@ require $rootPath . 'includes/navbar.php';
                     </div>
                     <div class="movie-row-right">
                         <div class="movie-row-meta">
-                            <span class="rating">⭐ <?php echo htmlspecialchars((string)$movie['valoracion']); ?>/10</span>
+                            <span class="rating" style="display: inline-flex; flex-direction: column; gap: 2px; align-items: flex-start; line-height: 1.2;">
+                                <span>⭐ TMDB: <?php echo htmlspecialchars((string)$movie['valoracion']); ?>/10</span>
+                                <?php if (isset($movie['promedio_resenas']) && $movie['promedio_resenas'] > 0): ?>
+                                    <span><i class="fa-solid fa-comments"></i> Comunidad: <?php echo htmlspecialchars((string)$movie['promedio_resenas']); ?>/5</span>
+                                <?php endif; ?>
+                            </span>
                             <span>📅 Estreno: <?php echo date('d/m/Y', strtotime($movie['release_date'])); ?></span>
                             <span>🎬 Género: <?php echo htmlspecialchars($movie['genero']); ?></span>
                         </div>

@@ -161,7 +161,8 @@ if ($start_date !== '' || $end_date !== '' || $upcoming === 1) {
 $sql = "SELECT t.*, 
                GROUP_CONCAT(DISTINCT g.nombre SEPARATOR ', ') as genero,
                CONCAT(d.nombre, ' ', d.apellidos) as director,
-               GROUP_CONCAT(DISTINCT CONCAT(r.nombre, ' ', r.apellidos) SEPARATOR ', ') as reparto
+               GROUP_CONCAT(DISTINCT CONCAT(r.nombre, ' ', r.apellidos) SEPARATOR ', ') as reparto,
+               COALESCE((SELECT ROUND(AVG(valoracion), 1) FROM resenas WHERE id_trailer = t.id_trailer), 0) as promedio_resenas
         FROM trailers t
         LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
         LEFT JOIN generos g ON tg.id_genero = g.id_genero
@@ -218,7 +219,8 @@ if (isset($_SESSION['usuario_id'])) {
     // Vistos recientemente (últimos 5 trailers vistos sin duplicar película)
     $sqlRecent = "SELECT t.id_trailer, t.titulo, t.poster_url, t.valoracion, t.release_date, t.duracion,
                          GROUP_CONCAT(DISTINCT g.nombre SEPARATOR ', ') as genero,
-                         MAX(v.fecha_visualizacion) as ultima_vista
+                         MAX(v.fecha_visualizacion) as ultima_vista,
+                         COALESCE((SELECT ROUND(AVG(valoracion), 1) FROM resenas WHERE id_trailer = t.id_trailer), 0) as promedio_resenas
                   FROM visualizaciones v
                   JOIN trailers t ON v.id_trailer = t.id_trailer
                   LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
@@ -241,7 +243,8 @@ if (isset($_SESSION['usuario_id'])) {
 
 // 6. Intentar traer los 5 trailers más próximos a estrenarse para el banner (independiente de filtros)
 $sqlFeatured = "SELECT t.*, GROUP_CONCAT(DISTINCT g.nombre SEPARATOR ', ') as genero,
-                       CONCAT(d.nombre, ' ', d.apellidos) as director
+                       CONCAT(d.nombre, ' ', d.apellidos) as director,
+                       COALESCE((SELECT ROUND(AVG(valoracion), 1) FROM resenas WHERE id_trailer = t.id_trailer), 0) as promedio_resenas
                 FROM trailers t
                 LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
                 LEFT JOIN generos g ON tg.id_genero = g.id_genero
@@ -262,7 +265,8 @@ if (count($featuredTrailers) < 5) {
     $needed = 5 - count($featuredTrailers);
     $excludeIds = !empty($featuredTrailers) ? implode(',', array_column($featuredTrailers, 'id_trailer')) : '0';
     $sqlFallback = "SELECT t.*, GROUP_CONCAT(DISTINCT g.nombre SEPARATOR ', ') as genero,
-                           CONCAT(d.nombre, ' ', d.apellidos) as director
+                           CONCAT(d.nombre, ' ', d.apellidos) as director,
+                           COALESCE((SELECT ROUND(AVG(valoracion), 1) FROM resenas WHERE id_trailer = t.id_trailer), 0) as promedio_resenas
                     FROM trailers t
                     LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
                     LEFT JOIN generos g ON tg.id_genero = g.id_genero
@@ -305,7 +309,10 @@ require_once $rootPath . 'includes/navbar.php';
                                 <div class="hero-meta">
                                     <span><i class="fa-solid fa-film"></i> <?= htmlspecialchars($item['genero']) ?></span>
                                     <span><i class="fa-solid fa-calendar"></i> <?= date('d/m/Y', strtotime($item['release_date'])) ?></span>
-                                    <span><i class="fa-solid fa-star"></i> <?= htmlspecialchars((string)$item['valoracion']) ?>/10</span>
+                                    <span><i class="fa-solid fa-star"></i> TMDB: <?= htmlspecialchars((string)$item['valoracion']) ?>/10</span>
+                                    <?php if (isset($item['promedio_resenas']) && $item['promedio_resenas'] > 0): ?>
+                                        <span><i class="fa-solid fa-comments"></i> Comunidad: <?= htmlspecialchars((string)$item['promedio_resenas']) ?>/5</span>
+                                    <?php endif; ?>
                                     <span><i class="fa-solid fa-clock"></i> <?= htmlspecialchars((string)$item['duracion']) ?> min</span>
                                 </div>
                                 <div>
@@ -362,9 +369,14 @@ require_once $rootPath . 'includes/navbar.php';
                                 </div>
                             </div>
 
-                            <div class="rating-badge">
+                            <div class="rating-badge" title="Valoración TMDB / Comunidad">
                                 <i class="fa-solid fa-star"></i>
                                 <span><?= htmlspecialchars((string)$recent['valoracion']) ?></span>
+                                <?php if (isset($recent['promedio_resenas']) && $recent['promedio_resenas'] > 0): ?>
+                                    <span style="border-left: 1px solid rgba(216, 195, 173, 0.25); padding-left: 4px; margin-left: 2px;">
+                                        <i class="fa-solid fa-comments"></i> <?= htmlspecialchars((string)$recent['promedio_resenas']) ?>
+                                    </span>
+                                <?php endif; ?>
                             </div>
 
                             <div class="genre-badge">
@@ -446,9 +458,14 @@ require_once $rootPath . 'includes/navbar.php';
                         </div>
                     </div>
 
-                    <div class="rating-badge">
+                    <div class="rating-badge" title="Valoración TMDB / Comunidad">
                         <i class="fa-solid fa-star"></i>
                         <span><?= htmlspecialchars((string)$trailer['valoracion']) ?></span>
+                        <?php if (isset($trailer['promedio_resenas']) && $trailer['promedio_resenas'] > 0): ?>
+                            <span style="border-left: 1px solid rgba(216, 195, 173, 0.25); padding-left: 4px; margin-left: 2px;">
+                                <i class="fa-solid fa-comments"></i> <?= htmlspecialchars((string)$trailer['promedio_resenas']) ?>
+                            </span>
+                        <?php endif; ?>
                     </div>
 
                     <div class="genre-badge">

@@ -12,7 +12,8 @@ require_login('../index.php', "Debes iniciar sesión para acceder a tus favorito
 $id_usuario = $_SESSION['usuario_id'];
 
 $sql = "SELECT t.*, GROUP_CONCAT(g.nombre SEPARATOR ', ') as genero,
-               CONCAT(d.nombre, ' ', d.apellidos) as director
+               CONCAT(d.nombre, ' ', d.apellidos) as director,
+               COALESCE((SELECT ROUND(AVG(valoracion), 1) FROM resenas WHERE id_trailer = t.id_trailer), 0) as promedio_resenas
         FROM favoritos f
         JOIN trailers t ON f.id_trailer = t.id_trailer
         LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
@@ -59,9 +60,14 @@ require_once $rootPath . 'includes/navbar.php';
                                 </div>
                             </div>
 
-                            <div class="rating-badge">
+                            <div class="rating-badge" title="Valoración TMDB / Comunidad">
                                 <i class="fa-solid fa-star"></i>
                                 <span><?= htmlspecialchars((string)$trailer['valoracion']) ?></span>
+                                <?php if (isset($trailer['promedio_resenas']) && $trailer['promedio_resenas'] > 0): ?>
+                                    <span style="border-left: 1px solid rgba(216, 195, 173, 0.25); padding-left: 4px; margin-left: 2px;">
+                                        <i class="fa-solid fa-comments"></i> <?= htmlspecialchars((string)$trailer['promedio_resenas']) ?>
+                                    </span>
+                                <?php endif; ?>
                             </div>
 
                             <div class="genre-badge">
