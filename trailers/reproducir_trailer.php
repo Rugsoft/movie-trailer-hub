@@ -24,6 +24,11 @@ if ($checkColType && $rowCol = mysqli_fetch_assoc($checkColType)) {
         mysqli_query($conexion, "ALTER TABLE resenas MODIFY COLUMN valoracion DECIMAL(2,1) NOT NULL");
     }
 }
+// Verificar si la columna estado existe en resenas, si no, crearla
+$checkColEstado = mysqli_query($conexion, "SHOW COLUMNS FROM resenas LIKE 'estado'");
+if (mysqli_num_rows($checkColEstado) == 0) {
+    mysqli_query($conexion, "ALTER TABLE resenas ADD COLUMN estado VARCHAR(20) NOT NULL DEFAULT 'aprobada'");
+}
 
 $successMsg = $_SESSION['success'] ?? null;
 $errorMsg = $_SESSION['error'] ?? null;
@@ -75,12 +80,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             exit;
         }
         
-        $sqlSave = "INSERT INTO resenas (id_trailer, id_usuario, valoracion, comentario, fecha_alta) 
-                    VALUES (?, ?, ?, ?, NOW()) 
-                    ON DUPLICATE KEY UPDATE valoracion = VALUES(valoracion), comentario = VALUES(comentario), fecha_alta = NOW()";
+        // Obtener el estado del comentario anterior para evitar re-moderar comentarios idénticos
+        $prevComment = '';
+        $prevStatus = 'aprobada';
+        $sqlPrev = "SELECT comentario, estado FROM resenas WHERE id_trailer = ? AND id_usuario = ? LIMIT 1";
+        $stmtPrev = mysqli_prepare($conexion, $sqlPrev);
+        if ($stmtPrev) {
+            mysqli_stmt_bind_param($stmtPrev, "ii", $id, $id_usuario);
+            mysqli_stmt_execute($stmtPrev);
+            $resPrev = mysqli_stmt_get_result($stmtPrev);
+            if ($rowPrev = mysqli_fetch_assoc($resPrev)) {
+                $prevComment = $rowPrev['comentario'] ?? '';
+                $prevStatus = $rowPrev['estado'];
+            }
+            mysqli_stmt_close($stmtPrev);
+        }
+
+        $nuevoEstado = $prevStatus;
+        if ($comentario !== $prevComment) {
+            $nuevoEstado = (empty($comentario)) ? 'aprobada' : 'pendiente';
+        }
+
+        $sqlSave = "INSERT INTO resenas (id_trailer, id_usuario, valoracion, comentario, estado, fecha_alta) 
+                    VALUES (?, ?, ?, ?, ?, NOW()) 
+                    ON DUPLICATE KEY UPDATE valoracion = VALUES(valoracion), comentario = VALUES(comentario), estado = VALUES(estado), fecha_alta = NOW()";
         $stmtSave = mysqli_prepare($conexion, $sqlSave);
         if ($stmtSave) {
-            mysqli_stmt_bind_param($stmtSave, "iids", $id, $id_usuario, $valoracion, $comentario);
+            mysqli_stmt_bind_param($stmtSave, "iidss", $id, $id_usuario, $valoracion, $comentario, $nuevoEstado);
             if (mysqli_stmt_execute($stmtSave)) {
                 $_SESSION['success'] = "¡Tu reseña ha sido guardada con éxito!";
             } else {
@@ -537,7 +563,14 @@ require_once $rootPath . 'includes/navbar.php';
                                     
                                     <!-- Comentario -->
                                     <?php if (!empty($resena['comentario'])): ?>
-                                        <p class="review-text"><?= htmlspecialchars($resena['comentario']) ?></p>
+                                        <?php if ($resena['estado'] === 'aprobada' || (isset($_SESSION['usuario_id']) && (int)$resena['id_usuario'] === (int)$_SESSION['usuario_id'])): ?>
+                                            <p class="review-text"><?= htmlspecialchars($resena['comentario']) ?></p>
+                                            <?php if ($resena['estado'] === 'pendiente'): ?>
+                                                <span class="badge" style="font-size: 10px; background: rgba(245,158,11,0.15); color: var(--primary); border: 1px solid rgba(245,158,11,0.3); padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 4px;">
+                                                    <i class="fa-solid fa-hourglass-half"></i> Comentario pendiente de aprobación
+                                                </span>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </div>
                             </div>

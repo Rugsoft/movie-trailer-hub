@@ -43,6 +43,7 @@ El proyecto se distribuye en módulos limpios y estructurados:
 * **`/includes`**:
   * [navbar.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/includes/navbar.php) & [footer.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/includes/footer.php): Componentes comunes del layout del sitio.
   * [seguridad.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/includes/seguridad.php): Módulo central de seguridad y roles de usuario.
+  * [moderacion_resenas.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/includes/moderacion_resenas.php): Panel de moderación para que administradores y editores aprueben o rechacen los comentarios de las reseñas.
 
 ---
 
@@ -67,6 +68,7 @@ Calcula un puntaje de afinidad en tiempo real al reproducir un trailer para suge
 ### 4. Sistema de Reseñas y Valoraciones
 * Selector dinámico e interactivo con pasos de **0.5 estrellas (medias estrellas)** de 0.5 a 5.0.
 * **Contador de Caracteres Reactivo:** Cuadro de texto para comentarios con contador visual (`X / 2000`), imponiendo límites mínimos (25 caracteres) y máximos (2000 caracteres) tanto en cliente como en servidor.
+* **Sistema de Moderación Integrado:** La puntuación en estrellas se aplica inmediatamente al promedio de la película. Sin embargo, el comentario de texto entra en estado `pendiente` y se oculta del público hasta que un `admin` o `editor` lo apruebe. Si es rechazado, se elimina el texto de forma permanente pero se conserva el voto en estrellas.
 * Promedio dinámico de calificación de la película actualizado de forma instantánea.
 * Restricciones únicas en BD para garantizar que cada usuario pueda dejar solo una valoración por película (con opción de editarla o eliminarla).
 

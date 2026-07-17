@@ -3633,3 +3633,11 @@ body.cinema-mode-active .video-container {
   margin-top: 6px;
 }
 
+
+/* Panel de Moderación */
+.moderation-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  margin-top: 24px;
+}

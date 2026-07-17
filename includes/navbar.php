@@ -40,6 +40,9 @@
                                 <a href="<?php echo $rootPath; ?>trailers/listar_trailers.php" class="dropdown-item">
                                     <i class="fa-solid fa-list"></i> Administrar Trailers
                                 </a>
+                                <a href="<?php echo $rootPath; ?>includes/moderacion_resenas.php" class="dropdown-item">
+                                    <i class="fa-solid fa-comments"></i> Moderar Reseñas
+                                </a>
                                 <?php if (has_role('admin')): ?>
                                     <a href="<?php echo $rootPath; ?>auth/gestion_usuarios.php" class="dropdown-item">
                                         <i class="fa-solid fa-users"></i> Administrar Usuarios
