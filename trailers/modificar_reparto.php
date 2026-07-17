@@ -29,6 +29,7 @@ require_once $rootPath . 'includes/navbar.php';
     <p>Actualizar la ficha de "<strong><?php echo htmlspecialchars($actor['nombre'] . ' ' . $actor['apellidos']); ?></strong>" en el sistema.</p>
 
     <form action="procesar_modificar_reparto.php" method="POST">
+        <?= csrf_field() ?>
         <input type="hidden" name="id_reparto" value="<?php echo $actor['id_reparto']; ?>">
 
         <label for="nombre">Nombre *</label>

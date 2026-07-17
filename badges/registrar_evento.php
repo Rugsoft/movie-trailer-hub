@@ -6,14 +6,13 @@ require_once "gamificacion_helper.php";
 
 header('Content-Type: application/json; charset=utf-8');
 
-if (!isset($_SESSION['usuario_id'])) {
-    http_response_code(401);
-    echo json_encode(['error' => 'No autorizado']);
-    exit;
-}
+require_login('../auth/login.php');
+require_post(true);
+require_csrf(true);
 
 $id_usuario = (int)$_SESSION['usuario_id'];
-$action = $_GET['action'] ?? '';
+$data = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+$action = $data['action'] ?? '';
 
 if ($action === 'modo_cine') {
     $sql = "INSERT INTO usuario_gamificacion_stats (id_usuario, modo_cine_activado) 
@@ -41,7 +40,7 @@ if ($action === 'modo_cine') {
 }
 
 if ($action === 'leer_resenas') {
-    $id_trailer = isset($_GET['id_trailer']) ? (int)$_GET['id_trailer'] : 0;
+    $id_trailer = isset($data['id_trailer']) ? (int)$data['id_trailer'] : 0;
     if ($id_trailer > 0) {
         $sql = "INSERT IGNORE INTO usuario_lectura_resenas (id_usuario, id_trailer) VALUES (?, ?)";
         $stmt = mysqli_prepare($conexion, $sql);

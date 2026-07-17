@@ -35,6 +35,7 @@ $resDirectores = mysqli_query($conexion, $sqlDirectores);
     </div>
 
     <form action="procesar_trailer.php" method="POST">
+        <?= csrf_field() ?>
         <label for="titulo">Título de la Película *</label>
         <input type="text" id="titulo" name="titulo" required placeholder="Ej: Interstellar">
 

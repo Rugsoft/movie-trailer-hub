@@ -43,7 +43,11 @@ require_once $rootPath . 'includes/navbar.php';
                             <a class="btn-tabla btn-devolver" href="actor_peliculas.php?id=<?php echo $actor['id_reparto']; ?>">Ver Perfil</a>
                             <a class="btn-tabla btn-modificar" href="modificar_reparto.php?id=<?php echo $actor['id_reparto']; ?>">Modificar</a>
                             <?php if ($_SESSION['rol'] === 'admin'): ?>
-                                <a class="btn-tabla btn-eliminar" href="eliminar_reparto.php?id=<?php echo $actor['id_reparto']; ?>" onclick="return confirm('¿Estás seguro de que deseas eliminar este actor? Se desvinculará de todos los trailers.');">Eliminar</a>
+                                <form action="eliminar_reparto.php" method="POST" class="table-action-form" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este actor? Se desvinculará de todos los trailers.');">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="id" value="<?= (int)$actor['id_reparto'] ?>">
+                                    <button type="submit" class="btn-tabla btn-eliminar">Eliminar</button>
+                                </form>
                             <?php endif; ?>
                         </td>
                     </tr>

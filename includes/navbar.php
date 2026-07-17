@@ -79,9 +79,12 @@
                         Hola, <?= htmlspecialchars($_SESSION['username']) ?>
                     </a>
 
-                    <a href="<?php echo $rootPath; ?>auth/logout.php" class="btn btn-secondary">
-                        <i class="fa-solid fa-right-from-bracket"></i> Salir
-                    </a>
+                    <form action="<?php echo $rootPath; ?>auth/logout.php" method="POST" style="display: inline;">
+                        <?= csrf_field() ?>
+                        <button type="submit" class="btn btn-secondary">
+                            <i class="fa-solid fa-right-from-bracket"></i> Salir
+                        </button>
+                    </form>
                 <?php else: ?>
                     <a href="<?php echo $rootPath; ?>auth/login.php" class="btn btn-secondary">
                         <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión

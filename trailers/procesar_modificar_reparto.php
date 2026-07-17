@@ -2,6 +2,8 @@
 require_once "../config/conexion.php";
 require_once __DIR__ . "/../includes/seguridad.php";
 require_admin_or_editor('../index.php');
+require_post();
+require_csrf();
 define('BASE_PATH', '../');
 
 $id_reparto = isset($_POST["id_reparto"]) ? (int)$_POST["id_reparto"] : 0;

@@ -173,18 +173,20 @@ if (isset($_SESSION['usuario_id'])) {
         <?php endif; ?>
 
         // Manejador Asíncrono Global de Favoritos
-        document.addEventListener('click', function(e) {
-            const btn = e.target.closest('.btn-toggle-favorito, .btn-toggle-favorito-detail, .favorite-heart-btn');
-            if (btn) {
+        document.addEventListener('submit', function(e) {
+            const form = e.target.closest('.favorite-toggle-form');
+            if (form) {
                 e.preventDefault();
-                const url = btn.getAttribute('href');
-                const fetchUrl = url + (url.includes('?') ? '&' : '?') + 'ajax=1';
+                const btn = form.querySelector('.btn-toggle-favorito, .btn-toggle-favorito-detail, .favorite-heart-btn');
+                const formData = new FormData(form);
 
-                fetch(fetchUrl, {
-                    method: 'GET',
+                fetch(form.action, {
+                    method: 'POST',
                     headers: {
+                        'X-CSRF-Token': formData.get('csrf_token'),
                         'X-Requested-With': 'XMLHttpRequest'
-                    }
+                    },
+                    body: formData
                 })
                 .then(res => res.json())
                 .then(data => {

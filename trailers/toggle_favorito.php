@@ -1,17 +1,26 @@
 <?php
 require_once "../config/conexion.php";
+require_once __DIR__ . "/../includes/seguridad.php";
 define('BASE_PATH', '../');
 
-if (!isset($_SESSION['usuario_id'])) {
-    $_SESSION['error'] = "Debes iniciar sesión para añadir trailers a tus favoritos.";
-    header("Location: ../auth/login.php");
-    exit;
-}
+$isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH'])
+    && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
 
-$id_usuario = $_SESSION['usuario_id'];
-$id_trailer = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+require_login('../auth/login.php', "Debes iniciar sesión para añadir trailers a tus favoritos.");
+require_post($isAjax);
+require_csrf($isAjax);
+
+$id_usuario = (int)$_SESSION['usuario_id'];
+$id_trailer = isset($_POST['id']) ? (int)$_POST['id'] : 0;
 
 if ($id_trailer <= 0) {
+    if ($isAjax) {
+        http_response_code(400);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['error' => 'ID de trailer inválido.']);
+        exit;
+    }
+
     header("Location: ../index.php");
     exit;
 }
@@ -57,12 +66,8 @@ procesar_y_obtener_badges($conexion, $id_usuario);
 
 mysqli_close($conexion);
 
-// Detectar si la petición es AJAX
-$isAjax = (isset($_GET['ajax']) && $_GET['ajax'] == 1) || 
-          (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
-
 if ($isAjax) {
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=utf-8');
     $nuevosLogros = $_SESSION['nuevos_logros_desbloqueados'] ?? [];
     unset($_SESSION['nuevos_logros_desbloqueados']);
     echo json_encode([

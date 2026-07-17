@@ -2,7 +2,7 @@
 require_once "../config/conexion.php";
 require_once __DIR__ . "/../includes/seguridad.php";
 
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 
 // 1. Validar autenticación
 if (!isset($_SESSION['usuario_id'])) {
@@ -13,6 +13,9 @@ if (!isset($_SESSION['usuario_id'])) {
 
 $id_usuario = (int)$_SESSION['usuario_id'];
 
+require_post(true);
+require_csrf(true);
+
 // 2. Obtener los parámetros de entrada (POST form o JSON)
 $contentType = $_SERVER["CONTENT_TYPE"] ?? '';
 if (stripos($contentType, 'application/json') !== false) {
@@ -20,14 +23,6 @@ if (stripos($contentType, 'application/json') !== false) {
     $data = json_decode($rawData, true) ?? [];
 } else {
     $data = $_POST;
-}
-
-// 3. Validar CSRF
-$csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $data['csrf_token'] ?? '';
-if (!$csrfToken || $csrfToken !== $_SESSION['csrf_token']) {
-    http_response_code(403);
-    echo json_encode(['error' => 'Token CSRF inválido.']);
-    exit;
 }
 
 $action = $data['action'] ?? '';

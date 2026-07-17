@@ -2,9 +2,11 @@
 require_once "../config/conexion.php";
 require_once __DIR__ . "/../includes/seguridad.php";
 require_admin('../index.php');
+require_post();
+require_csrf();
 define('BASE_PATH', '../');
 
-$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
 ?>
 <!DOCTYPE html>
 <html lang="es">

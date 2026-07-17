@@ -56,6 +56,7 @@ define('BASE_PATH', '../');
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+    const csrfToken = <?= json_encode(csrf_token(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     const movieQuery = document.getElementById('movieQuery');
     const btnSearch = document.getElementById('btnSearch');
     const resultsGrid = document.getElementById('resultsGrid');
@@ -158,6 +159,8 @@ document.addEventListener('DOMContentLoaded', () => {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRF-Token': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
             },
             body: `id=${id}`
         })

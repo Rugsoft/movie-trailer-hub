@@ -26,6 +26,7 @@ require_once $rootPath . 'includes/navbar.php';
     </div>
 
     <form action="procesar_reparto.php" method="POST">
+        <?= csrf_field() ?>
         <label for="nombre">Nombre *</label>
         <input type="text" id="nombre" name="nombre" required placeholder="Ej: Matthew">
 

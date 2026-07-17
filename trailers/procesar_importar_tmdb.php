@@ -6,6 +6,8 @@ header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . "/../includes/seguridad.php";
 require_admin_or_editor(null, true);
+require_post(true);
+require_csrf(true);
 
 $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
 if ($id <= 0) {

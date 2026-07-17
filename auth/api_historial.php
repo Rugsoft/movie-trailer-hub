@@ -1,19 +1,14 @@
 <?php
 require_once "../config/conexion.php";
+require_once __DIR__ . "/../includes/seguridad.php";
 
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 
-if (!isset($_SESSION['usuario_id'])) {
-    echo json_encode(["error" => "No autorizado."]);
-    exit;
-}
+require_login('login.php');
+require_post(true);
+require_csrf(true);
 
 $id_usuario = (int)$_SESSION['usuario_id'];
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    echo json_encode(["error" => "Método no permitido."]);
-    exit;
-}
 
 $data = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 $action = $data['action'] ?? '';

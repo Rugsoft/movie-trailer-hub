@@ -491,13 +491,21 @@ require_once $rootPath . 'includes/navbar.php';
 
                         <?php if (isset($_SESSION['usuario_id'])): ?>
                             <?php if (in_array((int)$trailer['id_trailer'], $userFavorites)): ?>
-                                <a class="btn btn-secondary btn-toggle-favorito btn-active-favorito" href="trailers/toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" data-id="<?= $trailer['id_trailer'] ?>" title="Quitar de favoritos">
-                                    <i class="fa-solid fa-heart"></i>
-                                </a>
+                                <form action="trailers/toggle_favorito.php" method="POST" class="favorite-toggle-form" style="display: inline-flex; margin: 0;">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="id" value="<?= (int)$trailer['id_trailer'] ?>">
+                                    <button type="submit" class="btn btn-secondary btn-toggle-favorito btn-active-favorito" data-id="<?= (int)$trailer['id_trailer'] ?>" title="Quitar de favoritos">
+                                        <i class="fa-solid fa-heart"></i>
+                                    </button>
+                                </form>
                             <?php else: ?>
-                                <a class="btn btn-secondary btn-toggle-favorito" href="trailers/toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" data-id="<?= $trailer['id_trailer'] ?>" title="Añadir a favoritos">
-                                    <i class="fa-regular fa-heart"></i>
-                                </a>
+                                <form action="trailers/toggle_favorito.php" method="POST" class="favorite-toggle-form" style="display: inline-flex; margin: 0;">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="id" value="<?= (int)$trailer['id_trailer'] ?>">
+                                    <button type="submit" class="btn btn-secondary btn-toggle-favorito" data-id="<?= (int)$trailer['id_trailer'] ?>" title="Añadir a favoritos">
+                                        <i class="fa-regular fa-heart"></i>
+                                    </button>
+                                </form>
                             <?php endif; ?>
                             <?php if (has_role(['admin', 'editor'])): ?>
                                 <a class="btn btn-secondary btn-modificar" href="trailers/modificar_trailer.php?id=<?= $trailer['id_trailer'] ?>">
@@ -505,9 +513,13 @@ require_once $rootPath . 'includes/navbar.php';
                                 </a>
                             <?php endif; ?>
                             <?php if (has_role('admin')): ?>
-                                <a class="btn btn-danger btn-eliminar" href="trailers/eliminar_trailer.php?id=<?= $trailer['id_trailer'] ?>" onclick="return confirm('¿Estás seguro de que deseas eliminar este trailer?');">
-                                    <i class="fa-solid fa-trash"></i> Borrar
-                                </a>
+                                <form action="trailers/eliminar_trailer.php" method="POST" style="display: inline;" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este trailer?');">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="id" value="<?= (int)$trailer['id_trailer'] ?>">
+                                    <button type="submit" class="btn btn-danger btn-eliminar">
+                                        <i class="fa-solid fa-trash"></i> Borrar
+                                    </button>
+                                </form>
                             <?php endif; ?>
                         <?php endif; ?>
                     </div>

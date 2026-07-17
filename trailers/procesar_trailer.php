@@ -2,6 +2,8 @@
 require_once "../config/conexion.php";
 require_once __DIR__ . "/../includes/seguridad.php";
 require_admin_or_editor('../index.php');
+require_post();
+require_csrf();
 define('BASE_PATH', '../');
 
 $titulo = trim($_POST["titulo"] ?? "");

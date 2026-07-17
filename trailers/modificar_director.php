@@ -29,6 +29,7 @@ require_once $rootPath . 'includes/navbar.php';
     <p>Actualizar la ficha de "<strong><?php echo htmlspecialchars($director['nombre'] . ' ' . $director['apellidos']); ?></strong>" en el sistema.</p>
 
     <form action="procesar_modificar_director.php" method="POST">
+        <?= csrf_field() ?>
         <input type="hidden" name="id_director" value="<?php echo $director['id_director']; ?>">
 
         <label for="nombre">Nombre *</label>

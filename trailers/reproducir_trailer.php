@@ -3,9 +3,7 @@ require_once "../config/conexion.php";
 require_once __DIR__ . "/../includes/seguridad.php";
 define('BASE_PATH', '../');
 
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
+csrf_token();
 
 // Auto-migración: Crear tabla de reseñas si no existe
 $sqlMigrateResenas = "CREATE TABLE IF NOT EXISTS resenas (
@@ -64,14 +62,15 @@ if (!$trailer) {
 // Procesar el envío de una nueva reseña o actualización/eliminación de una existente
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     require_login("reproducir_trailer.php?id=" . $id, "Debes iniciar sesión para publicar o modificar una reseña.");
+
+    $isAjax = (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest')
+        || (isset($_SERVER['CONTENT_TYPE']) && stripos($_SERVER['CONTENT_TYPE'], 'application/json') !== false)
+        || (isset($_SERVER['HTTP_ACCEPT']) && stripos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
+    require_csrf($isAjax);
     
     $id_usuario = (int)$_SESSION['usuario_id'];
     
     if ($_POST['action'] === 'guardar_resena') {
-        $isAjax = (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest')
-                  || (isset($_SERVER['CONTENT_TYPE']) && stripos($_SERVER['CONTENT_TYPE'], 'application/json') !== false)
-                  || (isset($_SERVER['HTTP_ACCEPT']) && stripos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
-
         $valoracion = isset($_POST['valoracion']) ? (float)$_POST['valoracion'] : 0.0;
         $comentario = isset($_POST['comentario']) ? trim($_POST['comentario']) : '';
         
@@ -538,13 +537,21 @@ require_once $rootPath . 'includes/navbar.php';
         <?php if (isset($_SESSION['usuario_id'])): ?>
             <div class="text-center mb-24" style="margin-top: 15px; margin-bottom: 20px;">
                 <?php if ($isTrailerFavorito): ?>
-                    <a href="toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" class="btn btn-secondary btn-toggle-favorito-detail btn-active-favorito-reproductor" data-id="<?= $trailer['id_trailer'] ?>">
-                        <i class="fa-solid fa-heart"></i> Quitar de Favoritos
-                    </a>
+                    <form action="toggle_favorito.php" method="POST" class="favorite-toggle-form" style="display: inline-flex; margin: 0;">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="id" value="<?= (int)$trailer['id_trailer'] ?>">
+                        <button type="submit" class="btn btn-secondary btn-toggle-favorito-detail btn-active-favorito-reproductor" data-id="<?= (int)$trailer['id_trailer'] ?>">
+                            <i class="fa-solid fa-heart"></i> Quitar de Favoritos
+                        </button>
+                    </form>
                 <?php else: ?>
-                    <a href="toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" class="btn btn-secondary btn-toggle-favorito-detail btn-inline-flex" data-id="<?= $trailer['id_trailer'] ?>">
-                        <i class="fa-regular fa-heart"></i> Añadir a Favoritos
-                    </a>
+                    <form action="toggle_favorito.php" method="POST" class="favorite-toggle-form" style="display: inline-flex; margin: 0;">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="id" value="<?= (int)$trailer['id_trailer'] ?>">
+                        <button type="submit" class="btn btn-secondary btn-toggle-favorito-detail btn-inline-flex" data-id="<?= (int)$trailer['id_trailer'] ?>">
+                            <i class="fa-regular fa-heart"></i> Añadir a Favoritos
+                        </button>
+                    </form>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
@@ -591,6 +598,7 @@ require_once $rootPath . 'includes/navbar.php';
                         </h4>
                         
                         <form action="" method="POST">
+                            <?= csrf_field() ?>
                             <input type="hidden" name="action" value="guardar_resena">
                             
                             <!-- Selector de estrellas interactivo -->
@@ -634,6 +642,7 @@ require_once $rootPath . 'includes/navbar.php';
                         <?php if ($userReview): ?>
                             <!-- Formulario oculto para eliminar reseña -->
                             <form id="deleteReviewForm" action="" method="POST" style="display:none;">
+                                <?= csrf_field() ?>
                                 <input type="hidden" name="action" value="eliminar_resena">
                             </form>
                         <?php endif; ?>
@@ -780,6 +789,8 @@ require_once $rootPath . 'includes/navbar.php';
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            const csrfTokenVal = <?= json_encode(csrf_token(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+
             // Lógica para desplegar reseñas asíncronamente
             const toggleReviewsHeader = document.getElementById('toggleReviewsHeader');
             const reviewsContent = document.getElementById('reviewsCollapsibleContent');
@@ -788,7 +799,18 @@ require_once $rootPath . 'includes/navbar.php';
                     const isCollapsed = reviewsContent.style.display === 'none';
                     reviewsContent.style.display = isCollapsed ? 'block' : 'none';
                     if (isCollapsed) {
-                        fetch('../badges/registrar_evento.php?action=leer_resenas&id_trailer=<?= $id ?>')
+                        fetch('../badges/registrar_evento.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-Token': csrfTokenVal,
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify({
+                                action: 'leer_resenas',
+                                id_trailer: <?= (int)$id ?>
+                            })
+                        })
                         .then(res => res.json())
                         .then(data => {
                             if (data.nuevos_logros && data.nuevos_logros.length > 0) {
@@ -811,7 +833,15 @@ require_once $rootPath . 'includes/navbar.php';
                     const isActive = document.body.classList.toggle('cinema-mode-active');
                     if (isActive) {
                         cinemaBtn.innerHTML = '<i class="fa-solid fa-sun"></i> <span>Encender Luces</span>';
-                        fetch('../badges/registrar_evento.php?action=modo_cine')
+                        fetch('../badges/registrar_evento.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-Token': csrfTokenVal,
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify({ action: 'modo_cine' })
+                        })
                         .then(res => res.json())
                         .then(data => {
                             if (data.nuevos_logros && data.nuevos_logros.length > 0) {
@@ -885,7 +915,8 @@ require_once $rootPath . 'includes/navbar.php';
                         fetch('reproducir_trailer.php?id=' + trailerId, {
                             method: 'POST',
                             headers: {
-                                'X-Requested-With': 'XMLHttpRequest'
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-Token': csrfTokenVal
                             },
                             body: formData
                         })
@@ -919,7 +950,6 @@ require_once $rootPath . 'includes/navbar.php';
                 });
             }
             // === Lógica de la Bitácora Personal (Inline) ===
-            const csrfTokenVal = '<?= $_SESSION['csrf_token'] ?>';
             const currentTrailerId = <?= $id ?>;
 
             // Cambiar estado en las listas personales

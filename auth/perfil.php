@@ -58,6 +58,8 @@ $error = null;
 
 // 3. Procesar el formulario de edición
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    require_csrf();
+
     $nombre = trim($_POST["nombre"] ?? "");
     $apellidos = trim($_POST["apellidos"] ?? "");
     $email = trim($_POST["email"] ?? "");
@@ -455,6 +457,7 @@ require_once $rootPath . 'includes/navbar.php';
             <!-- Formulario de Configuración -->
             <section class="profile-form-container">
                 <form action="perfil.php" method="POST" autocomplete="off">
+                    <?= csrf_field() ?>
                     
                     <h3 class="profile-section-title"><i class="fa-solid fa-id-card"></i> Datos Personales</h3>
                     
@@ -920,7 +923,7 @@ require_once $rootPath . 'includes/navbar.php';
 <!-- Side Drawer para Detalle y Gestión de Películas -->
 <div id="movieDrawer" class="side-drawer">
     <div class="drawer-content">
-        <input type="hidden" id="moviesCsrfToken" value="<?= $_SESSION['csrf_token'] ?>">
+        <input type="hidden" id="moviesCsrfToken" value="<?= htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
         <div class="drawer-header">
             <h3 id="drawerMovieTitle">Título de la Película</h3>
             <button type="button" class="close-drawer-btn" id="closeDrawerBtn">&times;</button>
@@ -1183,7 +1186,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 fetch('api_historial.php', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': moviesCsrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
                     body: JSON.stringify({
                         action: 'delete_entry',
@@ -1225,7 +1230,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 fetch('api_historial.php', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': moviesCsrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
                     body: JSON.stringify({
                         action: 'clear_history'
@@ -1534,7 +1541,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btn) {
             const id_trailer = btn.getAttribute('data-id');
             if (confirm('¿Estás seguro de que quieres quitar esta película de tus favoritos?')) {
-                fetch(`../trailers/toggle_favorito.php?id=${id_trailer}&ajax=1`)
+                const formData = new FormData();
+                formData.append('id', id_trailer);
+
+                fetch('../trailers/toggle_favorito.php', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-Token': moviesCsrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                })
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {

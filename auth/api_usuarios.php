@@ -11,13 +11,9 @@ require_admin();
 // 2. Validar token CSRF para operaciones de modificación/creación/eliminación
 $action = $_GET['action'] ?? '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $csrfToken = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? null;
-    if (!$csrfToken || $csrfToken !== $_SESSION['csrf_token']) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Petición rechazada: token CSRF inválido o ausente.']);
-        exit;
-    }
+if ($action !== 'list') {
+    require_post(true);
+    require_csrf(true);
 }
 
 // 3. Procesar Acciones

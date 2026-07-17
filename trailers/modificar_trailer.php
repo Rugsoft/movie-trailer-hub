@@ -67,6 +67,7 @@ require_once $rootPath . 'includes/navbar.php';
     <p>Actualizar la ficha de "<strong><?php echo htmlspecialchars($trailer['titulo']); ?></strong>" en el catálogo.</p>
 
     <form action="procesar_modificar_trailer.php" method="POST">
+        <?= csrf_field() ?>
         <input type="hidden" name="id_trailer" value="<?php echo $trailer['id_trailer']; ?>">
 
         <label for="titulo">Título de la Película *</label>

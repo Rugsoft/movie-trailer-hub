@@ -6,6 +6,77 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 /**
+ * Obtiene el token CSRF de la sesión y lo crea cuando todavía no existe.
+ */
+function csrf_token(): string {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+
+    return $_SESSION['csrf_token'];
+}
+
+/**
+ * Genera el campo oculto que deben incluir los formularios protegidos.
+ */
+function csrf_field(): string {
+    return '<input type="hidden" name="csrf_token" value="'
+        . htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8')
+        . '">';
+}
+
+/**
+ * Rechaza cualquier método HTTP distinto de POST.
+ */
+function require_post(bool $isAjax = false): void {
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+        return;
+    }
+
+    header('Allow: POST');
+    http_response_code(405);
+
+    if ($isAjax) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['error' => 'Método no permitido.']);
+    } else {
+        header('Content-Type: text/plain; charset=utf-8');
+        echo 'Método no permitido.';
+    }
+
+    exit;
+}
+
+/**
+ * Valida el token CSRF recibido por formulario o cabecera HTTP.
+ */
+function require_csrf(bool $isAjax = false): void {
+    $receivedToken = $_SERVER['HTTP_X_CSRF_TOKEN']
+        ?? $_POST['csrf_token']
+        ?? '';
+
+    if (
+        is_string($receivedToken)
+        && $receivedToken !== ''
+        && hash_equals(csrf_token(), $receivedToken)
+    ) {
+        return;
+    }
+
+    http_response_code(403);
+
+    if ($isAjax) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['error' => 'Token CSRF inválido o ausente.']);
+    } else {
+        header('Content-Type: text/plain; charset=utf-8');
+        echo 'Petición rechazada: token CSRF inválido o ausente.';
+    }
+
+    exit;
+}
+
+/**
  * Comprueba si el usuario actual posee uno o varios de los roles especificados.
  */
 function has_role($allowedRoles): bool {

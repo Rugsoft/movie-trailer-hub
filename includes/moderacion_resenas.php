@@ -3,10 +3,7 @@ require_once "../config/conexion.php";
 require_once __DIR__ . "/seguridad.php";
 require_admin_or_editor('../index.php');
 
-// Inicializar token CSRF
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
+csrf_token();
 
 $successMsg = $_SESSION['success'] ?? null;
 $errorMsg = $_SESSION['error'] ?? null;
@@ -14,12 +11,7 @@ unset($_SESSION['success'], $_SESSION['error']);
 
 // Procesar aprobación o rechazo
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $csrfToken = $_POST['csrf_token'] ?? '';
-    if (!$csrfToken || $csrfToken !== $_SESSION['csrf_token']) {
-        $_SESSION['error'] = "Token CSRF inválido.";
-        header("Location: moderacion_resenas.php");
-        exit;
-    }
+    require_csrf();
     
     $action = $_POST['action'] ?? '';
     $id_resena = isset($_POST['id_resena']) ? (int)$_POST['id_resena'] : 0;
@@ -129,7 +121,7 @@ require_once "navbar.php";
 
                     <div style="display: flex; justify-content: flex-end; gap: 12px;">
                         <form action="" method="POST" style="margin:0;">
-                            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                            <?= csrf_field() ?>
                             <input type="hidden" name="id_resena" value="<?= $rev['id_resena'] ?>">
                             <input type="hidden" name="action" value="rechazar">
                             <button type="submit" class="btn btn-secondary" onclick="return confirm('¿Rechazar este comentario? El texto se eliminará de forma permanente, pero la valoración de estrellas se mantendrá.');" style="background: transparent; color: var(--secondary); border: 1px solid var(--secondary); display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: var(--radius-sm);">
@@ -138,7 +130,7 @@ require_once "navbar.php";
                         </form>
                         
                         <form action="" method="POST" style="margin:0;">
-                            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                            <?= csrf_field() ?>
                             <input type="hidden" name="id_resena" value="<?= $rev['id_resena'] ?>">
                             <input type="hidden" name="action" value="aprobar">
                             <button type="submit" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; font-size: 12px; font-weight: 600; cursor: pointer; border-radius: var(--radius-sm);">

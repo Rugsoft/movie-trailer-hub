@@ -1,11 +1,14 @@
 <?php
 require_once "../config/conexion.php";
+require_once __DIR__ . "/../includes/seguridad.php";
 define('BASE_PATH', '../');
 
 $error = null;
 $success = null;
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    require_csrf();
+
     $username = trim($_POST["username"] ?? "");
     $nombre = trim($_POST["nombre"] ?? "");
     $apellidos = trim($_POST["apellidos"] ?? "");
@@ -90,6 +93,7 @@ require_once $rootPath . 'includes/navbar.php';
     <?php endif; ?>
 
     <form action="registro.php" method="POST">
+        <?= csrf_field() ?>
         <label for="username">Nombre de Usuario *</label>
         <input type="text" id="username" name="username" required placeholder="Ej: lector123">
 

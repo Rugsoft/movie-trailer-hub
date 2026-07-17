@@ -8,10 +8,7 @@ require_admin('../index.php');
 
 define('BASE_PATH', '../');
 
-// Generar token CSRF seguro si no existe
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
+$csrfToken = csrf_token();
 
 // 2. Cargar todos los usuarios inicialmente desde PHP para evitar saltos visuales
 $sql = "SELECT u.*,
@@ -446,7 +443,7 @@ require_once $rootPath . 'includes/navbar.php';
 
 <script>
     // Token CSRF generado en sesión PHP
-    const csrfToken = "<?= $_SESSION['csrf_token'] ?>";
+    const csrfToken = <?= json_encode($csrfToken, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
     const loggedUserId = <?= (int)$_SESSION['usuario_id'] ?>;
 
     const modal = document.getElementById('userFormModal');

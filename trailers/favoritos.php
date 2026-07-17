@@ -91,9 +91,13 @@ require_once $rootPath . 'includes/navbar.php';
                                     <i class="fa-solid fa-play"></i> Ver
                                 </a>
                                 
-                                <a class="favorite-heart-btn" href="toggle_favorito.php?id=<?= $trailer['id_trailer'] ?>" title="Quitar de favoritos">
-                                    <i class="fa-solid fa-heart"></i>
-                                </a>
+                                <form action="toggle_favorito.php" method="POST" class="favorite-toggle-form" style="display: inline-flex; margin: 0;">
+                                    <?= csrf_field() ?>
+                                    <input type="hidden" name="id" value="<?= (int)$trailer['id_trailer'] ?>">
+                                    <button type="submit" class="favorite-heart-btn" title="Quitar de favoritos">
+                                        <i class="fa-solid fa-heart"></i>
+                                    </button>
+                                </form>
 
                                  <?php if (has_role(['admin', 'editor'])): ?>
                                      <a class="btn btn-secondary btn-modificar" href="modificar_trailer.php?id=<?= $trailer['id_trailer'] ?>">
@@ -101,9 +105,13 @@ require_once $rootPath . 'includes/navbar.php';
                                      </a>
                                  <?php endif; ?>
                                  <?php if (has_role('admin')): ?>
-                                     <a class="btn btn-danger btn-eliminar" href="eliminar_trailer.php?id=<?= $trailer['id_trailer'] ?>" onclick="return confirm('¿Estás seguro de que deseas eliminar este trailer?');">
-                                         <i class="fa-solid fa-trash"></i> Borrar
-                                     </a>
+                                     <form action="eliminar_trailer.php" method="POST" style="display: inline;" onsubmit="return confirm('¿Estás seguro de que deseas eliminar este trailer?');">
+                                         <?= csrf_field() ?>
+                                         <input type="hidden" name="id" value="<?= (int)$trailer['id_trailer'] ?>">
+                                         <button type="submit" class="btn btn-danger btn-eliminar">
+                                             <i class="fa-solid fa-trash"></i> Borrar
+                                         </button>
+                                     </form>
                                  <?php endif; ?>
                             </div>
                         </div>
