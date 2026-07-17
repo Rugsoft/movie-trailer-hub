@@ -64,17 +64,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $id_usuario = (int)$_SESSION['usuario_id'];
     
     if ($_POST['action'] === 'guardar_resena') {
+        $isAjax = (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest')
+                  || (isset($_SERVER['CONTENT_TYPE']) && stripos($_SERVER['CONTENT_TYPE'], 'application/json') !== false)
+                  || (isset($_SERVER['HTTP_ACCEPT']) && stripos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
+
         $valoracion = isset($_POST['valoracion']) ? (float)$_POST['valoracion'] : 0.0;
         $comentario = isset($_POST['comentario']) ? trim($_POST['comentario']) : '';
         
         $commentLength = mb_strlen($comentario);
-        if ($commentLength < 25 || $commentLength > 2000) {
+        if ($commentLength > 0 && ($commentLength < 25 || $commentLength > 2000)) {
+            if ($isAjax) {
+                http_response_code(400);
+                echo json_encode(['error' => "La reseña debe tener entre 25 y 2000 caracteres."]);
+                exit;
+            }
             $_SESSION['error'] = "La reseña debe tener entre 25 y 2000 caracteres.";
             header("Location: reproducir_trailer.php?id=" . $id);
             exit;
         }
         
         if ($valoracion < 0.5 || $valoracion > 5.0) {
+            if ($isAjax) {
+                http_response_code(400);
+                echo json_encode(['error' => "Por favor selecciona una valoración entre 0.5 y 5 estrellas."]);
+                exit;
+            }
             $_SESSION['error'] = "Por favor selecciona una valoración entre 0.5 y 5 estrellas.";
             header("Location: reproducir_trailer.php?id=" . $id);
             exit;
@@ -108,12 +122,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if ($stmtSave) {
             mysqli_stmt_bind_param($stmtSave, "iidss", $id, $id_usuario, $valoracion, $comentario, $nuevoEstado);
             if (mysqli_stmt_execute($stmtSave)) {
+                // Recalcular promedio de la comunidad para la respuesta AJAX
+                $newAvg = 0;
+                $sqlNewAvg = "SELECT AVG(valoracion) as avg_val FROM resenas WHERE id_trailer = ?";
+                $stmtNewAvg = mysqli_prepare($conexion, $sqlNewAvg);
+                if ($stmtNewAvg) {
+                    mysqli_stmt_bind_param($stmtNewAvg, "i", $id);
+                    mysqli_stmt_execute($stmtNewAvg);
+                    $resNewAvg = mysqli_stmt_get_result($stmtNewAvg);
+                    if ($rowNewAvg = mysqli_fetch_assoc($resNewAvg)) {
+                        $newAvg = round((float)$rowNewAvg['avg_val'], 1);
+                    }
+                    mysqli_stmt_close($stmtNewAvg);
+                }
+
+                if ($isAjax) {
+                    echo json_encode(['success' => true, 'avgRating' => $newAvg]);
+                    exit;
+                }
                 $_SESSION['success'] = "¡Tu reseña ha sido guardada con éxito!";
             } else {
+                if ($isAjax) {
+                    http_response_code(500);
+                    echo json_encode(['error' => "Error al guardar en la base de datos."]);
+                    exit;
+                }
                 $_SESSION['error'] = "Error al guardar la reseña. Inténtalo de nuevo.";
             }
             mysqli_stmt_close($stmtSave);
         } else {
+            if ($isAjax) {
+                http_response_code(500);
+                echo json_encode(['error' => "Error de preparación de consulta."]);
+                exit;
+            }
             $_SESSION['error'] = "Error en el servidor al procesar la reseña.";
         }
     } elseif ($_POST['action'] === 'eliminar_resena') {
@@ -397,9 +439,9 @@ require_once $rootPath . 'includes/navbar.php';
                 <span>Género: <strong><?php echo htmlspecialchars($trailer['genero']); ?></strong></span>
                 <span>Duración: <strong><?php echo htmlspecialchars((string)$trailer['duracion']); ?> min</strong></span>
                 <span>Valoración TMDB: <strong>⭐ <?php echo htmlspecialchars((string)$trailer['valoracion']); ?>/10</strong></span>
-                <?php if (isset($trailer['promedio_resenas']) && $trailer['promedio_resenas'] > 0): ?>
-                    <span>Valoración Comunidad: <strong><i class="fa-solid fa-comments"></i> <?php echo htmlspecialchars((string)$trailer['promedio_resenas']); ?>/5</strong></span>
-                <?php endif; ?>
+                <span id="communityRatingMeta" style="<?= (isset($trailer['promedio_resenas']) && $trailer['promedio_resenas'] > 0) ? '' : 'display: none;' ?>">
+                    Valoración Comunidad: <strong><i class="fa-solid fa-comments"></i> <span id="communityRatingValue"><?= htmlspecialchars((string)$trailer['promedio_resenas']) ?></span>/5</strong>
+                </span>
             </div>
             
             <?php if (isset($_SESSION['usuario_id'])): ?>
@@ -479,7 +521,7 @@ require_once $rootPath . 'includes/navbar.php';
                                 </div>
                             </div>
                             
-                            <textarea name="comentario" id="reviewComentario" rows="3" placeholder="Escribe tu reseña u opinión sobre este trailer (mín. 25 y máx. 2000 caracteres)..." minlength="25" maxlength="2000" required><?= $userReview ? htmlspecialchars($userReview['comentario']) : '' ?></textarea>
+                            <textarea name="comentario" id="reviewComentario" rows="3" placeholder="Escribe tu reseña u opinión sobre este trailer (opcional, mín. 25 y máx. 2000 caracteres)..." minlength="25" maxlength="2000"><?= $userReview ? htmlspecialchars($userReview['comentario']) : '' ?></textarea>
                             
                             <?php 
                             $currentLength = $userReview ? mb_strlen($userReview['comentario']) : 0;
@@ -721,7 +763,7 @@ require_once $rootPath . 'includes/navbar.php';
                     
                     if (length === 0) {
                         reviewCounter.className = 'review-char-counter';
-                        submitBtn.disabled = true;
+                        submitBtn.disabled = false;
                     } else if (length < 25 || length > 2000) {
                         reviewCounter.className = 'review-char-counter invalid';
                         submitBtn.disabled = true;
@@ -734,6 +776,57 @@ require_once $rootPath . 'includes/navbar.php';
                 reviewTextarea.addEventListener('input', updateCounter);
                 // Ejecución inicial para textos pre-cargados (editar reseña)
                 updateCounter();
+            }
+
+            // Guardado automático al hacer clic en las estrellas
+            const starInputs = document.querySelectorAll('.star-rating input[type="radio"]');
+            if (starInputs.length > 0) {
+                starInputs.forEach(input => {
+                    input.addEventListener('change', () => {
+                        const ratingValue = input.value;
+                        const trailerId = <?= $id ?>;
+                        const commentText = reviewTextarea ? reviewTextarea.value : '';
+
+                        const formData = new FormData();
+                        formData.append('action', 'guardar_resena');
+                        formData.append('valoracion', ratingValue);
+                        formData.append('comentario', commentText);
+
+                        fetch('reproducir_trailer.php?id=' + trailerId, {
+                            method: 'POST',
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: formData
+                        })
+                        .then(response => {
+                            if (response.status === 401) {
+                                window.location.href = '../auth/login.php';
+                                return;
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data && data.success) {
+                                showToast('⭐ ¡Valoración guardada!', 'success');
+                                
+                                // Actualizar dinámicamente el promedio comunitario en la interfaz
+                                const metaContainer = document.getElementById('communityRatingMeta');
+                                const valueContainer = document.getElementById('communityRatingValue');
+                                if (metaContainer && valueContainer) {
+                                    valueContainer.textContent = data.avgRating;
+                                    metaContainer.style.display = 'inline';
+                                }
+                            } else if (data && data.error) {
+                                showToast(data.error, 'error');
+                            }
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            showToast('Error al conectar con el servidor', 'error');
+                        });
+                    });
+                });
             }
         });
     </script>
