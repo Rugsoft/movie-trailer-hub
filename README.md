@@ -28,8 +28,9 @@ El proyecto se distribuye en módulos limpios y estructurados:
   * [tmdb_config.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/config/tmdb_config.php): Credenciales y claves de acceso para la API de TMDB.
 * **`/auth`**:
   * [login.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/auth/login.php), [registro.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/auth/registro.php), [logout.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/auth/logout.php): Flujo de autenticación seguro.
-  * [perfil.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/auth/perfil.php): Perfil interactivo del usuario con historial de vistas, panel de insignias y gráficos dinámicos con la distribución de horas y géneros más consumidos.
+  * [perfil.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/auth/perfil.php): Perfil interactivo del usuario con historial de vistas, panel de insignias, gráficos dinámicos de consumo y pestaña de gestión de películas personales ("Por Ver" / "Vistas").
   * [gestion_usuarios.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/auth/gestion_usuarios.php) & [api_usuarios.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/auth/api_usuarios.php): Panel de administración (CRUD) de usuarios con protecciones críticas (autobloqueo).
+  * [api_listas.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/auth/api_listas.php): Endpoint AJAX para gestionar listas personales, comentarios privados e historial de cambios.
 * **`/trailers`**:
   * [reproducir_trailer.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/trailers/reproducir_trailer.php): Reproductor con Modo Cine, reseñas con puntuación por estrellas y motor inteligente de recomendación.
   * [estadisticas.php](file:///C:/xampp/htdocs/curso-soc-php/movieTrailerWeb/trailers/estadisticas.php): Dashboard analítico de tops (trailers, favoritos, géneros, actores y usuarios activos).
@@ -91,6 +92,11 @@ La plataforma define tres niveles de acceso basados en literales de texto en la 
 * **`lector` (Lector)**: Rol por defecto. Permite explorar el catálogo, reproducir trailers (con Modo Cine), guardar favoritos, publicar reseñas y consultar estadísticas personales.
 * **`editor` (Editor)**: Permite añadir y modificar trailers, directores y repartos, y utilizar el importador TMDB. **Tiene bloqueada la capacidad de eliminar contenido y el acceso al panel de gestión de usuarios.**
 * **`admin` (Administrador)**: Permisos totales. Acceso a todas las operaciones CRUD (incluyendo eliminación de contenido), gestión de usuarios y cambio de roles del sistema.
+ 
+### 8. Listas Personales y Notas Privadas (Bitácora)
+*   **Listas "Por Ver" y "Vistas":** Los usuarios pueden clasificar películas en estas categorías desde el perfil o directamente desde la página del reproductor de forma instantánea.
+*   **Comentarios Privados Únicos:** Cada usuario puede escribir un comentario/nota de análisis sobre cualquier película, que es de carácter estrictamente privado.
+*   **Historial de Cambios:** El sistema guarda un registro de las versiones previas de las notas con su respectiva fecha y hora de edición, permitiendo consultarlas mediante un acordeón colapsable.
 
 ---
 
