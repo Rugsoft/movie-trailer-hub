@@ -51,6 +51,31 @@ require_once $rootPath . 'includes/navbar.php';
             const btnSearch = document.getElementById('btn_tmdb_person_search');
             const resultsBox = document.getElementById('tmdb_person_results');
             const statusBox = document.getElementById('tmdb_status_box');
+            const fallbackImage = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=185';
+
+            function renderMessage(container, message, options = {}) {
+                const messageNode = document.createElement('div');
+                messageNode.style.color = options.color ?? 'var(--text-muted)';
+                messageNode.style.textAlign = 'center';
+                messageNode.style.padding = '10px';
+
+                if (options.iconClass) {
+                    const iconNode = document.createElement('i');
+                    iconNode.className = `fa-solid ${options.iconClass}`;
+                    messageNode.append(iconNode, document.createTextNode(` ${String(message ?? '')}`));
+                } else {
+                    messageNode.textContent = String(message ?? '');
+                }
+
+                container.replaceChildren(messageNode);
+            }
+
+            function buildProfileUrl(profilePath) {
+                const safePath = String(profilePath ?? '');
+                return /^\/[a-zA-Z0-9._-]+$/.test(safePath)
+                    ? `https://image.tmdb.org/t/p/w185${safePath}`
+                    : fallbackImage;
+            }
 
             tmdbQuery.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
@@ -69,59 +94,93 @@ require_once $rootPath . 'includes/navbar.php';
                 }
 
                 resultsBox.style.display = 'flex';
-                resultsBox.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 10px;"><i class="fa-solid fa-spinner fa-spin"></i> Buscando en TMDB...</div>';
+                renderMessage(resultsBox, 'Buscando en TMDB...', { iconClass: 'fa-spinner fa-spin' });
                 statusBox.style.display = 'none';
 
                 fetch(`api_tmdb.php?action=search_person&query=${encodeURIComponent(query)}`)
                     .then(res => res.json())
                     .then(data => {
                         if (data.error) {
-                            resultsBox.innerHTML = `<div style="color: var(--danger, #ef4444); text-align: center; padding: 10px;"><i class="fa-solid fa-circle-exclamation"></i> ${data.error}</div>`;
+                            renderMessage(resultsBox, data.error, {
+                                color: 'var(--danger, #ef4444)',
+                                iconClass: 'fa-circle-exclamation'
+                            });
                             return;
                         }
 
                         if (!data.results || data.results.length === 0) {
-                            resultsBox.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 10px;">No se encontraron personas con ese nombre.</div>';
+                            renderMessage(resultsBox, 'No se encontraron personas con ese nombre.');
                             return;
                         }
 
-                        resultsBox.innerHTML = '';
+                        resultsBox.replaceChildren();
                         data.results.forEach(person => {
-                            const imgUrl = person.profile_path ? `https://image.tmdb.org/t/p/w185${person.profile_path}` : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=185';
-                            const dep = person.known_for_department ? ` (${person.known_for_department})` : '';
+                            const personId = Number.parseInt(person.id, 10);
+                            if (!Number.isInteger(personId) || personId <= 0) {
+                                return;
+                            }
 
                             const row = document.createElement('div');
                             row.className = 'tmdb-result-row';
-                            
-                            row.innerHTML = `
-                                <div class="tmdb-result-row-info">
-                                    <img src="${imgUrl}" style="width: 38px; height: 38px; border-radius: 50%;">
-                                    <div>
-                                        <strong class="tmdb-result-row-title">${person.name}</strong>
-                                        <div class="tmdb-result-row-year">${dep}</div>
-                                    </div>
-                                </div>
-                                <button type="button" class="btn btn-secondary btn-sm" style="font-size: 12px; padding: 4px 10px;">Seleccionar</button>
-                            `;
 
-                            row.addEventListener('click', () => selectPerson(person.id));
+                            const info = document.createElement('div');
+                            info.className = 'tmdb-result-row-info';
+
+                            const image = document.createElement('img');
+                            image.src = buildProfileUrl(person.profile_path);
+                            image.alt = '';
+                            image.style.width = '38px';
+                            image.style.height = '38px';
+                            image.style.borderRadius = '50%';
+
+                            const textWrapper = document.createElement('div');
+                            const name = document.createElement('strong');
+                            name.className = 'tmdb-result-row-title';
+                            name.textContent = String(person.name ?? '');
+
+                            const department = document.createElement('div');
+                            department.className = 'tmdb-result-row-year';
+                            department.textContent = person.known_for_department
+                                ? ` (${String(person.known_for_department)})`
+                                : '';
+
+                            const selectButton = document.createElement('button');
+                            selectButton.type = 'button';
+                            selectButton.className = 'btn btn-secondary btn-sm';
+                            selectButton.style.fontSize = '12px';
+                            selectButton.style.padding = '4px 10px';
+                            selectButton.textContent = 'Seleccionar';
+
+                            textWrapper.append(name, department);
+                            info.append(image, textWrapper);
+                            row.append(info, selectButton);
+                            row.addEventListener('click', () => selectPerson(personId));
                             resultsBox.appendChild(row);
                         });
                     })
                     .catch(err => {
-                        resultsBox.innerHTML = `<div style="color: var(--danger); text-align: center; padding: 10px;">Error al conectar con el servidor.</div>`;
+                        renderMessage(resultsBox, 'Error al conectar con el servidor.', {
+                            color: 'var(--danger)'
+                        });
                         console.error(err);
                     });
             }
 
             function selectPerson(id) {
-                resultsBox.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 10px;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando detalles...</div>';
+                if (!Number.isInteger(id) || id <= 0) {
+                    renderMessage(resultsBox, 'La persona seleccionada no es válida.', {
+                        color: 'var(--danger)'
+                    });
+                    return;
+                }
+
+                renderMessage(resultsBox, 'Cargando detalles...', { iconClass: 'fa-spinner fa-spin' });
                 
-                fetch(`api_tmdb.php?action=person_details&id=${id}`)
+                fetch(`api_tmdb.php?action=person_details&id=${encodeURIComponent(id)}`)
                     .then(res => res.json())
                     .then(data => {
                         if (data.error) {
-                            resultsBox.innerHTML = `<div style="color: var(--danger); text-align: center; padding: 10px;">${data.error}</div>`;
+                            renderMessage(resultsBox, data.error, { color: 'var(--danger)' });
                             return;
                         }
 
@@ -158,10 +217,22 @@ require_once $rootPath . 'includes/navbar.php';
                         }
 
                         statusBox.style.display = 'flex';
-                        statusBox.innerHTML = `<div style="color: #10b981; font-weight: 600;"><i class="fa-solid fa-circle-check"></i> Ficha cargada: "${data.name}"</div>`;
+                        const statusMessage = document.createElement('div');
+                        statusMessage.style.color = '#10b981';
+                        statusMessage.style.fontWeight = '600';
+
+                        const statusIcon = document.createElement('i');
+                        statusIcon.className = 'fa-solid fa-circle-check';
+                        statusMessage.append(
+                            statusIcon,
+                            document.createTextNode(` Ficha cargada: "${String(data.name ?? '')}"`)
+                        );
+                        statusBox.replaceChildren(statusMessage);
                     })
                     .catch(err => {
-                        resultsBox.innerHTML = `<div style="color: var(--danger); text-align: center; padding: 10px;">Error al cargar detalles de la persona.</div>`;
+                        renderMessage(resultsBox, 'Error al cargar detalles de la persona.', {
+                            color: 'var(--danger)'
+                        });
                         console.error(err);
                     });
             }

@@ -34,8 +34,18 @@ $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
         // Obtener el nombre para el mensaje de éxito
         $sqlInfo = "SELECT nombre, apellidos FROM directores WHERE id_director = ?";
         $stmtInfo = mysqli_prepare($conexion, $sqlInfo);
+        if (!$stmtInfo) {
+            abortar_error_interno(
+                'Error al preparar la consulta del director',
+                mysqli_error($conexion)
+            );
+        }
         mysqli_stmt_bind_param($stmtInfo, "i", $id);
-        mysqli_stmt_execute($stmtInfo);
+        if (!mysqli_stmt_execute($stmtInfo)) {
+            $error_db = mysqli_stmt_error($stmtInfo);
+            mysqli_stmt_close($stmtInfo);
+            abortar_error_interno('Error al consultar el director', $error_db);
+        }
         $resInfo = mysqli_stmt_get_result($stmtInfo);
         $director = mysqli_fetch_assoc($resInfo);
         mysqli_stmt_close($stmtInfo);
@@ -56,6 +66,12 @@ $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
 
         $sql = "DELETE FROM directores WHERE id_director = ?";
         $stmt = mysqli_prepare($conexion, $sql);
+        if (!$stmt) {
+            abortar_error_interno(
+                'Error al preparar la eliminación del director',
+                mysqli_error($conexion)
+            );
+        }
         mysqli_stmt_bind_param($stmt, "i", $id);
         
         if (mysqli_stmt_execute($stmt)) {
@@ -69,11 +85,12 @@ $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
             <?php
         } else {
             $error_db = mysqli_stmt_error($stmt);
+            registrar_error_interno('Error al eliminar el director', $error_db);
             mysqli_stmt_close($stmt);
             ?>
             <h1>Error de Eliminación</h1>
             <div class="alerta">
-                <p>No se pudo eliminar el director de la base de datos: <?php echo htmlspecialchars($error_db); ?></p>
+                <p>No se pudo eliminar el director. Inténtalo de nuevo.</p>
             </div>
             <a class="boton" href="listar_directores.php">Volver al catálogo</a>
             <?php

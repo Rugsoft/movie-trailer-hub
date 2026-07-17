@@ -33,6 +33,12 @@ $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
 
         $sql = "DELETE FROM trailers WHERE id_trailer = ?";
         $stmt = mysqli_prepare($conexion, $sql);
+        if (!$stmt) {
+            abortar_error_interno(
+                'Error al preparar la eliminación del trailer',
+                mysqli_error($conexion)
+            );
+        }
         mysqli_stmt_bind_param($stmt, "i", $id);
         
         if (mysqli_stmt_execute($stmt)) {
@@ -46,11 +52,12 @@ $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
             <?php
         } else {
             $error_db = mysqli_stmt_error($stmt);
+            registrar_error_interno('Error al eliminar el trailer', $error_db);
             mysqli_stmt_close($stmt);
             ?>
             <h1>Error de Eliminación</h1>
             <div class="alerta">
-                <p>No se pudo eliminar el trailer de la base de datos: <?php echo htmlspecialchars($error_db); ?></p>
+                <p>No se pudo eliminar el trailer. Inténtalo de nuevo.</p>
             </div>
             <a class="boton" href="listar_trailers.php">Volver al catálogo</a>
             <?php

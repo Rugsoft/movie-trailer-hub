@@ -19,7 +19,7 @@ try {
     $result = importMovieById($conexion, $id);
     echo json_encode($result);
 } catch (Exception $e) {
-    echo json_encode(["error" => $e->getMessage()]);
+    abortar_error_interno('Error al importar la película desde TMDB', $e, true);
 }
 
 mysqli_close($conexion);

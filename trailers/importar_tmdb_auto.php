@@ -69,6 +69,55 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalActions = document.getElementById('modalActions');
     const btnGoCatalog = document.getElementById('btnGoCatalog');
     const btnImportAnother = document.getElementById('btnImportAnother');
+    const fallbackPoster = 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=342';
+
+    function buildPosterUrl(path) {
+        const safePath = String(path ?? '');
+        return /^\/[a-zA-Z0-9._-]+$/.test(safePath)
+            ? `https://image.tmdb.org/t/p/w342${safePath}`
+            : fallbackPoster;
+    }
+
+    function renderGridMessage(message, options = {}) {
+        const wrapper = document.createElement('div');
+        wrapper.style.gridColumn = '1 / -1';
+        wrapper.style.textAlign = 'center';
+        wrapper.style.color = options.color ?? 'var(--text-muted)';
+        wrapper.style.padding = options.padding ?? '50px';
+
+        if (options.iconClass) {
+            const icon = document.createElement('i');
+            icon.className = `fa-solid ${options.iconClass}`;
+            icon.style.fontSize = options.iconSize ?? '32px';
+            icon.style.marginBottom = '10px';
+            if (options.iconColor) {
+                icon.style.color = options.iconColor;
+            }
+            wrapper.appendChild(icon);
+        }
+
+        const text = document.createElement('p');
+        text.textContent = String(message ?? '');
+        wrapper.appendChild(text);
+        resultsGrid.replaceChildren(wrapper);
+    }
+
+    function renderModalMessage(message, options = {}) {
+        const wrapper = document.createElement('div');
+        if (options.color) {
+            wrapper.style.color = options.color;
+        }
+
+        if (options.iconClass) {
+            const icon = document.createElement('i');
+            icon.className = `fa-solid ${options.iconClass}`;
+            wrapper.append(icon, document.createTextNode(` ${String(message ?? '')}`));
+        } else {
+            wrapper.textContent = String(message ?? '');
+        }
+
+        modalMessage.replaceChildren(wrapper);
+    }
 
     movieQuery.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
@@ -86,71 +135,138 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        resultsGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 50px;"><i class="fa-solid fa-circle-notch fa-spin" style="font-size: 32px; color: var(--primary); margin-bottom: 10px;"></i><p style="color: var(--text-muted);">Buscando películas...</p></div>';
+        renderGridMessage('Buscando películas...', {
+            iconClass: 'fa-circle-notch fa-spin',
+            iconColor: 'var(--primary)'
+        });
 
         fetch(`api_tmdb.php?action=search_movie&query=${encodeURIComponent(query)}`)
             .then(res => res.json())
             .then(data => {
                 if (data.error) {
-                    resultsGrid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--secondary); padding: 30px;"><i class="fa-solid fa-circle-exclamation" style="font-size: 24px; margin-bottom: 10px;"></i><p>${data.error}</p></div>`;
+                    renderGridMessage(data.error, {
+                        color: 'var(--secondary)',
+                        padding: '30px',
+                        iconClass: 'fa-circle-exclamation',
+                        iconSize: '24px'
+                    });
                     return;
                 }
 
                 if (!data.results || data.results.length === 0) {
-                    resultsGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 50px;"><i class="fa-solid fa-magnifying-glass-minus" style="font-size: 32px; margin-bottom: 10px;"></i><p>No se encontraron resultados.</p></div>';
+                    renderGridMessage('No se encontraron resultados.', {
+                        iconClass: 'fa-magnifying-glass-minus'
+                    });
                     return;
                 }
 
-                resultsGrid.innerHTML = '';
+                resultsGrid.replaceChildren();
                 data.results.forEach(movie => {
-                    const year = movie.release_date ? movie.release_date.substring(0, 4) : 'N/A';
-                    const imgUrl = movie.poster_path ? `https://image.tmdb.org/t/p/w342${movie.poster_path}` : 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=342';
+                    const movieId = Number.parseInt(movie.id, 10);
+                    if (!Number.isInteger(movieId) || movieId <= 0) {
+                        return;
+                    }
+
+                    const year = movie.release_date
+                        ? String(movie.release_date).substring(0, 4)
+                        : 'N/A';
+                    const voteAverage = Number(movie.vote_average);
                     
                     const card = document.createElement('article');
                     card.className = 'movie-card';
                     card.style.display = 'flex';
                     card.style.flexDirection = 'column';
-                    
-                    card.innerHTML = `
-                        <div class="movie-poster-container" style="aspect-ratio: 2/3;">
-                            <img src="${imgUrl}" alt="${movie.title}" class="movie-poster">
-                            <div class="rating-badge">
-                                <i class="fa-solid fa-star"></i>
-                                <span>${movie.vote_average ? movie.vote_average.toFixed(1) : '0.0'}</span>
-                            </div>
-                        </div>
-                        <div class="movie-info" style="display: flex; flex-direction: column; flex-grow: 1; padding: 12px;">
-                            <h3 class="movie-title" style="font-size: 14px; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${movie.title}</h3>
-                            <div class="movie-meta-row" style="font-size: 11px; margin-bottom: 12px;">
-                                <span><i class="fa-regular fa-calendar"></i> ${year}</span>
-                            </div>
-                            <button type="button" class="btn btn-primary btn-importar" data-id="${movie.id}" style="width: 100%; justify-content: center; font-size: 12px; padding: 8px 0; margin-top: auto;">
-                                <i class="fa-solid fa-cloud-arrow-down"></i> Importar Todo
-                            </button>
-                        </div>
-                    `;
+
+                    const posterContainer = document.createElement('div');
+                    posterContainer.className = 'movie-poster-container';
+                    posterContainer.style.aspectRatio = '2 / 3';
+
+                    const poster = document.createElement('img');
+                    poster.src = buildPosterUrl(movie.poster_path);
+                    poster.alt = String(movie.title ?? '');
+                    poster.className = 'movie-poster';
+
+                    const ratingBadge = document.createElement('div');
+                    ratingBadge.className = 'rating-badge';
+                    const ratingIcon = document.createElement('i');
+                    ratingIcon.className = 'fa-solid fa-star';
+                    const ratingValue = document.createElement('span');
+                    ratingValue.textContent = Number.isFinite(voteAverage)
+                        ? voteAverage.toFixed(1)
+                        : '0.0';
+                    ratingBadge.append(ratingIcon, ratingValue);
+                    posterContainer.append(poster, ratingBadge);
+
+                    const movieInfo = document.createElement('div');
+                    movieInfo.className = 'movie-info';
+                    movieInfo.style.display = 'flex';
+                    movieInfo.style.flexDirection = 'column';
+                    movieInfo.style.flexGrow = '1';
+                    movieInfo.style.padding = '12px';
+
+                    const title = document.createElement('h3');
+                    title.className = 'movie-title';
+                    title.style.fontSize = '14px';
+                    title.style.marginBottom = '4px';
+                    title.style.overflow = 'hidden';
+                    title.style.textOverflow = 'ellipsis';
+                    title.style.whiteSpace = 'nowrap';
+                    title.textContent = String(movie.title ?? '');
+
+                    const metaRow = document.createElement('div');
+                    metaRow.className = 'movie-meta-row';
+                    metaRow.style.fontSize = '11px';
+                    metaRow.style.marginBottom = '12px';
+                    const yearWrapper = document.createElement('span');
+                    const calendarIcon = document.createElement('i');
+                    calendarIcon.className = 'fa-regular fa-calendar';
+                    yearWrapper.append(calendarIcon, document.createTextNode(` ${year}`));
+                    metaRow.appendChild(yearWrapper);
+
+                    const importButton = document.createElement('button');
+                    importButton.type = 'button';
+                    importButton.className = 'btn btn-primary btn-importar';
+                    importButton.style.width = '100%';
+                    importButton.style.justifyContent = 'center';
+                    importButton.style.fontSize = '12px';
+                    importButton.style.padding = '8px 0';
+                    importButton.style.marginTop = 'auto';
+                    const importIcon = document.createElement('i');
+                    importIcon.className = 'fa-solid fa-cloud-arrow-down';
+                    importButton.append(importIcon, document.createTextNode(' Importar Todo'));
+                    importButton.addEventListener('click', () => importMovie(movieId));
+
+                    movieInfo.append(title, metaRow, importButton);
+                    card.append(posterContainer, movieInfo);
                     
                     resultsGrid.appendChild(card);
                 });
-
-                // Registrar eventos de los botones de importar
-                document.querySelectorAll('.btn-importar').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const id = btn.getAttribute('data-id');
-                        importMovie(id);
-                    });
-                });
             })
             .catch(err => {
-                resultsGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--secondary); padding: 30px;"><p>Error de conexión con el servidor.</p></div>';
+                renderGridMessage('Error de conexión con el servidor.', {
+                    color: 'var(--secondary)',
+                    padding: '30px'
+                });
                 console.error(err);
             });
     }
 
     function importMovie(id) {
+        if (!Number.isInteger(id) || id <= 0) {
+            renderGridMessage('La película seleccionada no es válida.', {
+                color: 'var(--secondary)',
+                padding: '30px',
+                iconClass: 'fa-circle-exclamation',
+                iconSize: '24px'
+            });
+            return;
+        }
+
         statusModal.style.display = 'flex';
         modalTitle.innerText = "Procesando Importación";
-        modalMessage.innerHTML = '<div><i class="fa-solid fa-spinner fa-spin"></i> Conectando con TMDB para obtener metadatos...</div>';
+        renderModalMessage('Conectando con TMDB para obtener metadatos...', {
+            iconClass: 'fa-spinner fa-spin'
+        });
         modalSpinner.style.display = 'block';
         btnCloseModal.style.display = 'none';
         modalActions.style.display = 'none';
@@ -162,14 +278,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 'X-CSRF-Token': csrfToken,
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            body: `id=${id}`
+            body: new URLSearchParams({ id: String(id) }).toString()
         })
         .then(res => res.json())
         .then(data => {
             if (data.error) {
                 modalSpinner.style.display = 'none';
                 modalTitle.innerText = "Error de Importación";
-                modalMessage.innerHTML = `<div style="color: #ef4444;"><i class="fa-solid fa-triangle-exclamation"></i> ${data.error}</div>`;
+                renderModalMessage(data.error, {
+                    color: '#ef4444',
+                    iconClass: 'fa-triangle-exclamation'
+                });
                 btnCloseModal.innerText = "Cerrar";
                 btnCloseModal.style.display = 'block';
                 btnCloseModal.onclick = () => { statusModal.style.display = 'none'; };
@@ -178,20 +297,80 @@ document.addEventListener('DOMContentLoaded', () => {
 
             modalSpinner.style.display = 'none';
             modalTitle.innerText = "¡Importación Completada!";
-            
-            let logHtml = `<div style="color: #10b981; font-weight: bold; margin-bottom: 10px;"><i class="fa-solid fa-circle-check"></i> "${data.titulo}" añadida con éxito.</div>`;
-            logHtml += `<div>• Director: <strong>${data.director}</strong> (${data.director_status})</div>`;
-            logHtml += `<div>• Reparto importado: <strong>${data.actores_count} actores</strong> asociados.</div>`;
-            logHtml += `<div>• Géneros asociados: <strong>${data.generos_count}</strong></div>`;
+
+            const importLog = document.createDocumentFragment();
+
+            const successLine = document.createElement('div');
+            successLine.style.color = '#10b981';
+            successLine.style.fontWeight = 'bold';
+            successLine.style.marginBottom = '10px';
+            const successIcon = document.createElement('i');
+            successIcon.className = 'fa-solid fa-circle-check';
+            successLine.append(
+                successIcon,
+                document.createTextNode(` "${String(data.titulo ?? '')}" añadida con éxito.`)
+            );
+            importLog.appendChild(successLine);
+
+            const directorLine = document.createElement('div');
+            const directorName = document.createElement('strong');
+            directorName.textContent = String(data.director ?? '');
+            directorLine.append(
+                document.createTextNode('• Director: '),
+                directorName,
+                document.createTextNode(` (${String(data.director_status ?? '')})`)
+            );
+            importLog.appendChild(directorLine);
+
+            const castLine = document.createElement('div');
+            const castCount = document.createElement('strong');
+            castCount.textContent = `${Number.parseInt(data.actores_count, 10) || 0} actores`;
+            castLine.append(
+                document.createTextNode('• Reparto importado: '),
+                castCount,
+                document.createTextNode(' asociados.')
+            );
+            importLog.appendChild(castLine);
+
+            const genresLine = document.createElement('div');
+            const genresCount = document.createElement('strong');
+            genresCount.textContent = String(Number.parseInt(data.generos_count, 10) || 0);
+            genresLine.append(document.createTextNode('• Géneros asociados: '), genresCount);
+            importLog.appendChild(genresLine);
             
             if (data.nuevo_director_creado) {
-                logHtml += `<div style="font-size: 11px; margin-top: 5px; color: var(--primary);"><i class="fa-solid fa-user-plus"></i> Nuevo director registrado localmente: ${data.director}</div>`;
+                const newDirectorLine = document.createElement('div');
+                newDirectorLine.style.fontSize = '11px';
+                newDirectorLine.style.marginTop = '5px';
+                newDirectorLine.style.color = 'var(--primary)';
+                const directorIcon = document.createElement('i');
+                directorIcon.className = 'fa-solid fa-user-plus';
+                newDirectorLine.append(
+                    directorIcon,
+                    document.createTextNode(` Nuevo director registrado localmente: ${String(data.director ?? '')}`)
+                );
+                importLog.appendChild(newDirectorLine);
             }
-            if (data.nuevos_actores_creados && data.nuevos_actores_creados.length > 0) {
-                logHtml += `<div style="font-size: 11px; margin-top: 5px; color: var(--primary);"><i class="fa-solid fa-user-plus"></i> Actores creados localmente: <em>${data.nuevos_actores_creados.join(', ')}</em></div>`;
+            if (Array.isArray(data.nuevos_actores_creados) && data.nuevos_actores_creados.length > 0) {
+                const newActorsLine = document.createElement('div');
+                newActorsLine.style.fontSize = '11px';
+                newActorsLine.style.marginTop = '5px';
+                newActorsLine.style.color = 'var(--primary)';
+                const actorsIcon = document.createElement('i');
+                actorsIcon.className = 'fa-solid fa-user-plus';
+                const actorNames = document.createElement('em');
+                actorNames.textContent = data.nuevos_actores_creados
+                    .map(name => String(name ?? ''))
+                    .join(', ');
+                newActorsLine.append(
+                    actorsIcon,
+                    document.createTextNode(' Actores creados localmente: '),
+                    actorNames
+                );
+                importLog.appendChild(newActorsLine);
             }
 
-            modalMessage.innerHTML = logHtml;
+            modalMessage.replaceChildren(importLog);
             
             btnCloseModal.style.display = 'none';
             modalActions.style.display = 'flex';
@@ -203,13 +382,16 @@ document.addEventListener('DOMContentLoaded', () => {
             btnImportAnother.onclick = () => {
                 statusModal.style.display = 'none';
                 movieQuery.value = '';
-                resultsGrid.innerHTML = '';
+                resultsGrid.replaceChildren();
             };
         })
         .catch(err => {
             modalSpinner.style.display = 'none';
             modalTitle.innerText = "Error Crítico";
-            modalMessage.innerHTML = '<div style="color: #ef4444;"><i class="fa-solid fa-circle-xmark"></i> Error en la comunicación con el procesador.</div>';
+            renderModalMessage('Error en la comunicación con el procesador.', {
+                color: '#ef4444',
+                iconClass: 'fa-circle-xmark'
+            });
             btnCloseModal.innerText = "Cerrar";
             btnCloseModal.style.display = 'block';
             btnCloseModal.onclick = () => { statusModal.style.display = 'none'; };

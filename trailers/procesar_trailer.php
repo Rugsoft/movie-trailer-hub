@@ -72,7 +72,10 @@ if (empty($poster_url)) {
             $sqlExiste = "SELECT * FROM trailers WHERE titulo = ? AND release_date = ?";
             $stmtExiste = mysqli_prepare($conexion, $sqlExiste);
             if (!$stmtExiste) {
-                die("Error al preparar la validación de existencia: " . mysqli_error($conexion));
+                abortar_error_interno(
+                    'Error al preparar la validación de existencia del trailer',
+                    mysqli_error($conexion)
+                );
             }
             mysqli_stmt_bind_param($stmtExiste, "ss", $titulo, $release_date);
             mysqli_stmt_execute($stmtExiste);
@@ -93,7 +96,6 @@ if (empty($poster_url)) {
                 // Iniciar transacción
                 mysqli_begin_transaction($conexion);
                 $exito = true;
-                $error_db = "";
 
                 try {
                     $sqlInsertar = "INSERT INTO trailers (titulo, id_director, release_date, duracion, trailer_url, poster_url, valoracion, sinopsis) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
@@ -144,7 +146,7 @@ if (empty($poster_url)) {
                 } catch (Exception $e) {
                     mysqli_rollback($conexion);
                     $exito = false;
-                    $error_db = $e->getMessage();
+                    registrar_error_interno('Error al registrar el trailer', $e);
                 }
 
                 if ($exito):
@@ -157,7 +159,7 @@ if (empty($poster_url)) {
                 <?php else: ?>
                     <h1>Error de Registro</h1>
                     <div class="alerta">
-                        <p>Error en la operación de base de datos: <?php echo htmlspecialchars($error_db); ?></p>
+                        <p>No se pudo completar el registro del trailer.</p>
                     </div>
                     <a class="boton" href="añadir_trailer.php">Volver al formulario</a>
                 <?php endif; ?>

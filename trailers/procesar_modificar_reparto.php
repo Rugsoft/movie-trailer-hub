@@ -40,7 +40,10 @@ if (empty($foto_url)) {
             $sqlExiste = "SELECT * FROM reparto WHERE nombre = ? AND apellidos = ? AND id_reparto != ?";
             $stmtExiste = mysqli_prepare($conexion, $sqlExiste);
             if (!$stmtExiste) {
-                die("Error al preparar la validación de existencia del actor: " . mysqli_error($conexion));
+                abortar_error_interno(
+                    'Error al preparar la validación de existencia del actor',
+                    mysqli_error($conexion)
+                );
             }
             mysqli_stmt_bind_param($stmtExiste, "ssi", $nombre, $apellidos, $id_reparto);
             mysqli_stmt_execute($stmtExiste);
@@ -60,7 +63,10 @@ if (empty($foto_url)) {
                 $sqlActualizar = "UPDATE reparto SET nombre = ?, apellidos = ?, edad = ?, pais = ?, foto_url = ? WHERE id_reparto = ?";
                 $stmtActualizar = mysqli_prepare($conexion, $sqlActualizar);
                 if (!$stmtActualizar) {
-                    die("Error al preparar la modificación del actor: " . mysqli_error($conexion));
+                    abortar_error_interno(
+                        'Error al preparar la modificación del actor',
+                        mysqli_error($conexion)
+                    );
                 }
                 mysqli_stmt_bind_param($stmtActualizar, "ssissi", $nombre, $apellidos, $edad, $pais, $foto_url, $id_reparto);
                 
@@ -74,11 +80,12 @@ if (empty($foto_url)) {
                     <a class="boton" href="listar_reparto.php">Volver al catálogo de reparto</a>
                 <?php else:
                     $error_db = mysqli_stmt_error($stmtActualizar);
+                    registrar_error_interno('Error al modificar el actor', $error_db);
                     mysqli_stmt_close($stmtActualizar);
                 ?>
                     <h1>Error de Modificación</h1>
                     <div class="alerta">
-                        <p>Error al guardar cambios: <?php echo htmlspecialchars($error_db); ?></p>
+                        <p>No se pudieron guardar los cambios. Inténtalo de nuevo.</p>
                     </div>
                     <a class="boton" href="modificar_reparto.php?id=<?php echo $id_reparto; ?>">Volver al formulario</a>
                 <?php endif; ?>

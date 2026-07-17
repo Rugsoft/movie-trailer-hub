@@ -1,68 +1,17 @@
 <?php
 // badges/gamificacion_helper.php
 
-// Ejecutar migraciones automáticas al incluir el archivo
-function inicializar_gamificacion_db($conexion) {
-    // 1. Tabla de Badges
-    $sqlBadges = "CREATE TABLE IF NOT EXISTS badges (
-        id_badge INT AUTO_INCREMENT PRIMARY KEY,
-        nombre VARCHAR(100) NOT NULL UNIQUE,
-        descripcion VARCHAR(255) NOT NULL,
-        requisito_tipo VARCHAR(50) NOT NULL,
-        requisito_valor INT NOT NULL,
-        icono VARCHAR(100) NOT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
-    mysqli_query($conexion, $sqlBadges);
+const MOVIE_APP_BADGES_SEED_VERSION = 1;
 
-    // 2. Tabla de Relación Usuario-Badges
-    $sqlUserBadges = "CREATE TABLE IF NOT EXISTS usuario_badges (
-        id_usuario INT NOT NULL,
-        id_badge INT NOT NULL,
-        fecha_desbloqueo DATETIME DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (id_usuario, id_badge),
-        CONSTRAINT fk_ub_usuarios FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE ON UPDATE CASCADE,
-        CONSTRAINT fk_ub_badges FOREIGN KEY (id_badge) REFERENCES badges(id_badge) ON DELETE CASCADE ON UPDATE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
-    mysqli_query($conexion, $sqlUserBadges);
-
-    // 3. Tabla de Racha de Logins
-    $sqlRachas = "CREATE TABLE IF NOT EXISTS usuario_rachas (
-        id_usuario INT PRIMARY KEY,
-        fecha_ultimo_login DATE NOT NULL,
-        racha_actual INT NOT NULL DEFAULT 1,
-        CONSTRAINT fk_ur_usuarios FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE ON UPDATE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
-    mysqli_query($conexion, $sqlRachas);
-
-    // 4. Tabla de Stats de Gamificación
-    $sqlStats = "CREATE TABLE IF NOT EXISTS usuario_gamificacion_stats (
-        id_usuario INT PRIMARY KEY,
-        modo_cine_activado TINYINT DEFAULT 0,
-        intentos_fallidos_admin TINYINT DEFAULT 0,
-        busquedas_fecha_actual TINYINT DEFAULT 0,
-        registro_invitacion TINYINT DEFAULT 0,
-        CONSTRAINT fk_ugs_usuarios FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE ON UPDATE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
-    mysqli_query($conexion, $sqlStats);
-
-    // 5. Tabla de Lectura de Reseñas
-    $sqlLecturas = "CREATE TABLE IF NOT EXISTS usuario_lectura_resenas (
-        id_usuario INT NOT NULL,
-        id_trailer INT NOT NULL,
-        fecha_lectura DATETIME DEFAULT CURRENT_TIMESTAMP,
-        PRIMARY KEY (id_usuario, id_trailer),
-        CONSTRAINT fk_ulr_usuarios FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE ON UPDATE CASCADE,
-        CONSTRAINT fk_ulr_trailers FOREIGN KEY (id_trailer) REFERENCES trailers(id_trailer) ON DELETE CASCADE ON UPDATE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
-    mysqli_query($conexion, $sqlLecturas);
-
-    // 6. Modificar tabla favoritos para añadir fecha_adicion si no existe
-    $checkCol = mysqli_query($conexion, "SHOW COLUMNS FROM favoritos LIKE 'fecha_adicion'");
-    if (mysqli_num_rows($checkCol) == 0) {
-        mysqli_query($conexion, "ALTER TABLE favoritos ADD COLUMN fecha_adicion DATETIME DEFAULT CURRENT_TIMESTAMP");
+/**
+ * Inserta únicamente las insignias que todavía no existen.
+ */
+function sembrar_badges(mysqli $conexion): void {
+    $versionSesion = (int) ($_SESSION['movie_app_badges_seed_version'] ?? 0);
+    if ($versionSesion >= MOVIE_APP_BADGES_SEED_VERSION) {
+        return;
     }
 
-    // 7. Seeder de Badges (Idempotente)
     $badgesSemilla = [
         ['Pionero', 'Únete a nuestra comunidad y crea tu cuenta.', 'registro', 0, 'fa-user-plus'],
         ['Primer Vistazo', 'Reproduce tu primer trailer en la plataforma.', 'visualizaciones', 1, 'fa-circle-play'],
@@ -105,30 +54,76 @@ function inicializar_gamificacion_db($conexion) {
         ['La Comunidad del Tráiler', 'Regístrate usando invitación o el mismo día que otros 5 usuarios.', 'comunidad_trailer', 1, 'fa-users-line']
     ];
 
-    foreach ($badgesSemilla as $b) {
-        $checkBadge = mysqli_prepare($conexion, "SELECT id_badge FROM badges WHERE nombre = ? LIMIT 1");
-        if ($checkBadge) {
-            mysqli_stmt_bind_param($checkBadge, "s", $b[0]);
-            mysqli_stmt_execute($checkBadge);
-            $resBadge = mysqli_stmt_get_result($checkBadge);
-            if (mysqli_num_rows($resBadge) === 0) {
-                $sqlSeed = "INSERT INTO badges (nombre, descripcion, requisito_tipo, requisito_valor, icono) VALUES (?, ?, ?, ?, ?)";
-                $stmtSeed = mysqli_prepare($conexion, $sqlSeed);
-                if ($stmtSeed) {
-                    mysqli_stmt_bind_param($stmtSeed, "sssis", $b[0], $b[1], $b[2], $b[3], $b[4]);
-                    mysqli_stmt_execute($stmtSeed);
-                    mysqli_stmt_close($stmtSeed);
-                }
-            }
-            mysqli_stmt_close($checkBadge);
-        }
+    $resultadoExistentes = mysqli_query($conexion, 'SELECT nombre FROM badges');
+    if ($resultadoExistentes === false) {
+        throw new RuntimeException(
+            'No se pudieron consultar las insignias existentes: ' . mysqli_error($conexion)
+        );
     }
+
+    $nombresExistentes = [];
+    while ($badgeExistente = mysqli_fetch_assoc($resultadoExistentes)) {
+        $nombresExistentes[(string) $badgeExistente['nombre']] = true;
+    }
+
+    $sqlInsertar = 'INSERT INTO badges (
+                        nombre,
+                        descripcion,
+                        requisito_tipo,
+                        requisito_valor,
+                        icono
+                    ) VALUES (?, ?, ?, ?, ?)';
+    $stmtInsertar = mysqli_prepare($conexion, $sqlInsertar);
+
+    if (!$stmtInsertar) {
+        throw new RuntimeException(
+            'No se pudo preparar la siembra de insignias: ' . mysqli_error($conexion)
+        );
+    }
+
+    foreach ($badgesSemilla as $badge) {
+        $nombre = $badge[0];
+        if (isset($nombresExistentes[$nombre])) {
+            continue;
+        }
+
+        $descripcion = $badge[1];
+        $requisitoTipo = $badge[2];
+        $requisitoValor = $badge[3];
+        $icono = $badge[4];
+
+        mysqli_stmt_bind_param(
+            $stmtInsertar,
+            'sssis',
+            $nombre,
+            $descripcion,
+            $requisitoTipo,
+            $requisitoValor,
+            $icono
+        );
+
+        if (!mysqli_stmt_execute($stmtInsertar)) {
+            $codigoError = mysqli_stmt_errno($stmtInsertar);
+            $detalle = mysqli_stmt_error($stmtInsertar);
+
+            if ($codigoError === 1062) {
+                $nombresExistentes[$nombre] = true;
+                continue;
+            }
+
+            mysqli_stmt_close($stmtInsertar);
+            throw new RuntimeException('No se pudo insertar la insignia ' . $nombre . ': ' . $detalle);
+        }
+
+        $nombresExistentes[$nombre] = true;
+    }
+
+    mysqli_stmt_close($stmtInsertar);
+    $_SESSION['movie_app_badges_seed_version'] = MOVIE_APP_BADGES_SEED_VERSION;
 }
 
 // Actualizar la racha de logins consecutivos
 function actualizar_racha_login($conexion, $id_usuario) {
-    inicializar_gamificacion_db($conexion);
-
     $hoy = date('Y-m-d');
     $ayer = date('Y-m-d', strtotime('-1 day'));
 
@@ -516,7 +511,7 @@ function evaluar_requisito($conexion, $id_usuario, $tipo, $valor) {
 
 // Analizar badges e insertar automáticamente los nuevos desbloqueados
 function procesar_y_obtener_badges($conexion, $id_usuario) {
-    inicializar_gamificacion_db($conexion);
+    sembrar_badges($conexion);
     
     // Obtener todos los badges del sistema
     $sqlBadges = "SELECT * FROM badges ORDER BY id_badge ASC";

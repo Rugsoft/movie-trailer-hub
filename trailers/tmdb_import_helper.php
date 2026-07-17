@@ -1,23 +1,63 @@
 <?php
 require_once __DIR__ . "/../config/tmdb_config.php";
+require_once __DIR__ . "/../config/errores.php";
 
 /**
  * Helper para hacer peticiones a TMDB
  */
-function makeTmdbRequest($url) {
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    
-    if ($httpCode !== 200) {
+function makeTmdbRequest(string $url): ?array {
+    $ch = curl_init($url);
+
+    if ($ch === false) {
+        registrar_error_interno('No se pudo inicializar cURL para importar desde TMDB');
         return null;
     }
-    return json_decode($response, true);
+
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_TIMEOUT => 15,
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_SSL_VERIFYHOST => 2,
+        CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
+        CURLOPT_HTTPHEADER => ['Accept: application/json'],
+    ]);
+
+    $response = curl_exec($ch);
+    $curlErrorNumber = curl_errno($ch);
+    $curlError = curl_error($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($response === false) {
+        registrar_error_interno(
+            'Error en la conexión segura con TMDB durante la importación',
+            "cURL $curlErrorNumber: $curlError"
+        );
+        return null;
+    }
+
+    if ($httpCode !== 200) {
+        registrar_error_interno(
+            'TMDB devolvió un estado HTTP inesperado durante la importación',
+            (string)$httpCode
+        );
+        return null;
+    }
+
+    try {
+        $data = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
+    } catch (JsonException $exception) {
+        registrar_error_interno('TMDB devolvió JSON inválido durante la importación', $exception);
+        return null;
+    }
+
+    if (!is_array($data)) {
+        registrar_error_interno('TMDB devolvió un formato inesperado durante la importación');
+        return null;
+    }
+
+    return $data;
 }
 
 /**

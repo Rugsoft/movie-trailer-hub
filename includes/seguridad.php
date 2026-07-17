@@ -63,24 +63,6 @@ function login_attempt_key(string $username): string {
 }
 
 /**
- * Crea la tabla del limitador cuando todavía no existe.
- */
-function ensure_login_attempts_table(mysqli $conexion): void {
-    $sql = "CREATE TABLE IF NOT EXISTS intentos_login (
-        clave_intento CHAR(64) PRIMARY KEY,
-        intentos_fallidos TINYINT UNSIGNED NOT NULL DEFAULT 0,
-        inicio_ventana BIGINT UNSIGNED NOT NULL,
-        bloqueado_hasta BIGINT UNSIGNED DEFAULT NULL,
-        actualizado_en BIGINT UNSIGNED NOT NULL,
-        INDEX idx_intentos_login_actualizado (actualizado_en)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
-
-    if (!mysqli_query($conexion, $sql)) {
-        throw new RuntimeException('No se pudo inicializar el limitador de acceso: ' . mysqli_error($conexion));
-    }
-}
-
-/**
  * Indica si la combinación de usuario e IP sigue bloqueada.
  */
 function is_login_rate_limited(mysqli $conexion, string $username): bool {

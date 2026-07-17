@@ -7,48 +7,6 @@ require_login('login.php', "Debes iniciar sesión para acceder a tu perfil.");
 
 define('BASE_PATH', '../');
 
-// 2. Automigración de la base de datos (Añadir columna avatar_url si no existe)
-$checkCol = mysqli_query($conexion, "SHOW COLUMNS FROM usuarios LIKE 'avatar_url'");
-if (mysqli_num_rows($checkCol) == 0) {
-    mysqli_query($conexion, "ALTER TABLE usuarios ADD COLUMN avatar_url VARCHAR(255) DEFAULT NULL");
-}
-
-// Crear tabla listas_personales si no existe
-mysqli_query($conexion, "CREATE TABLE IF NOT EXISTS listas_personales (
-    id_lista INT AUTO_INCREMENT PRIMARY KEY,
-    id_usuario INT NOT NULL,
-    id_trailer INT NOT NULL,
-    estado VARCHAR(20) NOT NULL,
-    fecha_adicion DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY uq_usuario_trailer_lista (id_usuario, id_trailer),
-    CONSTRAINT fk_listas_trailers FOREIGN KEY (id_trailer) REFERENCES trailers(id_trailer) ON DELETE CASCADE,
-    CONSTRAINT fk_listas_usuarios FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
-
-// Crear tabla comentarios_privados si no existe
-mysqli_query($conexion, "CREATE TABLE IF NOT EXISTS comentarios_privados (
-    id_comentario_privado INT AUTO_INCREMENT PRIMARY KEY,
-    id_usuario INT NOT NULL,
-    id_trailer INT NOT NULL,
-    comentario TEXT NOT NULL,
-    fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
-    fecha_actualizacion DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY uq_usuario_trailer_comentario (id_usuario, id_trailer),
-    CONSTRAINT fk_comentarios_priv_trailers FOREIGN KEY (id_trailer) REFERENCES trailers(id_trailer) ON DELETE CASCADE,
-    CONSTRAINT fk_comentarios_priv_usuarios FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
-
-// Crear tabla historial_comentarios_privados si no existe
-mysqli_query($conexion, "CREATE TABLE IF NOT EXISTS historial_comentarios_privados (
-    id_historial INT AUTO_INCREMENT PRIMARY KEY,
-    id_usuario INT NOT NULL,
-    id_trailer INT NOT NULL,
-    comentario_anterior TEXT NOT NULL,
-    fecha_cambio DATETIME DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_historial_trailers FOREIGN KEY (id_trailer) REFERENCES trailers(id_trailer) ON DELETE CASCADE,
-    CONSTRAINT fk_historial_usuarios FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
-
 $successMsg = $_SESSION['success'] ?? null;
 $errorMsg = $_SESSION['error'] ?? null;
 unset($_SESSION['success'], $_SESSION['error']);
@@ -56,7 +14,7 @@ unset($_SESSION['success'], $_SESSION['error']);
 $user_id = $_SESSION['usuario_id'];
 $error = null;
 
-// 3. Procesar el formulario de edición
+// 2. Procesar el formulario de edición
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     require_csrf();
 
@@ -166,11 +124,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 }
 
-// 4. Obtener datos actuales del usuario para llenar el formulario
+// 3. Obtener datos actuales del usuario para llenar el formulario
 $sqlUser = "SELECT * FROM usuarios WHERE id_usuario = ? LIMIT 1";
 $stmtUser = mysqli_prepare($conexion, $sqlUser);
 if (!$stmtUser) {
-    die("Error al preparar la consulta de datos del usuario: " . mysqli_error($conexion));
+    abortar_error_interno(
+        'Error al preparar la consulta de datos del perfil',
+        mysqli_error($conexion)
+    );
 }
 mysqli_stmt_bind_param($stmtUser, "i", $user_id);
 mysqli_stmt_execute($stmtUser);
@@ -1336,10 +1297,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         const entry = document.createElement('div');
                         entry.className = 'history-entry-box';
                         entry.style.borderLeft = '2px solid var(--primary)';
-                        entry.innerHTML = `
-                            <div class="history-entry-date">Edición: ${h.fecha_cambio}</div>
-                            <div class="history-entry-text">${escapeHtml(h.comentario_anterior)}</div>
-                        `;
+
+                        const dateNode = document.createElement('div');
+                        dateNode.className = 'history-entry-date';
+                        dateNode.textContent = `Edición: ${String(h.fecha_cambio ?? '')}`;
+
+                        const commentNode = document.createElement('div');
+                        commentNode.className = 'history-entry-text';
+                        commentNode.textContent = String(h.comentario_anterior ?? '');
+
+                        entry.append(dateNode, commentNode);
                         drawerHistoryList.appendChild(entry);
                     });
                 }
@@ -1604,15 +1571,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    function escapeHtml(text) {
-        return text
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-    }
-
     // --- Lógica del Sistema de Gamificación (Badges) ---
     const badgesContainer = document.getElementById('badgesContainer');
     let badgesLoaded = false;
@@ -1642,33 +1600,79 @@ document.addEventListener('DOMContentLoaded', () => {
                 data.forEach(badge => {
                     const card = document.createElement('div');
                     card.className = `badge-card ${badge.desbloqueado ? 'unlocked' : 'locked'}`;
-                    
-                    const progressPercentage = Math.min(100, Math.max(0, (badge.progreso_actual / badge.requisito_valor) * 100));
-                    
-                    card.innerHTML = `
-                        <div class="badge-icon-circle">
-                            <i class="fa-solid ${badge.icono}"></i>
-                        </div>
-                        <span class="badge-title-label">${badge.nombre}</span>
-                        
-                        <div class="badge-tooltip">
-                            <div class="tooltip-title">${badge.nombre}</div>
-                            <div class="tooltip-status ${badge.desbloqueado ? 'status-unlocked' : 'status-locked'}">
-                                ${badge.desbloqueado ? '<i class="fa-solid fa-circle-check"></i> Conseguido' : '<i class="fa-solid fa-lock"></i> Bloqueado'}
-                            </div>
-                            <div class="tooltip-desc">${badge.descripcion}</div>
-                            <div class="tooltip-progress-section">
-                                <div class="tooltip-progress-label">
-                                    <span>Progreso</span>
-                                    <span>${badge.progreso_actual} / ${badge.requisito_valor}</span>
-                                </div>
-                                <div class="tooltip-progress-bar">
-                                    <div class="tooltip-progress-fill" style="width: ${progressPercentage}%"></div>
-                                </div>
-                            </div>
-                            ${badge.desbloqueado ? `<div class="tooltip-date">Desbloqueado el: ${new Date(badge.fecha_desbloqueo).toLocaleDateString()}</div>` : ''}
-                        </div>
-                    `;
+
+                    const progressCurrent = Number(badge.progreso_actual) || 0;
+                    const progressRequired = Number(badge.requisito_valor) || 0;
+                    const progressPercentage = progressRequired > 0
+                        ? Math.min(100, Math.max(0, (progressCurrent / progressRequired) * 100))
+                        : 0;
+
+                    const iconCircle = document.createElement('div');
+                    iconCircle.className = 'badge-icon-circle';
+
+                    const iconNode = document.createElement('i');
+                    iconNode.className = 'fa-solid';
+                    const iconClass = String(badge.icono ?? '');
+                    iconNode.classList.add(/^fa-[a-z0-9-]+$/.test(iconClass) ? iconClass : 'fa-award');
+                    iconCircle.appendChild(iconNode);
+
+                    const titleLabel = document.createElement('span');
+                    titleLabel.className = 'badge-title-label';
+                    titleLabel.textContent = String(badge.nombre ?? '');
+
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'badge-tooltip';
+
+                    const tooltipTitle = document.createElement('div');
+                    tooltipTitle.className = 'tooltip-title';
+                    tooltipTitle.textContent = String(badge.nombre ?? '');
+
+                    const tooltipStatus = document.createElement('div');
+                    tooltipStatus.className = `tooltip-status ${badge.desbloqueado ? 'status-unlocked' : 'status-locked'}`;
+
+                    const statusIcon = document.createElement('i');
+                    statusIcon.className = `fa-solid ${badge.desbloqueado ? 'fa-circle-check' : 'fa-lock'}`;
+                    tooltipStatus.append(statusIcon, document.createTextNode(badge.desbloqueado ? ' Conseguido' : ' Bloqueado'));
+
+                    const tooltipDescription = document.createElement('div');
+                    tooltipDescription.className = 'tooltip-desc';
+                    tooltipDescription.textContent = String(badge.descripcion ?? '');
+
+                    const progressSection = document.createElement('div');
+                    progressSection.className = 'tooltip-progress-section';
+
+                    const progressLabel = document.createElement('div');
+                    progressLabel.className = 'tooltip-progress-label';
+
+                    const progressText = document.createElement('span');
+                    progressText.textContent = 'Progreso';
+
+                    const progressValues = document.createElement('span');
+                    progressValues.textContent = `${progressCurrent} / ${progressRequired}`;
+                    progressLabel.append(progressText, progressValues);
+
+                    const progressBar = document.createElement('div');
+                    progressBar.className = 'tooltip-progress-bar';
+
+                    const progressFill = document.createElement('div');
+                    progressFill.className = 'tooltip-progress-fill';
+                    progressFill.style.width = `${progressPercentage}%`;
+                    progressBar.appendChild(progressFill);
+                    progressSection.append(progressLabel, progressBar);
+
+                    tooltip.append(tooltipTitle, tooltipStatus, tooltipDescription, progressSection);
+
+                    if (badge.desbloqueado && badge.fecha_desbloqueo) {
+                        const unlockedDate = new Date(badge.fecha_desbloqueo);
+                        if (!Number.isNaN(unlockedDate.getTime())) {
+                            const dateNode = document.createElement('div');
+                            dateNode.className = 'tooltip-date';
+                            dateNode.textContent = `Desbloqueado el: ${unlockedDate.toLocaleDateString()}`;
+                            tooltip.appendChild(dateNode);
+                        }
+                    }
+
+                    card.append(iconCircle, titleLabel, tooltip);
                     badgesContainer.appendChild(card);
                 });
                 badgesLoaded = true;

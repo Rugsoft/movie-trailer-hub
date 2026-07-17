@@ -72,7 +72,6 @@ if (empty($poster_url)) {
             mysqli_begin_transaction($conexion);
             
             $exito = true;
-            $error_db = "";
             
             try {
                 // 1. Actualizar datos básicos del trailer
@@ -150,7 +149,7 @@ if (empty($poster_url)) {
                 // Revertir todos los cambios si algo falla
                 mysqli_rollback($conexion);
                 $exito = false;
-                $error_db = $e->getMessage();
+                registrar_error_interno('Error al modificar el trailer', $e);
             }
             
             if ($exito):
@@ -163,7 +162,7 @@ if (empty($poster_url)) {
             <?php else: ?>
                 <h1>Error de Actualización</h1>
                 <div class="alerta">
-                    <p>Error en la operación de base de datos: <?php echo htmlspecialchars($error_db); ?></p>
+                    <p>No se pudo completar la modificación del trailer.</p>
                 </div>
                 <a class="boton" href="modificar_trailer.php?id=<?php echo $id_trailer; ?>">Volver a intentarlo</a>
             <?php endif; ?>

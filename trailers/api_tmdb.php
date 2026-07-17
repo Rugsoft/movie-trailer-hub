@@ -17,21 +17,64 @@ if (!defined('TMDB_API_KEY') || TMDB_API_KEY === 'TU_API_KEY_AQUI' || empty(TMDB
 /**
  * Realiza una petición cURL a TMDB y retorna la respuesta decodificada
  */
-function makeTmdbRequest($url) {
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Evitar problemas de certificados SSL en entornos locales (como XAMPP)
+function makeTmdbRequest(string $url): array {
+    $ch = curl_init($url);
+
+    if ($ch === false) {
+        registrar_error_interno('No se pudo inicializar cURL para TMDB');
+        http_response_code(502);
+        return ['error' => 'No se pudo conectar con el servicio de películas.'];
+    }
+
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_TIMEOUT => 10,
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_SSL_VERIFYHOST => 2,
+        CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
+        CURLOPT_HTTPHEADER => ['Accept: application/json'],
+    ]);
+
     $response = curl_exec($ch);
+    $curlErrorNumber = curl_errno($ch);
+    $curlError = curl_error($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
-    
-    if ($httpCode !== 200) {
-        return ["error" => "Error de la API de TMDB (Código de estado HTTP: $httpCode)"];
+
+    if ($response === false) {
+        registrar_error_interno(
+            'Error en la conexión segura con TMDB',
+            "cURL $curlErrorNumber: $curlError"
+        );
+        http_response_code(502);
+        return ['error' => 'No se pudo conectar con el servicio de películas.'];
     }
-    
-    return json_decode($response, true);
+
+    if ($httpCode !== 200) {
+        registrar_error_interno(
+            'TMDB devolvió un estado HTTP inesperado',
+            (string)$httpCode
+        );
+        http_response_code(502);
+        return ['error' => 'El servicio de películas no está disponible temporalmente.'];
+    }
+
+    try {
+        $data = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
+    } catch (JsonException $exception) {
+        registrar_error_interno('TMDB devolvió una respuesta JSON inválida', $exception);
+        http_response_code(502);
+        return ['error' => 'El servicio de películas devolvió una respuesta inválida.'];
+    }
+
+    if (!is_array($data)) {
+        registrar_error_interno('TMDB devolvió una respuesta con formato inesperado');
+        http_response_code(502);
+        return ['error' => 'El servicio de películas devolvió una respuesta inválida.'];
+    }
+
+    return $data;
 }
 
 switch ($action) {

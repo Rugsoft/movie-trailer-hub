@@ -13,8 +13,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     
     if ($username !== "" && $password !== "") {
         try {
-            ensure_login_attempts_table($conexion);
-
             if (is_login_rate_limited($conexion, $username)) {
                 $error = "No se pudo iniciar sesión. Inténtalo de nuevo más tarde.";
             } else {

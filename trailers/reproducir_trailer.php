@@ -5,33 +5,6 @@ define('BASE_PATH', '../');
 
 csrf_token();
 
-// Auto-migración: Crear tabla de reseñas si no existe
-$sqlMigrateResenas = "CREATE TABLE IF NOT EXISTS resenas (
-    id_resena INT AUTO_INCREMENT PRIMARY KEY,
-    id_trailer INT NOT NULL,
-    id_usuario INT NOT NULL,
-    valoracion DECIMAL(2,1) NOT NULL,
-    comentario TEXT DEFAULT NULL,
-    fecha_alta DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY uq_trailer_usuario (id_trailer, id_usuario),
-    CONSTRAINT fk_resenas_trailers FOREIGN KEY (id_trailer) REFERENCES trailers(id_trailer) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT fk_resenas_usuarios FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci";
-mysqli_query($conexion, $sqlMigrateResenas);
-
-// Asegurar que la columna valoracion en resenas sea DECIMAL(2,1)
-$checkColType = mysqli_query($conexion, "SHOW COLUMNS FROM resenas LIKE 'valoracion'");
-if ($checkColType && $rowCol = mysqli_fetch_assoc($checkColType)) {
-    if (stripos($rowCol['Type'], 'int') !== false) {
-        mysqli_query($conexion, "ALTER TABLE resenas MODIFY COLUMN valoracion DECIMAL(2,1) NOT NULL");
-    }
-}
-// Verificar si la columna estado existe en resenas, si no, crearla
-$checkColEstado = mysqli_query($conexion, "SHOW COLUMNS FROM resenas LIKE 'estado'");
-if (mysqli_num_rows($checkColEstado) == 0) {
-    mysqli_query($conexion, "ALTER TABLE resenas ADD COLUMN estado VARCHAR(20) NOT NULL DEFAULT 'aprobada'");
-}
-
 $successMsg = $_SESSION['success'] ?? null;
 $errorMsg = $_SESSION['error'] ?? null;
 unset($_SESSION['success'], $_SESSION['error']);
@@ -301,14 +274,18 @@ $sqlView = "INSERT INTO visualizaciones (id_trailer, id_usuario, ip_direccion, d
 $stmtView = mysqli_prepare($conexion, $sqlView);
 if ($stmtView) {
     mysqli_stmt_bind_param($stmtView, "iiss", $id, $id_usuario_view, $ip_direccion, $dispositivo);
-    if (mysqli_stmt_execute($stmtView)) {
-        echo "<!-- DEBUG VISUALIZACION: Insertada con éxito para trailer ID $id y usuario " . ($id_usuario_view ?? 'Invitado') . " -->";
-    } else {
-        echo "<!-- DEBUG VISUALIZACION ERROR EJECUCION: " . htmlspecialchars(mysqli_stmt_error($stmtView)) . " -->";
+    if (!mysqli_stmt_execute($stmtView)) {
+        error_log(
+            "Error al registrar la visualización del trailer $id: "
+            . mysqli_stmt_error($stmtView)
+        );
     }
     mysqli_stmt_close($stmtView);
 } else {
-    echo "<!-- DEBUG VISUALIZACION ERROR PREPARACION: " . htmlspecialchars(mysqli_error($conexion)) . " -->";
+    error_log(
+        "Error al preparar el registro de visualización del trailer $id: "
+        . mysqli_error($conexion)
+    );
 }
 
 // Convertir URL a embed
@@ -347,9 +324,11 @@ if ($stmtReparto) {
         $reparto[] = $row;
     }
     mysqli_stmt_close($stmtReparto);
-    echo "<!-- DEBUG ACTORES: Encontrados " . count($reparto) . " actores para trailer ID $id -->";
 } else {
-    echo "<!-- DEBUG ACTORES ERROR: " . htmlspecialchars(mysqli_error($conexion)) . " -->";
+    error_log(
+        "Error al preparar la consulta de reparto del trailer $id: "
+        . mysqli_error($conexion)
+    );
 }
 
 $isTrailerFavorito = false;
@@ -1091,18 +1070,18 @@ require_once $rootPath . 'includes/navbar.php';
                                         entry.style.borderRadius = 'var(--radius-sm)';
                                         entry.style.fontSize = '11px';
                                         
-                                        // Escapar texto para prevenir XSS
-                                        const safeComment = h.comentario_anterior
-                                            .replace(/&/g, "&amp;")
-                                            .replace(/</g, "&lt;")
-                                            .replace(/>/g, "&gt;")
-                                            .replace(/"/g, "&quot;")
-                                            .replace(/'/g, "&#039;");
-                                            
-                                        entry.innerHTML = `
-                                            <div style="color: var(--text-muted); font-size: 10px; margin-bottom: 4px;">Edición: ${h.fecha_cambio}</div>
-                                            <div style="color: var(--text-primary); white-space: pre-wrap;">${safeComment}</div>
-                                        `;
+                                        const dateNode = document.createElement('div');
+                                        dateNode.style.color = 'var(--text-muted)';
+                                        dateNode.style.fontSize = '10px';
+                                        dateNode.style.marginBottom = '4px';
+                                        dateNode.textContent = `Edición: ${String(h.fecha_cambio ?? '')}`;
+
+                                        const commentNode = document.createElement('div');
+                                        commentNode.style.color = 'var(--text-primary)';
+                                        commentNode.style.whiteSpace = 'pre-wrap';
+                                        commentNode.textContent = String(h.comentario_anterior ?? '');
+
+                                        entry.append(dateNode, commentNode);
                                         privateNoteHistoryList.appendChild(entry);
                                     });
                                 }

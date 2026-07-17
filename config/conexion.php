@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/secretos_loader.php';
+require_once __DIR__ . '/errores.php';
 require_once __DIR__ . '/sesion.php';
 
 // Detectar de forma dinámica si estamos en entorno local (CLI o localhost)
@@ -39,13 +40,26 @@ if ($conexion) {
 
 // Verificar la conexión
 if (!$conexion) {
-    die("Error de conexión: " . mysqli_connect_error());
+    error_log('Error de conexión con MySQL: ' . mysqli_connect_error());
+    http_response_code(500);
+    exit('No se pudo conectar con el servicio de datos.');
 }
 mysqli_set_charset($conexion, "utf8mb4");
 
 // Configurar la zona horaria del proyecto (España)
 date_default_timezone_set('Europe/Madrid');
 mysqli_query($conexion, "SET time_zone = '+02:00'");
+
+require_once __DIR__ . '/../database/migraciones.php';
+
+try {
+    ejecutar_migraciones($conexion);
+} catch (Throwable $errorMigracion) {
+    abortar_error_interno(
+        'No se pudo actualizar el esquema de la aplicación',
+        $errorMigracion
+    );
+}
 
 if (isset($_SESSION['usuario_id'])) {
     // Optimización: verificar racha solo una vez por día en la sesión

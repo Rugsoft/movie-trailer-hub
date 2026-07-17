@@ -343,7 +343,12 @@ require_once $rootPath . 'includes/navbar.php';
                                 <i class="fa-solid fa-pen"></i> Editar
                             </button>
                             <?php if (!$isSelf): ?>
-                                <button class="btn-tabla btn-eliminar" onclick="deleteUser(<?= $user['id_usuario'] ?>, '<?= htmlspecialchars($user['username']) ?>')">
+                                <button
+                                    type="button"
+                                    class="btn-tabla btn-eliminar js-delete-user"
+                                    data-user-id="<?= (int) $user['id_usuario'] ?>"
+                                    data-username="<?= htmlspecialchars((string) $user['username'], ENT_QUOTES, 'UTF-8') ?>"
+                                >
                                     <i class="fa-solid fa-trash-can"></i> Eliminar
                                 </button>
                             <?php else: ?>
@@ -672,6 +677,17 @@ require_once $rootPath . 'includes/navbar.php';
             showToast(err.message, 'error');
         });
     }
+
+    document.querySelectorAll('.js-delete-user').forEach(button => {
+        button.addEventListener('click', () => {
+            const id = Number.parseInt(button.dataset.userId ?? '', 10);
+            const username = button.dataset.username ?? '';
+
+            if (Number.isInteger(id)) {
+                deleteUser(id, username);
+            }
+        });
+    });
 </script>
 
 <?php

@@ -34,7 +34,10 @@ $pais = trim($_POST["pais"] ?? "");
             $sqlExiste = "SELECT * FROM directores WHERE nombre = ? AND apellidos = ?";
             $stmtExiste = mysqli_prepare($conexion, $sqlExiste);
             if (!$stmtExiste) {
-                die("Error al preparar la validación de existencia de director: " . mysqli_error($conexion));
+                abortar_error_interno(
+                    'Error al preparar la validación de existencia de director',
+                    mysqli_error($conexion)
+                );
             }
             mysqli_stmt_bind_param($stmtExiste, "ss", $nombre, $apellidos);
             mysqli_stmt_execute($stmtExiste);
@@ -54,7 +57,10 @@ $pais = trim($_POST["pais"] ?? "");
                 $sqlInsertar = "INSERT INTO directores (nombre, apellidos, edad, pais) VALUES (?, ?, ?, ?)";
                 $stmtInsertar = mysqli_prepare($conexion, $sqlInsertar);
                 if (!$stmtInsertar) {
-                    die("Error al preparar el registro del director: " . mysqli_error($conexion));
+                    abortar_error_interno(
+                        'Error al preparar el registro del director',
+                        mysqli_error($conexion)
+                    );
                 }
                 mysqli_stmt_bind_param($stmtInsertar, "ssis", $nombre, $apellidos, $edad, $pais);
                 
@@ -71,11 +77,12 @@ $pais = trim($_POST["pais"] ?? "");
                     </div>
                 <?php else:
                     $error_db = mysqli_stmt_error($stmtInsertar);
+                    registrar_error_interno('Error al registrar el director', $error_db);
                     mysqli_stmt_close($stmtInsertar);
                 ?>
                     <h1>Error de Registro</h1>
                     <div class="alerta">
-                        <p>Error al guardar en la base de datos: <?php echo htmlspecialchars($error_db); ?></p>
+                        <p>No se pudo guardar el director. Inténtalo de nuevo.</p>
                     </div>
                     <a class="boton" href="añadir_director.php">Volver al formulario</a>
                 <?php endif; ?>

@@ -40,7 +40,10 @@ if (empty($foto_url)) {
             $sqlExiste = "SELECT * FROM reparto WHERE nombre = ? AND apellidos = ?";
             $stmtExiste = mysqli_prepare($conexion, $sqlExiste);
             if (!$stmtExiste) {
-                die("Error al preparar la validación de existencia del actor: " . mysqli_error($conexion));
+                abortar_error_interno(
+                    'Error al preparar la validación de existencia del actor',
+                    mysqli_error($conexion)
+                );
             }
             mysqli_stmt_bind_param($stmtExiste, "ss", $nombre, $apellidos);
             mysqli_stmt_execute($stmtExiste);
@@ -60,7 +63,10 @@ if (empty($foto_url)) {
                 $sqlInsertar = "INSERT INTO reparto (nombre, apellidos, edad, pais, foto_url) VALUES (?, ?, ?, ?, ?)";
                 $stmtInsertar = mysqli_prepare($conexion, $sqlInsertar);
                 if (!$stmtInsertar) {
-                    die("Error al preparar el registro del actor: " . mysqli_error($conexion));
+                    abortar_error_interno(
+                        'Error al preparar el registro del actor',
+                        mysqli_error($conexion)
+                    );
                 }
                 mysqli_stmt_bind_param($stmtInsertar, "ssiss", $nombre, $apellidos, $edad, $pais, $foto_url);
                 
@@ -77,11 +83,12 @@ if (empty($foto_url)) {
                     </div>
                 <?php else:
                     $error_db = mysqli_stmt_error($stmtInsertar);
+                    registrar_error_interno('Error al registrar el actor', $error_db);
                     mysqli_stmt_close($stmtInsertar);
                 ?>
                     <h1>Error de Registro</h1>
                     <div class="alerta">
-                        <p>Error al guardar en la base de datos: <?php echo htmlspecialchars($error_db); ?></p>
+                        <p>No se pudo guardar el actor. Inténtalo de nuevo.</p>
                     </div>
                     <a class="boton" href="añadir_reparto.php">Volver al formulario</a>
                 <?php endif; ?>

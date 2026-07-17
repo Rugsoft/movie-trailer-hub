@@ -35,7 +35,10 @@ $pais = trim($_POST["pais"] ?? "");
             $sqlExiste = "SELECT * FROM directores WHERE nombre = ? AND apellidos = ? AND id_director != ?";
             $stmtExiste = mysqli_prepare($conexion, $sqlExiste);
             if (!$stmtExiste) {
-                die("Error al preparar la validación de existencia de director: " . mysqli_error($conexion));
+                abortar_error_interno(
+                    'Error al preparar la validación de existencia de director',
+                    mysqli_error($conexion)
+                );
             }
             mysqli_stmt_bind_param($stmtExiste, "ssi", $nombre, $apellidos, $id_director);
             mysqli_stmt_execute($stmtExiste);
@@ -55,7 +58,10 @@ $pais = trim($_POST["pais"] ?? "");
                 $sqlActualizar = "UPDATE directores SET nombre = ?, apellidos = ?, edad = ?, pais = ? WHERE id_director = ?";
                 $stmtActualizar = mysqli_prepare($conexion, $sqlActualizar);
                 if (!$stmtActualizar) {
-                    die("Error al preparar la modificación del director: " . mysqli_error($conexion));
+                    abortar_error_interno(
+                        'Error al preparar la modificación del director',
+                        mysqli_error($conexion)
+                    );
                 }
                 mysqli_stmt_bind_param($stmtActualizar, "ssisi", $nombre, $apellidos, $edad, $pais, $id_director);
                 
@@ -69,11 +75,12 @@ $pais = trim($_POST["pais"] ?? "");
                     <a class="boton" href="listar_directores.php">Volver al catálogo de directores</a>
                 <?php else:
                     $error_db = mysqli_stmt_error($stmtActualizar);
+                    registrar_error_interno('Error al modificar el director', $error_db);
                     mysqli_stmt_close($stmtActualizar);
                 ?>
                     <h1>Error de Modificación</h1>
                     <div class="alerta">
-                        <p>Error al guardar cambios: <?php echo htmlspecialchars($error_db); ?></p>
+                        <p>No se pudieron guardar los cambios. Inténtalo de nuevo.</p>
                     </div>
                     <a class="boton" href="modificar_director.php?id=<?php echo $id_director; ?>">Volver al formulario</a>
                 <?php endif; ?>

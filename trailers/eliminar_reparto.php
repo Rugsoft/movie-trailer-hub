@@ -34,8 +34,18 @@ $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
         // Obtener el nombre para el mensaje de éxito
         $sqlInfo = "SELECT nombre, apellidos FROM reparto WHERE id_reparto = ?";
         $stmtInfo = mysqli_prepare($conexion, $sqlInfo);
+        if (!$stmtInfo) {
+            abortar_error_interno(
+                'Error al preparar la consulta del actor',
+                mysqli_error($conexion)
+            );
+        }
         mysqli_stmt_bind_param($stmtInfo, "i", $id);
-        mysqli_stmt_execute($stmtInfo);
+        if (!mysqli_stmt_execute($stmtInfo)) {
+            $error_db = mysqli_stmt_error($stmtInfo);
+            mysqli_stmt_close($stmtInfo);
+            abortar_error_interno('Error al consultar el actor', $error_db);
+        }
         $resInfo = mysqli_stmt_get_result($stmtInfo);
         $actor = mysqli_fetch_assoc($resInfo);
         mysqli_stmt_close($stmtInfo);
@@ -56,6 +66,12 @@ $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
 
         $sql = "DELETE FROM reparto WHERE id_reparto = ?";
         $stmt = mysqli_prepare($conexion, $sql);
+        if (!$stmt) {
+            abortar_error_interno(
+                'Error al preparar la eliminación del actor',
+                mysqli_error($conexion)
+            );
+        }
         mysqli_stmt_bind_param($stmt, "i", $id);
         
         if (mysqli_stmt_execute($stmt)) {
@@ -69,11 +85,12 @@ $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
             <?php
         } else {
             $error_db = mysqli_stmt_error($stmt);
+            registrar_error_interno('Error al eliminar el actor', $error_db);
             mysqli_stmt_close($stmt);
             ?>
             <h1>Error de Eliminación</h1>
             <div class="alerta">
-                <p>No se pudo eliminar el actor de la base de datos: <?php echo htmlspecialchars($error_db); ?></p>
+                <p>No se pudo eliminar el actor. Inténtalo de nuevo.</p>
             </div>
             <a class="boton" href="listar_reparto.php">Volver al catálogo</a>
             <?php

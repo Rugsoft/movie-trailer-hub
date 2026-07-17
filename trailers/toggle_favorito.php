@@ -29,10 +29,18 @@ if ($id_trailer <= 0) {
 $sqlCheck = "SELECT 1 FROM favoritos WHERE id_usuario = ? AND id_trailer = ? LIMIT 1";
 $stmtCheck = mysqli_prepare($conexion, $sqlCheck);
 if (!$stmtCheck) {
-    die("Error al preparar la verificación de favoritos: " . mysqli_error($conexion));
+    abortar_error_interno(
+        'Error al preparar la verificación de favoritos',
+        mysqli_error($conexion),
+        $isAjax
+    );
 }
 mysqli_stmt_bind_param($stmtCheck, "ii", $id_usuario, $id_trailer);
-mysqli_stmt_execute($stmtCheck);
+if (!mysqli_stmt_execute($stmtCheck)) {
+    $error_db = mysqli_stmt_error($stmtCheck);
+    mysqli_stmt_close($stmtCheck);
+    abortar_error_interno('Error al verificar favoritos', $error_db, $isAjax);
+}
 $resCheck = mysqli_stmt_get_result($stmtCheck);
 $isFavorito = mysqli_num_rows($resCheck) > 0;
 mysqli_stmt_close($stmtCheck);
@@ -42,10 +50,18 @@ if ($isFavorito) {
     $sqlDelete = "DELETE FROM favoritos WHERE id_usuario = ? AND id_trailer = ?";
     $stmtDelete = mysqli_prepare($conexion, $sqlDelete);
     if (!$stmtDelete) {
-        die("Error al preparar la eliminación de favoritos: " . mysqli_error($conexion));
+        abortar_error_interno(
+            'Error al preparar la eliminación de favoritos',
+            mysqli_error($conexion),
+            $isAjax
+        );
     }
     mysqli_stmt_bind_param($stmtDelete, "ii", $id_usuario, $id_trailer);
-    mysqli_stmt_execute($stmtDelete);
+    if (!mysqli_stmt_execute($stmtDelete)) {
+        $error_db = mysqli_stmt_error($stmtDelete);
+        mysqli_stmt_close($stmtDelete);
+        abortar_error_interno('Error al eliminar el favorito', $error_db, $isAjax);
+    }
     mysqli_stmt_close($stmtDelete);
     $_SESSION['success'] = "Película eliminada de tus favoritos.";
 } else {
@@ -53,10 +69,18 @@ if ($isFavorito) {
     $sqlInsert = "INSERT INTO favoritos (id_usuario, id_trailer) VALUES (?, ?)";
     $stmtInsert = mysqli_prepare($conexion, $sqlInsert);
     if (!$stmtInsert) {
-        die("Error al preparar la inserción de favoritos: " . mysqli_error($conexion));
+        abortar_error_interno(
+            'Error al preparar la inserción de favoritos',
+            mysqli_error($conexion),
+            $isAjax
+        );
     }
     mysqli_stmt_bind_param($stmtInsert, "ii", $id_usuario, $id_trailer);
-    mysqli_stmt_execute($stmtInsert);
+    if (!mysqli_stmt_execute($stmtInsert)) {
+        $error_db = mysqli_stmt_error($stmtInsert);
+        mysqli_stmt_close($stmtInsert);
+        abortar_error_interno('Error al insertar el favorito', $error_db, $isAjax);
+    }
     mysqli_stmt_close($stmtInsert);
     $_SESSION['success'] = "Película añadida a tus favoritos.";
 }

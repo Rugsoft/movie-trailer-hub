@@ -27,7 +27,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $sqlCheck = "SELECT id_usuario FROM usuarios WHERE username = ? OR email = ? LIMIT 1";
             $stmtCheck = mysqli_prepare($conexion, $sqlCheck);
             if (!$stmtCheck) {
-                die("Error al preparar la verificación del registro: " . mysqli_error($conexion));
+                abortar_error_interno(
+                    'Error al preparar la verificación del registro',
+                    mysqli_error($conexion)
+                );
             }
             mysqli_stmt_bind_param($stmtCheck, "ss", $username, $email);
             mysqli_stmt_execute($stmtCheck);
@@ -47,7 +50,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $sqlInsert = "INSERT INTO usuarios (username, password_hash, nombre, apellidos, email, telefono, rol, fecha_alta) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
                 $stmtInsert = mysqli_prepare($conexion, $sqlInsert);
                 if (!$stmtInsert) {
-                    die("Error al preparar el registro de usuario: " . mysqli_error($conexion));
+                    abortar_error_interno(
+                        'Error al preparar el registro de usuario',
+                        mysqli_error($conexion)
+                    );
                 }
                 mysqli_stmt_bind_param($stmtInsert, "ssssssss", $username, $passwordHash, $nombre, $apellidos, $email, $telefono, $rol, $fecha_alta);
             
@@ -66,7 +72,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 header("Location: login.php");
                 exit;
             } else {
-                $error = "Error al realizar el registro: " . mysqli_error($conexion);
+                registrar_error_interno(
+                    'Error al ejecutar el registro de usuario',
+                    mysqli_stmt_error($stmtInsert)
+                );
+                $error = "No se pudo completar el registro. Inténtalo de nuevo.";
                 mysqli_stmt_close($stmtInsert);
             }
         }

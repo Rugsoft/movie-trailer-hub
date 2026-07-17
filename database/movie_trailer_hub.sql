@@ -79,7 +79,8 @@ INSERT INTO `directores` (`id_director`, `nombre`, `apellidos`, `edad`, `pais`) 
 
 CREATE TABLE `favoritos` (
   `id_usuario` int(11) NOT NULL,
-  `id_trailer` int(11) NOT NULL
+  `id_trailer` int(11) NOT NULL,
+  `fecha_adicion` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -693,6 +694,174 @@ CREATE TABLE `visualizaciones` (
 
 -- Historial de visualizaciones omitido para proteger datos de actividad.
 
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `badges`
+--
+
+CREATE TABLE `badges` (
+  `id_badge` int(11) NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(100) NOT NULL,
+  `descripcion` varchar(255) NOT NULL,
+  `requisito_tipo` varchar(50) NOT NULL,
+  `requisito_valor` int(11) NOT NULL,
+  `icono` varchar(100) NOT NULL,
+  PRIMARY KEY (`id_badge`),
+  UNIQUE KEY `nombre` (`nombre`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Los badges se inicializan de forma idempotente desde la aplicacion.
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `usuario_badges`
+--
+
+CREATE TABLE `usuario_badges` (
+  `id_usuario` int(11) NOT NULL,
+  `id_badge` int(11) NOT NULL,
+  `fecha_desbloqueo` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_usuario`,`id_badge`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Insignias desbloqueadas omitidas para proteger datos de actividad.
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `usuario_rachas`
+--
+
+CREATE TABLE `usuario_rachas` (
+  `id_usuario` int(11) NOT NULL,
+  `fecha_ultimo_login` date NOT NULL,
+  `racha_actual` int(11) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id_usuario`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Rachas de usuarios omitidas para proteger datos de actividad.
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `usuario_gamificacion_stats`
+--
+
+CREATE TABLE `usuario_gamificacion_stats` (
+  `id_usuario` int(11) NOT NULL,
+  `modo_cine_activado` tinyint(4) DEFAULT 0,
+  `intentos_fallidos_admin` tinyint(4) DEFAULT 0,
+  `busquedas_fecha_actual` tinyint(4) DEFAULT 0,
+  `registro_invitacion` tinyint(4) DEFAULT 0,
+  PRIMARY KEY (`id_usuario`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Estadisticas de gamificacion omitidas para proteger datos de actividad.
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `usuario_lectura_resenas`
+--
+
+CREATE TABLE `usuario_lectura_resenas` (
+  `id_usuario` int(11) NOT NULL,
+  `id_trailer` int(11) NOT NULL,
+  `fecha_lectura` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_usuario`,`id_trailer`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Lecturas de resenas omitidas para proteger datos de actividad.
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `listas_personales`
+--
+
+CREATE TABLE `listas_personales` (
+  `id_lista` int(11) NOT NULL AUTO_INCREMENT,
+  `id_usuario` int(11) NOT NULL,
+  `id_trailer` int(11) NOT NULL,
+  `estado` varchar(20) NOT NULL,
+  `fecha_adicion` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_lista`),
+  UNIQUE KEY `uq_usuario_trailer_lista` (`id_usuario`,`id_trailer`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Listas personales omitidas para proteger datos de usuario.
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `comentarios_privados`
+--
+
+CREATE TABLE `comentarios_privados` (
+  `id_comentario_privado` int(11) NOT NULL AUTO_INCREMENT,
+  `id_usuario` int(11) NOT NULL,
+  `id_trailer` int(11) NOT NULL,
+  `comentario` text NOT NULL,
+  `fecha_creacion` datetime DEFAULT current_timestamp(),
+  `fecha_actualizacion` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id_comentario_privado`),
+  UNIQUE KEY `uq_usuario_trailer_comentario` (`id_usuario`,`id_trailer`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Comentarios privados omitidos para proteger datos de usuario.
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `historial_comentarios_privados`
+--
+
+CREATE TABLE `historial_comentarios_privados` (
+  `id_historial` int(11) NOT NULL AUTO_INCREMENT,
+  `id_usuario` int(11) NOT NULL,
+  `id_trailer` int(11) NOT NULL,
+  `comentario_anterior` text NOT NULL,
+  `fecha_cambio` datetime DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_historial`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Historial de comentarios privados omitido para proteger datos de usuario.
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `resenas`
+--
+
+CREATE TABLE `resenas` (
+  `id_resena` int(11) NOT NULL AUTO_INCREMENT,
+  `id_trailer` int(11) NOT NULL,
+  `id_usuario` int(11) NOT NULL,
+  `valoracion` decimal(2,1) NOT NULL,
+  `comentario` text DEFAULT NULL,
+  `fecha_alta` datetime DEFAULT current_timestamp(),
+  `estado` varchar(20) NOT NULL DEFAULT 'aprobada',
+  PRIMARY KEY (`id_resena`),
+  UNIQUE KEY `uq_trailer_usuario` (`id_trailer`,`id_usuario`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Resenas omitidas para proteger datos de usuario.
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `migraciones_esquema`
+--
+
+CREATE TABLE `migraciones_esquema` (
+  `version` int unsigned NOT NULL,
+  `nombre` varchar(150) NOT NULL,
+  `aplicada_en` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`version`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 --
 -- Índices para tablas volcadas
 --
@@ -844,6 +1013,66 @@ ALTER TABLE `trailers_generos`
 ALTER TABLE `visualizaciones`
   ADD CONSTRAINT `fk_visualizaciones_trailers` FOREIGN KEY (`id_trailer`) REFERENCES `trailers` (`id_trailer`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_visualizaciones_usuarios` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Restricciones para la tabla `usuario_badges`
+--
+ALTER TABLE `usuario_badges`
+  ADD CONSTRAINT `fk_ub_usuarios` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_ub_badges` FOREIGN KEY (`id_badge`) REFERENCES `badges` (`id_badge`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Restricciones para la tabla `usuario_rachas`
+--
+ALTER TABLE `usuario_rachas`
+  ADD CONSTRAINT `fk_ur_usuarios` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Restricciones para la tabla `usuario_gamificacion_stats`
+--
+ALTER TABLE `usuario_gamificacion_stats`
+  ADD CONSTRAINT `fk_ugs_usuarios` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Restricciones para la tabla `usuario_lectura_resenas`
+--
+ALTER TABLE `usuario_lectura_resenas`
+  ADD CONSTRAINT `fk_ulr_usuarios` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_ulr_trailers` FOREIGN KEY (`id_trailer`) REFERENCES `trailers` (`id_trailer`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Restricciones para la tabla `listas_personales`
+--
+ALTER TABLE `listas_personales`
+  ADD CONSTRAINT `fk_listas_trailers` FOREIGN KEY (`id_trailer`) REFERENCES `trailers` (`id_trailer`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_listas_usuarios` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE;
+
+--
+-- Restricciones para la tabla `comentarios_privados`
+--
+ALTER TABLE `comentarios_privados`
+  ADD CONSTRAINT `fk_comentarios_priv_trailers` FOREIGN KEY (`id_trailer`) REFERENCES `trailers` (`id_trailer`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_comentarios_priv_usuarios` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE;
+
+--
+-- Restricciones para la tabla `historial_comentarios_privados`
+--
+ALTER TABLE `historial_comentarios_privados`
+  ADD CONSTRAINT `fk_historial_trailers` FOREIGN KEY (`id_trailer`) REFERENCES `trailers` (`id_trailer`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_historial_usuarios` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE;
+
+--
+-- Restricciones para la tabla `resenas`
+--
+ALTER TABLE `resenas`
+  ADD CONSTRAINT `fk_resenas_trailers` FOREIGN KEY (`id_trailer`) REFERENCES `trailers` (`id_trailer`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_resenas_usuarios` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Versión inicial del esquema consolidado
+--
+INSERT INTO `migraciones_esquema` (`version`, `nombre`)
+VALUES (1, 'Estructura base consolidada');
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

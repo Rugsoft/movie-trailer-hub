@@ -130,6 +130,42 @@ $resDirectores = mysqli_query($conexion, $sqlDirectores);
             const btnSearch = document.getElementById('btn_tmdb_movie_search');
             const resultsBox = document.getElementById('tmdb_movie_results');
             const statusBox = document.getElementById('tmdb_status_box');
+            const fallbackPoster = 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=92';
+
+            function renderMessage(container, message, options = {}) {
+                const messageNode = document.createElement('div');
+                messageNode.style.color = options.color ?? 'var(--text-muted)';
+                messageNode.style.textAlign = 'center';
+                messageNode.style.padding = '10px';
+
+                if (options.iconClass) {
+                    const iconNode = document.createElement('i');
+                    iconNode.className = `fa-solid ${options.iconClass}`;
+                    messageNode.append(iconNode, document.createTextNode(` ${String(message ?? '')}`));
+                } else {
+                    messageNode.textContent = String(message ?? '');
+                }
+
+                container.replaceChildren(messageNode);
+            }
+
+            function isValidTmdbPath(path) {
+                return /^\/[a-zA-Z0-9._-]+$/.test(String(path ?? ''));
+            }
+
+            function buildPosterUrl(path, size, fallback = '') {
+                const allowedSizes = new Set(['w92', 'w500']);
+                return allowedSizes.has(size) && isValidTmdbPath(path)
+                    ? `https://image.tmdb.org/t/p/${size}${String(path)}`
+                    : fallback;
+            }
+
+            function createStatusIcon(iconClass, color) {
+                const icon = document.createElement('i');
+                icon.className = `fa-solid ${iconClass}`;
+                icon.style.color = color;
+                return icon;
+            }
 
             tmdbQuery.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
@@ -148,59 +184,92 @@ $resDirectores = mysqli_query($conexion, $sqlDirectores);
                 }
 
                 resultsBox.style.display = 'flex';
-                resultsBox.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 10px;"><i class="fa-solid fa-spinner fa-spin"></i> Buscando en TMDB...</div>';
+                renderMessage(resultsBox, 'Buscando en TMDB...', { iconClass: 'fa-spinner fa-spin' });
                 statusBox.style.display = 'none';
 
                 fetch(`api_tmdb.php?action=search_movie&query=${encodeURIComponent(query)}`)
                     .then(res => res.json())
                     .then(data => {
                         if (data.error) {
-                            resultsBox.innerHTML = `<div style="color: var(--danger, #ef4444); text-align: center; padding: 10px;"><i class="fa-solid fa-circle-exclamation"></i> ${data.error}</div>`;
+                            renderMessage(resultsBox, data.error, {
+                                color: 'var(--danger, #ef4444)',
+                                iconClass: 'fa-circle-exclamation'
+                            });
                             return;
                         }
 
                         if (!data.results || data.results.length === 0) {
-                            resultsBox.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 10px;">No se encontraron películas con ese título.</div>';
+                            renderMessage(resultsBox, 'No se encontraron películas con ese título.');
                             return;
                         }
 
-                        resultsBox.innerHTML = '';
+                        resultsBox.replaceChildren();
                         data.results.forEach(movie => {
-                            const year = movie.release_date ? movie.release_date.substring(0, 4) : 'N/A';
-                            const imgUrl = movie.poster_path ? `https://image.tmdb.org/t/p/w92${movie.poster_path}` : 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=92';
+                            const movieId = Number.parseInt(movie.id, 10);
+                            if (!Number.isInteger(movieId) || movieId <= 0) {
+                                return;
+                            }
+
+                            const year = movie.release_date
+                                ? String(movie.release_date).substring(0, 4)
+                                : 'N/A';
                             
                             const row = document.createElement('div');
                             row.className = 'tmdb-result-row';
-                            
-                            row.innerHTML = `
-                                <div class="tmdb-result-row-info">
-                                    <img src="${imgUrl}">
-                                    <div>
-                                        <strong class="tmdb-result-row-title">${movie.title}</strong>
-                                        <div class="tmdb-result-row-year">${year}</div>
-                                    </div>
-                                </div>
-                                <button type="button" class="btn btn-secondary btn-sm" style="font-size: 12px; padding: 4px 10px;">Seleccionar</button>
-                            `;
 
-                            row.addEventListener('click', () => selectMovie(movie.id));
+                            const info = document.createElement('div');
+                            info.className = 'tmdb-result-row-info';
+
+                            const image = document.createElement('img');
+                            image.src = buildPosterUrl(movie.poster_path, 'w92', fallbackPoster);
+                            image.alt = '';
+
+                            const textWrapper = document.createElement('div');
+                            const title = document.createElement('strong');
+                            title.className = 'tmdb-result-row-title';
+                            title.textContent = String(movie.title ?? '');
+
+                            const yearNode = document.createElement('div');
+                            yearNode.className = 'tmdb-result-row-year';
+                            yearNode.textContent = year;
+
+                            const selectButton = document.createElement('button');
+                            selectButton.type = 'button';
+                            selectButton.className = 'btn btn-secondary btn-sm';
+                            selectButton.style.fontSize = '12px';
+                            selectButton.style.padding = '4px 10px';
+                            selectButton.textContent = 'Seleccionar';
+
+                            textWrapper.append(title, yearNode);
+                            info.append(image, textWrapper);
+                            row.append(info, selectButton);
+                            row.addEventListener('click', () => selectMovie(movieId));
                             resultsBox.appendChild(row);
                         });
                     })
                     .catch(err => {
-                        resultsBox.innerHTML = `<div style="color: var(--danger); text-align: center; padding: 10px;">Error al conectar con el servidor.</div>`;
+                        renderMessage(resultsBox, 'Error al conectar con el servidor.', {
+                            color: 'var(--danger)'
+                        });
                         console.error(err);
                     });
             }
 
             function selectMovie(id) {
-                resultsBox.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 10px;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando ficha completa...</div>';
+                if (!Number.isInteger(id) || id <= 0) {
+                    renderMessage(resultsBox, 'La película seleccionada no es válida.', {
+                        color: 'var(--danger)'
+                    });
+                    return;
+                }
+
+                renderMessage(resultsBox, 'Cargando ficha completa...', { iconClass: 'fa-spinner fa-spin' });
                 
-                fetch(`api_tmdb.php?action=movie_details&id=${id}`)
+                fetch(`api_tmdb.php?action=movie_details&id=${encodeURIComponent(id)}`)
                     .then(res => res.json())
                     .then(data => {
                         if (data.error) {
-                            resultsBox.innerHTML = `<div style="color: var(--danger); text-align: center; padding: 10px;">${data.error}</div>`;
+                            renderMessage(resultsBox, data.error, { color: 'var(--danger)' });
                             return;
                         }
 
@@ -210,17 +279,21 @@ $resDirectores = mysqli_query($conexion, $sqlDirectores);
                         document.getElementById('release_date').value = data.release_date || '';
                         document.getElementById('duracion').value = data.runtime || '';
                         document.getElementById('sinopsis').value = data.overview || '';
-                        document.getElementById('valoracion').value = data.vote_average ? data.vote_average.toFixed(1) : '0.0';
+                        const voteAverage = Number(data.vote_average);
+                        document.getElementById('valoracion').value = Number.isFinite(voteAverage)
+                            ? voteAverage.toFixed(1)
+                            : '0.0';
                         
                         if (data.poster_path) {
-                            document.getElementById('poster_url').value = `https://image.tmdb.org/t/p/w500${data.poster_path}`;
+                            document.getElementById('poster_url').value = buildPosterUrl(data.poster_path, 'w500');
                         }
 
                         let trailerUrlFound = '';
                         if (data.videos && data.videos.results) {
                             const trailer = data.videos.results.find(v => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser'));
-                            if (trailer) {
-                                trailerUrlFound = `https://www.youtube.com/watch?v=${trailer.key}`;
+                            const trailerKey = String(trailer?.key ?? '');
+                            if (/^[a-zA-Z0-9_-]{6,20}$/.test(trailerKey)) {
+                                trailerUrlFound = `https://www.youtube.com/watch?v=${trailerKey}`;
                                 document.getElementById('trailer_url').value = trailerUrlFound;
                             }
                         }
@@ -292,26 +365,100 @@ $resDirectores = mysqli_query($conexion, $sqlDirectores);
                         }
 
                         statusBox.style.display = 'flex';
-                        let statusHtml = `<div style="color: #10b981; font-weight: 600; margin-bottom: 4px;"><i class="fa-solid fa-circle-check"></i> Ficha cargada: "${data.title}"</div>`;
-                        
+                        const statusFragment = document.createDocumentFragment();
+
+                        const loadedLine = document.createElement('div');
+                        loadedLine.style.color = '#10b981';
+                        loadedLine.style.fontWeight = '600';
+                        loadedLine.style.marginBottom = '4px';
+                        loadedLine.append(
+                            createStatusIcon('fa-circle-check', '#10b981'),
+                            document.createTextNode(` Ficha cargada: "${String(data.title ?? '')}"`)
+                        );
+                        statusFragment.appendChild(loadedLine);
+
                         if (directorName) {
+                            const directorLine = document.createElement('div');
+                            const directorLabel = document.createElement('strong');
+                            directorLabel.textContent = String(directorName);
+
                             if (localDirectorFound) {
-                                statusHtml += `<div><i class="fa-solid fa-user-tie" style="color: #10b981;"></i> Director: <strong>${directorName}</strong> (asociado localmente)</div>`;
+                                directorLine.append(
+                                    createStatusIcon('fa-user-tie', '#10b981'),
+                                    document.createTextNode(' Director: '),
+                                    directorLabel,
+                                    document.createTextNode(' (asociado localmente)')
+                                );
                             } else {
-                                statusHtml += `<div><i class="fa-solid fa-user-tie" style="color: #f59e0b;"></i> Director: <strong>${directorName}</strong> (<span style="color: #f59e0b;">no encontrado en BD local</span>). <a href="añadir_director.php" target="_blank" style="color: var(--primary); text-decoration: underline;">Crear Director</a></div>`;
+                                const missingLabel = document.createElement('span');
+                                missingLabel.style.color = '#f59e0b';
+                                missingLabel.textContent = 'no encontrado en BD local';
+
+                                const createDirectorLink = document.createElement('a');
+                                createDirectorLink.href = 'añadir_director.php';
+                                createDirectorLink.target = '_blank';
+                                createDirectorLink.rel = 'noopener noreferrer';
+                                createDirectorLink.style.color = 'var(--primary)';
+                                createDirectorLink.style.textDecoration = 'underline';
+                                createDirectorLink.textContent = 'Crear Director';
+
+                                directorLine.append(
+                                    createStatusIcon('fa-user-tie', '#f59e0b'),
+                                    document.createTextNode(' Director: '),
+                                    directorLabel,
+                                    document.createTextNode(' ('),
+                                    missingLabel,
+                                    document.createTextNode('). '),
+                                    createDirectorLink
+                                );
                             }
+
+                            statusFragment.appendChild(directorLine);
                         }
 
-                        statusHtml += `<div><i class="fa-solid fa-users" style="color: #10b981;"></i> Actores asociados localmente: <strong>${matchedCount}</strong></div>`;
+                        const matchedLine = document.createElement('div');
+                        const matchedValue = document.createElement('strong');
+                        matchedValue.textContent = String(matchedCount);
+                        matchedLine.append(
+                            createStatusIcon('fa-users', '#10b981'),
+                            document.createTextNode(' Actores asociados localmente: '),
+                            matchedValue
+                        );
+                        statusFragment.appendChild(matchedLine);
                         
                         if (missingActors.length > 0) {
-                            statusHtml += `<div style="margin-top: 4px; font-size: 12px; color: var(--text-muted);"><i class="fa-solid fa-triangle-exclamation"></i> Actores en TMDB no creados localmente: <em>${missingActors.join(', ')}</em>. <a href="añadir_reparto.php" target="_blank" style="color: var(--primary); text-decoration: underline;">Añadir Actor</a></div>`;
+                            const missingLine = document.createElement('div');
+                            missingLine.style.marginTop = '4px';
+                            missingLine.style.fontSize = '12px';
+                            missingLine.style.color = 'var(--text-muted)';
+
+                            const missingNames = document.createElement('em');
+                            missingNames.textContent = missingActors.map(name => String(name ?? '')).join(', ');
+
+                            const addActorLink = document.createElement('a');
+                            addActorLink.href = 'añadir_reparto.php';
+                            addActorLink.target = '_blank';
+                            addActorLink.rel = 'noopener noreferrer';
+                            addActorLink.style.color = 'var(--primary)';
+                            addActorLink.style.textDecoration = 'underline';
+                            addActorLink.textContent = 'Añadir Actor';
+
+                            missingLine.append(
+                                createStatusIcon('fa-triangle-exclamation', ''),
+                                document.createTextNode(' Actores en TMDB no creados localmente: '),
+                                missingNames,
+                                document.createTextNode('. '),
+                                addActorLink
+                            );
+                            statusFragment.appendChild(missingLine);
                         }
 
-                        statusBox.innerHTML = statusHtml;
+                        statusBox.replaceChildren(statusFragment);
                     })
                     .catch(err => {
-                        resultsBox.innerHTML = `<div style="color: var(--danger); text-align: center; padding: 10px;">Error al cargar detalles de la película.</div>`;
+                        renderMessage(resultsBox, 'Error al cargar detalles de la película.', {
+                            color: 'var(--danger)'
+                        });
                         console.error(err);
                     });
             }

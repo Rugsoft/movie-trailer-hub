@@ -132,13 +132,24 @@ if (isset($_SESSION['usuario_id'])) {
         const toast = document.createElement('div');
         toast.className = `toast ${toastClass}`;
         toast.id = id;
-        toast.innerHTML = `
-            <i class="fa-solid ${icon} toast-icon"></i>
-            <div class="toast-message">${message}</div>
-            <button class="toast-close" onclick="closeToast('${id}')">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        `;
+
+        const iconNode = document.createElement('i');
+        iconNode.className = `fa-solid ${icon} toast-icon`;
+
+        const messageNode = document.createElement('div');
+        messageNode.className = 'toast-message';
+        messageNode.textContent = String(message ?? '');
+
+        const closeButton = document.createElement('button');
+        closeButton.type = 'button';
+        closeButton.className = 'toast-close';
+        closeButton.addEventListener('click', () => closeToast(id));
+
+        const closeIcon = document.createElement('i');
+        closeIcon.className = 'fa-solid fa-xmark';
+        closeButton.appendChild(closeIcon);
+
+        toast.append(iconNode, messageNode, closeButton);
         
         container.appendChild(toast);
         
@@ -167,7 +178,13 @@ if (isset($_SESSION['usuario_id'])) {
         // Mostrar notificaciones de insignias desbloqueadas en esta carga de página
         <?php if (isset($_SESSION['nuevos_logros_desbloqueados']) && !empty($_SESSION['nuevos_logros_desbloqueados'])): ?>
             <?php foreach ($_SESSION['nuevos_logros_desbloqueados'] as $logro): ?>
-                showToast("🏆 ¡Logro desbloqueado: <?= htmlspecialchars($logro['nombre'], ENT_QUOTES) ?>! - <?= htmlspecialchars($logro['descripcion'], ENT_QUOTES) ?>", 'success');
+                <?php
+                $mensajeLogro = '🏆 ¡Logro desbloqueado: '
+                    . (string) ($logro['nombre'] ?? '')
+                    . '! - '
+                    . (string) ($logro['descripcion'] ?? '');
+                ?>
+                showToast(<?= json_encode($mensajeLogro, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>, 'success');
             <?php endforeach; ?>
             <?php unset($_SESSION['nuevos_logros_desbloqueados']); ?>
         <?php endif; ?>
