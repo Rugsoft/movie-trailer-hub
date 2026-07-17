@@ -1,7 +1,12 @@
 <?php
+require_once __DIR__ . '/secretos_loader.php';
+
 // Configuración de la API de TMDB
 if (!defined('TMDB_API_KEY')) {
-    define('TMDB_API_KEY', 'b1bf8c51b113143cd3f1631dbc32520a'); // Reemplazar aquí por tu clave de API de TMDB v3
+    define(
+        'TMDB_API_KEY',
+        obtener_secreto('TMDB_API_KEY', 'tmdb_api_key')
+    );
 }
 if (!defined('TMDB_API_LANG')) {
     define('TMDB_API_LANG', 'es-ES'); // Idioma para los textos y sinopsis

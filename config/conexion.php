@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/secretos_loader.php';
+
 if (session_status() === PHP_SESSION_NONE) {
     // Usar carpeta propia para las sesiones (compatible con InfinityFree y hosting compartido)
     $sessionPath = __DIR__ . '/../sessions';
@@ -28,10 +30,20 @@ if ($isLocal) {
     $password = "";
     $base_datos = "movie_trailer_hub";
 } else {
-    $servidor = "sql108.infinityfree.com";
-    $usuario = "if0_42320411";
-    $password = "KiraKireta3";
-    $base_datos = "if0_42320411_movie_trailer_hub";
+    $servidor = obtener_secreto('MOVIE_DB_HOST', 'db_host');
+    $usuario = obtener_secreto('MOVIE_DB_USER', 'db_user');
+    $password = obtener_secreto('MOVIE_DB_PASSWORD', 'db_password');
+    $base_datos = obtener_secreto('MOVIE_DB_NAME', 'db_name');
+
+    if (
+        $servidor === ''
+        || $usuario === ''
+        || $password === ''
+        || $base_datos === ''
+    ) {
+        http_response_code(500);
+        die('La configuración de producción no está completa.');
+    }
 }
 
 // Conexión a la base de datos MySQL

@@ -86,12 +86,7 @@ CREATE TABLE `favoritos` (
 -- Volcado de datos para la tabla `favoritos`
 --
 
-INSERT INTO `favoritos` (`id_usuario`, `id_trailer`) VALUES
-(3, 6),
-(3, 13),
-(3, 14),
-(4, 9),
-(5, 32);
+-- Datos de favoritos omitidos para proteger la privacidad.
 
 -- --------------------------------------------------------
 
@@ -659,12 +654,7 @@ CREATE TABLE `usuarios` (
 -- Volcado de datos para la tabla `usuarios`
 --
 
-INSERT INTO `usuarios` (`id_usuario`, `username`, `password_hash`, `nombre`, `apellidos`, `email`, `telefono`, `rol`, `fecha_alta`) VALUES
-(1, 'admin', '$2y$10$iXQf/UkaKu2YnVMQ3pO8X.7o7fCmnnGnQarS3gxfFiCR3bWfmhCe6', 'Administrador', 'del Sistema', 'admin@email.com', '600111222', 'admin', '2026-07-06'),
-(2, 'user', '$2y$10$iXQf/UkaKu2YnVMQ3pO8X.7o7fCmnnGnQarS3gxfFiCR3bWfmhCe6', 'Usuario', 'Invitado', 'usuario@email.com', '600333444', 'lector', '2026-07-06'),
-(3, 'Rugsoft', '$2y$10$Z3S5Qtf3uEBiyC611SJA1eGfYljLy92a1xDvkuQbkhan85ZecJ9IS', 'César', 'Casas Insa', 'cesar@gmail.com', '622147896', 'admin', '2026-07-07'),
-(4, 'usuario1', '$2y$10$s.g16BsFMni8GpGJ1iWjVeL7FB74EnXDVuGpsnaVDihe7R9AWyU9u', 'Juan', 'Babau Huevo', 'huevo@email.com', '666666666', 'lector', '2026-07-07'),
-(5, 'David', '$2y$10$GWN01AqJ18FLXW2TO4Ik7uIOxmt9Z6XC8BfKMCO5050y5IZrokDEm', 'David', 'Profe Crack', 'davidprofe@gmail.com', '696969696', 'lector', '2026-07-08');
+-- Datos de usuarios omitidos para proteger credenciales e información personal.
 
 -- --------------------------------------------------------
 
@@ -685,76 +675,7 @@ CREATE TABLE `visualizaciones` (
 -- Volcado de datos para la tabla `visualizaciones`
 --
 
-INSERT INTO `visualizaciones` (`id_visualizacion`, `id_trailer`, `id_usuario`, `fecha_visualizacion`, `ip_direccion`, `dispositivo`) VALUES
-(1, 1, 2, '2026-07-07 11:53:39', NULL, NULL),
-(2, 3, NULL, '2026-07-07 11:53:57', NULL, NULL),
-(3, 13, 3, '2026-07-07 11:55:30', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(4, 13, 3, '2026-07-07 11:56:53', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(5, 4, 3, '2026-07-07 12:00:47', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(6, 4, 3, '2026-07-07 12:00:55', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(7, 10, NULL, '2026-07-07 12:01:45', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(8, 4, NULL, '2026-07-07 12:02:05', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(9, 9, NULL, '2026-07-07 12:02:12', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(10, 9, NULL, '2026-07-07 12:05:26', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(11, 13, 3, '2026-07-07 12:07:01', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(12, 4, 4, '2026-07-07 12:30:01', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(13, 9, 4, '2026-07-07 12:30:06', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(14, 9, 4, '2026-07-07 12:30:14', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(15, 10, 3, '2026-07-08 09:36:06', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(16, 10, 3, '2026-07-08 09:36:30', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(17, 4, 3, '2026-07-08 09:40:18', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(18, 12, 3, '2026-07-08 09:50:22', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(19, 9, 3, '2026-07-08 09:50:35', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(20, 4, 3, '2026-07-08 09:50:47', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(21, 13, 3, '2026-07-08 10:06:01', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(22, 5, 3, '2026-07-08 10:45:45', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(23, 9, 3, '2026-07-08 11:57:11', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(24, 9, 3, '2026-07-08 11:57:22', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(25, 4, 3, '2026-07-08 11:57:38', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(26, 13, 3, '2026-07-08 12:38:41', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(27, 4, 3, '2026-07-08 12:46:03', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(28, 13, 3, '2026-07-08 12:49:38', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(29, 9, 3, '2026-07-08 12:49:48', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(30, 4, 3, '2026-07-08 12:49:56', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(31, 9, 3, '2026-07-08 12:50:07', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(32, 4, 3, '2026-07-08 12:51:37', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(33, 1, 3, '2026-07-08 12:51:51', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(34, 8, 3, '2026-07-08 13:05:13', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(35, 4, 3, '2026-07-08 13:07:11', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(36, 4, 3, '2026-07-08 13:07:30', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(37, 9, 3, '2026-07-08 13:18:45', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(38, 11, 5, '2026-07-08 13:35:02', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(39, 14, 3, '2026-07-09 10:34:48', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(40, 14, 3, '2026-07-09 10:34:56', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(41, 14, 3, '2026-07-09 10:37:15', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(42, 16, 3, '2026-07-09 10:45:12', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(43, 17, 3, '2026-07-09 12:08:35', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(44, 24, 3, '2026-07-09 13:34:31', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(45, 25, 3, '2026-07-09 13:41:08', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(46, 26, 3, '2026-07-10 09:52:14', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(47, 26, 3, '2026-07-10 09:52:25', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(48, 22, 3, '2026-07-10 09:52:36', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(49, 22, 3, '2026-07-10 09:52:50', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(50, 5, 3, '2026-07-10 09:55:07', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Sa'),
-(51, 14, 3, '2026-07-10 09:58:34', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa'),
-(52, 14, 3, '2026-07-10 09:59:25', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa'),
-(53, 16, 3, '2026-07-10 09:59:43', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa'),
-(54, 16, 3, '2026-07-10 10:07:48', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa'),
-(55, 22, 3, '2026-07-10 10:08:10', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa'),
-(56, 4, 3, '2026-07-10 10:08:32', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa'),
-(57, 26, 3, '2026-07-10 10:10:41', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa'),
-(58, 26, 3, '2026-07-10 10:14:08', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa'),
-(59, 4, 3, '2026-07-10 10:14:22', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa'),
-(60, 4, 3, '2026-07-10 10:15:54', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa'),
-(61, 27, 3, '2026-07-10 10:25:03', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa'),
-(62, 28, 3, '2026-07-10 10:40:09', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa'),
-(63, 19, 3, '2026-07-10 10:42:11', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa'),
-(64, 28, 3, '2026-07-10 12:31:55', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa'),
-(65, 32, 5, '2026-07-10 12:55:32', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa'),
-(66, 27, 5, '2026-07-10 12:56:12', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa'),
-(67, 4, 3, '2026-07-10 13:01:47', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa'),
-(68, 4, 3, '2026-07-10 13:02:14', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa'),
-(69, 4, 3, '2026-07-10 13:03:37', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Sa');
+-- Historial de visualizaciones omitido para proteger datos de actividad.
 
 --
 -- Índices para tablas volcadas
@@ -862,13 +783,13 @@ ALTER TABLE `trailers`
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de la tabla `visualizaciones`
 --
 ALTER TABLE `visualizaciones`
-  MODIFY `id_visualizacion` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=70;
+  MODIFY `id_visualizacion` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Restricciones para tablas volcadas
