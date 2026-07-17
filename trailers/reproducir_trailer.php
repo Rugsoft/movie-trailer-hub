@@ -3,6 +3,10 @@ require_once "../config/conexion.php";
 require_once __DIR__ . "/../includes/seguridad.php";
 define('BASE_PATH', '../');
 
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 // Auto-migración: Crear tabla de reseñas si no existe
 $sqlMigrateResenas = "CREATE TABLE IF NOT EXISTS resenas (
     id_resena INT AUTO_INCREMENT PRIMARY KEY,
@@ -381,6 +385,8 @@ if ($stmtResenas) {
 
 // Buscar si el usuario actual ya ha dejado una reseña
 $userReview = null;
+$myListStatus = null; // 'por_ver', 'vista', o null
+$myPrivateComment = '';
 if (isset($_SESSION['usuario_id'])) {
     $id_usuario = (int)$_SESSION['usuario_id'];
     foreach ($resenas as $r) {
@@ -388,6 +394,32 @@ if (isset($_SESSION['usuario_id'])) {
             $userReview = $r;
             break;
         }
+    }
+
+    // Estado de la lista
+    $sqlStatus = "SELECT estado FROM listas_personales WHERE id_usuario = ? AND id_trailer = ? LIMIT 1";
+    $stmtStatus = mysqli_prepare($conexion, $sqlStatus);
+    if ($stmtStatus) {
+        mysqli_stmt_bind_param($stmtStatus, "ii", $id_usuario, $id);
+        mysqli_stmt_execute($stmtStatus);
+        $resStatus = mysqli_stmt_get_result($stmtStatus);
+        if ($rowStatus = mysqli_fetch_assoc($resStatus)) {
+            $myListStatus = $rowStatus['estado'];
+        }
+        mysqli_stmt_close($stmtStatus);
+    }
+    
+    // Comentario privado
+    $sqlPrivComment = "SELECT comentario FROM comentarios_privados WHERE id_usuario = ? AND id_trailer = ? LIMIT 1";
+    $stmtPrivComment = mysqli_prepare($conexion, $sqlPrivComment);
+    if ($stmtPrivComment) {
+        mysqli_stmt_bind_param($stmtPrivComment, "ii", $id_usuario, $id);
+        mysqli_stmt_execute($stmtPrivComment);
+        $resPrivComment = mysqli_stmt_get_result($stmtPrivComment);
+        if ($rowPrivComment = mysqli_fetch_assoc($resPrivComment)) {
+            $myPrivateComment = $rowPrivComment['comentario'];
+        }
+        mysqli_stmt_close($stmtPrivComment);
     }
 }
 
@@ -479,6 +511,48 @@ require_once $rootPath . 'includes/navbar.php';
                 </div>
             <?php endif; ?>
 
+            <!-- Bitácora Personal (Listas y Notas Privadas) -->
+            <?php if (isset($_SESSION['usuario_id'])): ?>
+                <div class="write-review-card" style="background: var(--bg-surface-elevated); padding: 20px; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 30px;">
+                    <h3 class="info-cast-title" style="margin-top: 0; margin-bottom: 15px;"><i class="fa-solid fa-book-bookmark" style="color: var(--primary);"></i> Mi Bitácora Personal</h3>
+                    
+                    <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 15px; flex-wrap: wrap;">
+                        <span style="font-size: 13px; color: var(--text-muted);">Estado en mis listas:</span>
+                        <div style="display: flex; gap: 10px;">
+                            <button type="button" class="btn btn-secondary btn-inline-list-status <?= $myListStatus === null ? 'btn-active-status' : '' ?>" data-status="none" style="padding: 6px 12px; font-size: 12px; cursor: pointer; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: transparent; color: var(--text-primary);">
+                                No en mis listas
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-inline-list-status <?= $myListStatus === 'por_ver' ? 'btn-active-status' : '' ?>" data-status="por_ver" style="padding: 6px 12px; font-size: 12px; cursor: pointer; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: transparent; color: var(--text-primary);">
+                                <i class="fa-regular fa-clock"></i> Por Ver
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-inline-list-status <?= $myListStatus === 'vista' ? 'btn-active-status' : '' ?>" data-status="vista" style="padding: 6px 12px; font-size: 12px; cursor: pointer; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: transparent; color: var(--text-primary);">
+                                <i class="fa-solid fa-circle-check"></i> Vista
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="privateNoteTextarea" style="display: block; margin-bottom: 6px; font-size: 13px; color: var(--text-muted);">Mi Comentario Privado (Solo tú puedes verlo):</label>
+                        <textarea id="privateNoteTextarea" rows="3" placeholder="Escribe aquí tu opinión, análisis o notas privadas sobre esta película..." style="width: 100%; padding: 12px; background: var(--bg-base); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 13px; resize: vertical; margin-bottom: 12px;"><?= htmlspecialchars($myPrivateComment) ?></textarea>
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <button type="button" id="btnSavePrivateNote" class="btn btn-primary" style="padding: 8px 16px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; background: var(--primary); color: #000; border-radius: var(--radius-sm);">
+                                <i class="fa-solid fa-save"></i> Guardar Nota Privada
+                            </button>
+                            <button type="button" id="btnTogglePrivateHistory" class="btn btn-secondary" style="padding: 8px 16px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border-color); background: transparent; color: var(--text-primary); border-radius: var(--radius-sm);">
+                                <i class="fa-solid fa-history"></i> Historial de Cambios
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Historial colapsable -->
+                    <div id="privateNoteHistoryContainer" style="display: none; margin-top: 15px; border-top: 1px solid rgba(216, 195, 173, 0.1); padding-top: 15px;">
+                        <h5 style="margin: 0 0 8px 0; font-size: 12px; color: var(--text-muted);"><i class="fa-solid fa-history"></i> Versiones anteriores:</h5>
+                        <div id="privateNoteHistoryList" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <!-- Sección de Reseñas y Comentarios -->
             <div class="reviews-section">
                 <h3 class="info-cast-title" style="cursor: pointer;" id="toggleReviewsHeader">
@@ -513,7 +587,7 @@ require_once $rootPath . 'includes/navbar.php';
                                         $isHalf = (fmod($val, 1) !== 0.0);
                                         $class = $isHalf ? 'star-half-left' : 'star-half-right';
                                     ?>
-                                        <input type="radio" id="star-<?= $val ?>" name="valoracion" value="<?= $val ?>" style="display: none;" <?= $userRating === $val ? 'checked' : '' ?> required>
+                                        <input type="radio" id="star-<?= $val ?>" name="valoracion" value="<?= $val ?>" style="display: none;" <?= abs((float)$userRating - (float)$val) < 0.01 ? 'checked' : '' ?> required>
                                         <label for="star-<?= $val ?>" class="<?= $class ?>" title="<?= $val ?> estrellas">
                                             <i class="fa-solid fa-star"></i>
                                         </label>
@@ -826,6 +900,148 @@ require_once $rootPath . 'includes/navbar.php';
                             showToast('Error al conectar con el servidor', 'error');
                         });
                     });
+                });
+            }
+            // === Lógica de la Bitácora Personal (Inline) ===
+            const csrfTokenVal = '<?= $_SESSION['csrf_token'] ?>';
+            const currentTrailerId = <?= $id ?>;
+
+            // Cambiar estado en las listas personales
+            const listStatusButtons = document.querySelectorAll('.btn-inline-list-status');
+            listStatusButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const status = btn.getAttribute('data-status');
+                    let action = 'add_to_list';
+                    if (status === 'none') {
+                        action = 'remove_from_list';
+                    }
+
+                    fetch('../auth/api_listas.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfTokenVal
+                        },
+                        body: JSON.stringify({
+                            action: action,
+                            id_trailer: currentTrailerId,
+                            estado: status
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast('¡Lista actualizada!', 'success');
+                            // Actualizar clase activa visual
+                            listStatusButtons.forEach(b => b.classList.remove('btn-active-status'));
+                            btn.classList.add('btn-active-status');
+                        } else {
+                            showToast(data.error, 'error');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showToast('Error al actualizar la lista.', 'error');
+                    });
+                });
+            });
+
+            // Guardar Nota Privada
+            const btnSavePrivateNote = document.getElementById('btnSavePrivateNote');
+            const privateNoteTextarea = document.getElementById('privateNoteTextarea');
+            if (btnSavePrivateNote && privateNoteTextarea) {
+                btnSavePrivateNote.addEventListener('click', () => {
+                    const commentText = privateNoteTextarea.value;
+
+                    fetch('../auth/api_listas.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfTokenVal
+                        },
+                        body: JSON.stringify({
+                            action: 'save_comment',
+                            id_trailer: currentTrailerId,
+                            comentario: commentText
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            showToast('¡Nota privada guardada!', 'success');
+                            // Ocultar historial para forzar recarga de nuevas versiones
+                            document.getElementById('privateNoteHistoryContainer').style.display = 'none';
+                        } else {
+                            showToast(data.error, 'error');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showToast('Error al guardar la nota privada.', 'error');
+                    });
+                });
+            }
+
+            // Ver historial de notas privadas
+            const btnTogglePrivateHistory = document.getElementById('btnTogglePrivateHistory');
+            const privateNoteHistoryContainer = document.getElementById('privateNoteHistoryContainer');
+            const privateNoteHistoryList = document.getElementById('privateNoteHistoryList');
+            if (btnTogglePrivateHistory && privateNoteHistoryContainer && privateNoteHistoryList) {
+                btnTogglePrivateHistory.addEventListener('click', () => {
+                    if (privateNoteHistoryContainer.style.display === 'none') {
+                        fetch('../auth/api_listas.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-Token': csrfTokenVal
+                            },
+                            body: JSON.stringify({
+                                action: 'get_history',
+                                id_trailer: currentTrailerId
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                privateNoteHistoryList.innerHTML = '';
+                                if (data.history.length === 0) {
+                                    privateNoteHistoryList.innerHTML = '<p style="color: var(--text-muted); font-size: 11px; margin: 0;">No hay cambios registrados en tu nota.</p>';
+                                } else {
+                                    data.history.forEach(h => {
+                                        const entry = document.createElement('div');
+                                        entry.style.background = 'rgba(255, 255, 255, 0.02)';
+                                        entry.style.padding = '8px';
+                                        entry.style.borderLeft = '2px solid var(--primary)';
+                                        entry.style.borderRadius = 'var(--radius-sm)';
+                                        entry.style.fontSize = '11px';
+                                        
+                                        // Escapar texto para prevenir XSS
+                                        const safeComment = h.comentario_anterior
+                                            .replace(/&/g, "&amp;")
+                                            .replace(/</g, "&lt;")
+                                            .replace(/>/g, "&gt;")
+                                            .replace(/"/g, "&quot;")
+                                            .replace(/'/g, "&#039;");
+                                            
+                                        entry.innerHTML = `
+                                            <div style="color: var(--text-muted); font-size: 10px; margin-bottom: 4px;">Edición: ${h.fecha_cambio}</div>
+                                            <div style="color: var(--text-primary); white-space: pre-wrap;">${safeComment}</div>
+                                        `;
+                                        privateNoteHistoryList.appendChild(entry);
+                                    });
+                                }
+                                privateNoteHistoryContainer.style.display = 'block';
+                            } else {
+                                showToast(data.error, 'error');
+                            }
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            showToast('Error al cargar historial.', 'error');
+                        });
+                    } else {
+                        privateNoteHistoryContainer.style.display = 'none';
+                    }
                 });
             }
         });
