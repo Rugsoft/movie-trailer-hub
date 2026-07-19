@@ -279,9 +279,12 @@ function require_role($allowedRoles, $redirectUrl = '../index.php', $errorMessag
             }
             if (isset($conexion)) {
                 $id_usuario = (int)$_SESSION['usuario_id'];
-                mysqli_query($conexion, "INSERT INTO usuario_gamificacion_stats (id_usuario, intentos_fallidos_admin) 
+                if (mysqli_query($conexion, "INSERT INTO usuario_gamificacion_stats (id_usuario, intentos_fallidos_admin)
                                          VALUES ($id_usuario, 1) 
-                                         ON DUPLICATE KEY UPDATE intentos_fallidos_admin = 1");
+                                         ON DUPLICATE KEY UPDATE intentos_fallidos_admin = 1")) {
+                    require_once __DIR__ . '/../badges/gamificacion_helper.php';
+                    marcar_recalculo_badges_pendiente();
+                }
             }
         }
 

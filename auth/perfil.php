@@ -338,32 +338,12 @@ if ($stmtMyComments) {
     mysqli_stmt_close($stmtMyComments);
 }
 
-// Consultar todas las películas no añadidas aún para el buscador del panel
-$allTrailersOption = [];
-$sqlAllTrailers = "SELECT id_trailer, titulo 
-                   FROM trailers 
-                   WHERE id_trailer NOT IN (SELECT id_trailer FROM listas_personales WHERE id_usuario = ?) 
-                   ORDER BY titulo ASC";
-$stmtAllTrailers = mysqli_prepare($conexion, $sqlAllTrailers);
-if ($stmtAllTrailers) {
-    mysqli_stmt_bind_param($stmtAllTrailers, "i", $user_id);
-    mysqli_stmt_execute($stmtAllTrailers);
-    $resAllTrailers = mysqli_stmt_get_result($stmtAllTrailers);
-    while ($row = mysqli_fetch_assoc($resAllTrailers)) {
-        $allTrailersOption[] = $row;
-    }
-    mysqli_stmt_close($stmtAllTrailers);
-}
-
 $pageTitle = "Mi Perfil - Movie Trailer Hub";
 $rootPath = "../";
 require_once $rootPath . 'includes/navbar.php';
 ?>
 
 <main class="app-container" style="margin-top: 30px; margin-bottom: 50px;">
-    <!-- Cargar Chart.js de forma local y global para asegurar su inicialización -->
-    <script src="<?= BASE_PATH ?>js/chart.js"></script>
-    
     <div style="text-align: center; margin-bottom: 25px;">
         <h1 style="margin-bottom: 8px;">Configuración de la Cuenta</h1>
         <p style="color: var(--text-muted); margin: 0;">Administra tus datos personales, avatar y revisa tus estadísticas cinematográficas.</p>
@@ -498,7 +478,7 @@ require_once $rootPath . 'includes/navbar.php';
                     <?php foreach ($history as $item): ?>
                         <div class="history-item" id="history-item-<?= $item['id_visualizacion'] ?>">
                             <div class="history-item-left">
-                                <img src="<?= htmlspecialchars($item['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=100') ?>" alt="<?= htmlspecialchars($item['titulo']) ?>" class="history-item-poster">
+                                <img src="<?= htmlspecialchars($item['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=100') ?>" alt="<?= htmlspecialchars($item['titulo']) ?>" class="history-item-poster" loading="lazy" decoding="async">
                                 <div class="history-item-details">
                                     <h4 class="history-item-title">
                                         <a href="../trailers/reproducir_trailer.php?id=<?= $item['id_trailer'] ?>">
@@ -567,7 +547,7 @@ require_once $rootPath . 'includes/navbar.php';
                             <?php foreach ($myList as $movie): ?>
                                 <div class="management-card" id="movie-card-<?= $movie['id_trailer'] ?>">
                                     <div class="card-media-container">
-                                        <img src="<?= htmlspecialchars($movie['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=200') ?>" alt="<?= htmlspecialchars($movie['titulo']) ?>">
+                                        <img src="<?= htmlspecialchars($movie['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=200') ?>" alt="<?= htmlspecialchars($movie['titulo']) ?>" loading="lazy" decoding="async">
                                         
                                         <!-- Badge de estado -->
                                         <span class="card-status-badge <?= $movie['estado'] ?>">
@@ -610,7 +590,7 @@ require_once $rootPath . 'includes/navbar.php';
                             <?php foreach ($porVerList as $movie): ?>
                                 <div class="management-card" id="movie-card-por-ver-<?= $movie['id_trailer'] ?>">
                                     <div class="card-media-container">
-                                        <img src="<?= htmlspecialchars($movie['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=200') ?>" alt="<?= htmlspecialchars($movie['titulo']) ?>">
+                                        <img src="<?= htmlspecialchars($movie['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=200') ?>" alt="<?= htmlspecialchars($movie['titulo']) ?>" loading="lazy" decoding="async">
                                         
                                         <span class="card-status-badge por_ver">Por Ver</span>
 
@@ -649,7 +629,7 @@ require_once $rootPath . 'includes/navbar.php';
                             <?php foreach ($vistasList as $movie): ?>
                                 <div class="management-card" id="movie-card-vistas-<?= $movie['id_trailer'] ?>">
                                     <div class="card-media-container">
-                                        <img src="<?= htmlspecialchars($movie['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=200') ?>" alt="<?= htmlspecialchars($movie['titulo']) ?>">
+                                        <img src="<?= htmlspecialchars($movie['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=200') ?>" alt="<?= htmlspecialchars($movie['titulo']) ?>" loading="lazy" decoding="async">
                                         
                                         <span class="card-status-badge vista">Vista</span>
 
@@ -685,7 +665,7 @@ require_once $rootPath . 'includes/navbar.php';
                             <?php foreach ($myFavorites as $movie): ?>
                                 <div class="management-card" id="movie-card-fav-<?= $movie['id_trailer'] ?>">
                                     <div class="card-media-container">
-                                        <img src="<?= htmlspecialchars($movie['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=200') ?>" alt="<?= htmlspecialchars($movie['titulo']) ?>">
+                                        <img src="<?= htmlspecialchars($movie['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=200') ?>" alt="<?= htmlspecialchars($movie['titulo']) ?>" loading="lazy" decoding="async">
                                         
                                         <?php if ($movie['estado']): ?>
                                             <span class="card-status-badge <?= $movie['estado'] ?>">
@@ -725,7 +705,7 @@ require_once $rootPath . 'includes/navbar.php';
                             <?php foreach ($myComments as $movie): ?>
                                 <div class="management-card" id="movie-card-note-<?= $movie['id_trailer'] ?>">
                                     <div class="card-media-container">
-                                        <img src="<?= htmlspecialchars($movie['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=200') ?>" alt="<?= htmlspecialchars($movie['titulo']) ?>">
+                                        <img src="<?= htmlspecialchars($movie['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=200') ?>" alt="<?= htmlspecialchars($movie['titulo']) ?>" loading="lazy" decoding="async">
                                         
                                         <?php if ($movie['estado']): ?>
                                             <span class="card-status-badge <?= $movie['estado'] ?>">
@@ -945,6 +925,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabButtons = document.querySelectorAll('.profile-tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
     let chartsInitialized = false;
+    let chartLibraryLoading = null;
+
+    function loadChartLibrary() {
+        if (typeof Chart !== 'undefined') {
+            return Promise.resolve();
+        }
+
+        if (chartLibraryLoading) {
+            return chartLibraryLoading;
+        }
+
+        chartLibraryLoading = new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = '<?= BASE_PATH ?>js/chart.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+
+        return chartLibraryLoading;
+    }
 
     function initCharts() {
         if (typeof Chart === 'undefined') {
@@ -1069,7 +1070,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Si se activa la pestaña de estadísticas, inicializar gráficos tras un brevísimo retardo
             if (targetTab === 'stats') {
-                setTimeout(initCharts, 50);
+                loadChartLibrary()
+                    .then(() => setTimeout(initCharts, 50))
+                    .catch(() => console.error('Error al cargar Chart.js.'));
             }
 
             // Si se activa la pestaña de logros, cargar insignias
