@@ -31,7 +31,7 @@ if (isset($_SESSION['usuario_id'])) {
 
     if ($is_active) {
         require_once __DIR__ . '/../badges/gamificacion_helper.php';
-        procesar_y_obtener_badges($conexion, $_SESSION['usuario_id']);
+        procesar_badges_si_corresponde($conexion, (int) $_SESSION['usuario_id']);
     }
 }
 ?>

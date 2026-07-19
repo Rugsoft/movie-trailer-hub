@@ -9,6 +9,7 @@
     <meta name="description" content="Guarda, organiza y disfruta de los mejores trailers de tus películas favoritas. Tu hub centralizado de cine.">
     
     <link rel="icon" type="image/png" href="<?php echo $rootPath; ?>images/logo movie trailer hub (1) (1).png">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="<?php echo $rootPath; ?>css/estilos.css">
 </head>

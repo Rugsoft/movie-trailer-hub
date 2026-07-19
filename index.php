@@ -23,9 +23,12 @@ if ($search !== '') {
     if (preg_match('/^2026-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/', $search)) {
         if (isset($_SESSION['usuario_id'])) {
             $id_usuario = (int)$_SESSION['usuario_id'];
-            mysqli_query($conexion, "INSERT INTO usuario_gamificacion_stats (id_usuario, busquedas_fecha_actual) 
+            if (mysqli_query($conexion, "INSERT INTO usuario_gamificacion_stats (id_usuario, busquedas_fecha_actual)
                                      VALUES ($id_usuario, 1) 
-                                     ON DUPLICATE KEY UPDATE busquedas_fecha_actual = 1");
+                                     ON DUPLICATE KEY UPDATE busquedas_fecha_actual = 1")) {
+                require_once __DIR__ . "/badges/gamificacion_helper.php";
+                marcar_recalculo_badges_pendiente();
+            }
         }
     }
 }
@@ -162,13 +165,18 @@ $sql = "SELECT t.*,
                GROUP_CONCAT(DISTINCT g.nombre SEPARATOR ', ') as genero,
                CONCAT(d.nombre, ' ', d.apellidos) as director,
                GROUP_CONCAT(DISTINCT CONCAT(r.nombre, ' ', r.apellidos) SEPARATOR ', ') as reparto,
-               COALESCE((SELECT ROUND(AVG(valoracion), 1) FROM resenas WHERE id_trailer = t.id_trailer), 0) as promedio_resenas
+               COALESCE(rr.promedio_resenas, 0) as promedio_resenas
         FROM trailers t
         LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
         LEFT JOIN generos g ON tg.id_genero = g.id_genero
         LEFT JOIN directores d ON t.id_director = d.id_director
         LEFT JOIN reparto_trailers rt ON t.id_trailer = rt.id_trailer
         LEFT JOIN reparto r ON rt.id_reparto = r.id_reparto
+        LEFT JOIN (
+            SELECT id_trailer, ROUND(AVG(valoracion), 1) AS promedio_resenas
+            FROM resenas
+            GROUP BY id_trailer
+        ) rr ON t.id_trailer = rr.id_trailer
         $whereSql
         GROUP BY t.id_trailer
         $orderSql
@@ -220,11 +228,16 @@ if (isset($_SESSION['usuario_id'])) {
     $sqlRecent = "SELECT t.id_trailer, t.titulo, t.poster_url, t.valoracion, t.release_date, t.duracion,
                          GROUP_CONCAT(DISTINCT g.nombre SEPARATOR ', ') as genero,
                          MAX(v.fecha_visualizacion) as ultima_vista,
-                         COALESCE((SELECT ROUND(AVG(valoracion), 1) FROM resenas WHERE id_trailer = t.id_trailer), 0) as promedio_resenas
+                         COALESCE(rr.promedio_resenas, 0) as promedio_resenas
                   FROM visualizaciones v
                   JOIN trailers t ON v.id_trailer = t.id_trailer
                   LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
                   LEFT JOIN generos g ON tg.id_genero = g.id_genero
+                  LEFT JOIN (
+                      SELECT id_trailer, ROUND(AVG(valoracion), 1) AS promedio_resenas
+                      FROM resenas
+                      GROUP BY id_trailer
+                  ) rr ON t.id_trailer = rr.id_trailer
                   WHERE v.id_usuario = ?
                   GROUP BY t.id_trailer
                   ORDER BY ultima_vista DESC
@@ -244,11 +257,16 @@ if (isset($_SESSION['usuario_id'])) {
 // 6. Intentar traer los 5 trailers más próximos a estrenarse para el banner (independiente de filtros)
 $sqlFeatured = "SELECT t.*, GROUP_CONCAT(DISTINCT g.nombre SEPARATOR ', ') as genero,
                        CONCAT(d.nombre, ' ', d.apellidos) as director,
-                       COALESCE((SELECT ROUND(AVG(valoracion), 1) FROM resenas WHERE id_trailer = t.id_trailer), 0) as promedio_resenas
+                       COALESCE(rr.promedio_resenas, 0) as promedio_resenas
                 FROM trailers t
                 LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
                 LEFT JOIN generos g ON tg.id_genero = g.id_genero
                 LEFT JOIN directores d ON t.id_director = d.id_director
+                LEFT JOIN (
+                    SELECT id_trailer, ROUND(AVG(valoracion), 1) AS promedio_resenas
+                    FROM resenas
+                    GROUP BY id_trailer
+                ) rr ON t.id_trailer = rr.id_trailer
                 WHERE t.release_date >= CURDATE()
                 GROUP BY t.id_trailer
                 ORDER BY t.release_date ASC
@@ -263,23 +281,37 @@ mysqli_free_result($resFeatured);
 // Si no hay suficientes próximos a estrenarse, rellenar con los últimos agregados
 if (count($featuredTrailers) < 5) {
     $needed = 5 - count($featuredTrailers);
-    $excludeIds = !empty($featuredTrailers) ? implode(',', array_column($featuredTrailers, 'id_trailer')) : '0';
+    $excludeIds = array_map('intval', array_column($featuredTrailers, 'id_trailer'));
+    $excludePlaceholders = !empty($excludeIds) ? implode(',', array_fill(0, count($excludeIds), '?')) : '0';
     $sqlFallback = "SELECT t.*, GROUP_CONCAT(DISTINCT g.nombre SEPARATOR ', ') as genero,
                            CONCAT(d.nombre, ' ', d.apellidos) as director,
-                           COALESCE((SELECT ROUND(AVG(valoracion), 1) FROM resenas WHERE id_trailer = t.id_trailer), 0) as promedio_resenas
+                           COALESCE(rr.promedio_resenas, 0) as promedio_resenas
                     FROM trailers t
                     LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
                     LEFT JOIN generos g ON tg.id_genero = g.id_genero
                     LEFT JOIN directores d ON t.id_director = d.id_director
-                    WHERE t.id_trailer NOT IN ($excludeIds)
+                    LEFT JOIN (
+                        SELECT id_trailer, ROUND(AVG(valoracion), 1) AS promedio_resenas
+                        FROM resenas
+                        GROUP BY id_trailer
+                    ) rr ON t.id_trailer = rr.id_trailer
+                    WHERE t.id_trailer NOT IN ($excludePlaceholders)
                     GROUP BY t.id_trailer
                     ORDER BY t.id_trailer DESC
-                    LIMIT $needed";
-    $resFallback = mysqli_query($conexion, $sqlFallback);
-    while ($row = mysqli_fetch_assoc($resFallback)) {
-        $featuredTrailers[] = $row;
+                    LIMIT ?";
+    $stmtFallback = mysqli_prepare($conexion, $sqlFallback);
+    if ($stmtFallback) {
+        $fallbackParams = $excludeIds;
+        $fallbackParams[] = $needed;
+        $fallbackParamTypes = str_repeat('i', count($fallbackParams));
+        mysqli_stmt_bind_param($stmtFallback, $fallbackParamTypes, ...$fallbackParams);
+        mysqli_stmt_execute($stmtFallback);
+        $resFallback = mysqli_stmt_get_result($stmtFallback);
+        while ($row = mysqli_fetch_assoc($resFallback)) {
+            $featuredTrailers[] = $row;
+        }
+        mysqli_stmt_close($stmtFallback);
     }
-    mysqli_free_result($resFallback);
 }
 
 mysqli_close($conexion);
@@ -361,7 +393,7 @@ require_once $rootPath . 'includes/navbar.php';
                 <?php foreach ($recentlyViewed as $recent): ?>
                     <article class="movie-card" style="display: flex; flex-direction: column;">
                         <a class="movie-poster-container" href="trailers/reproducir_trailer.php?id=<?= $recent['id_trailer'] ?>">
-                            <img src="<?= htmlspecialchars($recent['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=600') ?>" alt="<?= htmlspecialchars($recent['titulo']) ?>" class="movie-poster">
+                            <img src="<?= htmlspecialchars($recent['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=600') ?>" alt="<?= htmlspecialchars($recent['titulo']) ?>" class="movie-poster" loading="lazy" decoding="async">
 
                             <div class="card-play-overlay">
                                 <div class="play-icon-circle">
@@ -450,7 +482,7 @@ require_once $rootPath . 'includes/navbar.php';
                 data-release-date="<?= htmlspecialchars($trailer['release_date']) ?>">
 
                 <a class="movie-poster-container" href="trailers/reproducir_trailer.php?id=<?= $trailer['id_trailer'] ?>">
-                    <img src="<?= htmlspecialchars($trailer['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=600') ?>" alt="<?= htmlspecialchars($trailer['titulo']) ?>" class="movie-poster">
+                    <img src="<?= htmlspecialchars($trailer['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=600') ?>" alt="<?= htmlspecialchars($trailer['titulo']) ?>" class="movie-poster" loading="lazy" decoding="async">
 
                     <div class="card-play-overlay">
                         <div class="play-icon-circle">
@@ -841,8 +873,6 @@ require_once $rootPath . 'includes/navbar.php';
             startAutoplay();
         }
 
-        // Inicializar paginación al cargar
-        filterMovies(true);
     });
 </script>
 
