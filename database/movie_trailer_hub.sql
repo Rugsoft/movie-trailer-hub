@@ -877,7 +877,8 @@ ALTER TABLE `directores`
 --
 ALTER TABLE `favoritos`
   ADD PRIMARY KEY (`id_usuario`,`id_trailer`),
-  ADD KEY `id_trailer` (`id_trailer`);
+  ADD KEY `id_trailer` (`id_trailer`),
+  ADD KEY `idx_favoritos_usuario_fecha` (`id_usuario`,`fecha_adicion`);
 
 --
 -- Indices de la tabla `generos`
@@ -905,7 +906,8 @@ ALTER TABLE `reparto_trailers`
 --
 ALTER TABLE `trailers`
   ADD PRIMARY KEY (`id_trailer`),
-  ADD KEY `fk_trailers_directores` (`id_director`);
+  ADD KEY `fk_trailers_directores` (`id_director`),
+  ADD KEY `idx_trailers_release_id` (`release_date`,`id_trailer`);
 
 --
 -- Indices de la tabla `trailers_generos`
@@ -928,7 +930,34 @@ ALTER TABLE `usuarios`
 ALTER TABLE `visualizaciones`
   ADD PRIMARY KEY (`id_visualizacion`),
   ADD KEY `idx_visualizaciones_trailer` (`id_trailer`),
-  ADD KEY `idx_visualizaciones_usuario` (`id_usuario`);
+  ADD KEY `idx_visualizaciones_usuario` (`id_usuario`),
+  ADD KEY `idx_visualizaciones_usuario_fecha` (`id_usuario`,`fecha_visualizacion`),
+  ADD KEY `idx_visualizaciones_usuario_trailer_fecha` (`id_usuario`,`id_trailer`,`fecha_visualizacion`);
+
+--
+-- Indices de la tabla `listas_personales`
+--
+ALTER TABLE `listas_personales`
+  ADD KEY `idx_listas_usuario_fecha` (`id_usuario`,`fecha_adicion`);
+
+--
+-- Indices de la tabla `comentarios_privados`
+--
+ALTER TABLE `comentarios_privados`
+  ADD KEY `idx_comentarios_privados_usuario_id` (`id_usuario`,`id_comentario_privado`);
+
+--
+-- Indices de la tabla `historial_comentarios_privados`
+--
+ALTER TABLE `historial_comentarios_privados`
+  ADD KEY `idx_historial_usuario_trailer_fecha` (`id_usuario`,`id_trailer`,`fecha_cambio`);
+
+--
+-- Indices de la tabla `resenas`
+--
+ALTER TABLE `resenas`
+  ADD KEY `idx_resenas_trailer_fecha` (`id_trailer`,`fecha_alta`),
+  ADD KEY `idx_resenas_usuario_fecha` (`id_usuario`,`fecha_alta`);
 
 --
 -- AUTO_INCREMENT de las tablas volcadas

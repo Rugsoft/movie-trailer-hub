@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-const MOVIE_APP_SCHEMA_VERSION = 1;
+const MOVIE_APP_SCHEMA_VERSION = 2;
 const MOVIE_APP_MIGRATION_LOCK = 'movie_trailer_hub_schema_migrations';
 
 /**
@@ -635,6 +635,72 @@ function migrar_esquema_v1(mysqli $conexion): void {
 }
 
 /**
+ * Añade índices compuestos para las consultas frecuentes de lectura.
+ */
+function migrar_esquema_v2(mysqli $conexion): void {
+    $indices = [
+        [
+            'visualizaciones',
+            'idx_visualizaciones_usuario_fecha',
+            'ALTER TABLE visualizaciones
+             ADD INDEX idx_visualizaciones_usuario_fecha (id_usuario, fecha_visualizacion)',
+        ],
+        [
+            'visualizaciones',
+            'idx_visualizaciones_usuario_trailer_fecha',
+            'ALTER TABLE visualizaciones
+             ADD INDEX idx_visualizaciones_usuario_trailer_fecha (id_usuario, id_trailer, fecha_visualizacion)',
+        ],
+        [
+            'favoritos',
+            'idx_favoritos_usuario_fecha',
+            'ALTER TABLE favoritos
+             ADD INDEX idx_favoritos_usuario_fecha (id_usuario, fecha_adicion)',
+        ],
+        [
+            'listas_personales',
+            'idx_listas_usuario_fecha',
+            'ALTER TABLE listas_personales
+             ADD INDEX idx_listas_usuario_fecha (id_usuario, fecha_adicion)',
+        ],
+        [
+            'comentarios_privados',
+            'idx_comentarios_privados_usuario_id',
+            'ALTER TABLE comentarios_privados
+             ADD INDEX idx_comentarios_privados_usuario_id (id_usuario, id_comentario_privado)',
+        ],
+        [
+            'historial_comentarios_privados',
+            'idx_historial_usuario_trailer_fecha',
+            'ALTER TABLE historial_comentarios_privados
+             ADD INDEX idx_historial_usuario_trailer_fecha (id_usuario, id_trailer, fecha_cambio)',
+        ],
+        [
+            'resenas',
+            'idx_resenas_trailer_fecha',
+            'ALTER TABLE resenas
+             ADD INDEX idx_resenas_trailer_fecha (id_trailer, fecha_alta)',
+        ],
+        [
+            'resenas',
+            'idx_resenas_usuario_fecha',
+            'ALTER TABLE resenas
+             ADD INDEX idx_resenas_usuario_fecha (id_usuario, fecha_alta)',
+        ],
+        [
+            'trailers',
+            'idx_trailers_release_id',
+            'ALTER TABLE trailers
+             ADD INDEX idx_trailers_release_id (release_date, id_trailer)',
+        ],
+    ];
+
+    foreach ($indices as [$tabla, $indice, $sqlIndice]) {
+        asegurar_indice_esquema($conexion, $tabla, $indice, $sqlIndice);
+    }
+}
+
+/**
  * Ejecuta, en orden, las migraciones pendientes del proyecto.
  */
 function ejecutar_migraciones(mysqli $conexion): void {
@@ -659,6 +725,10 @@ function ejecutar_migraciones(mysqli $conexion): void {
             1 => [
                 'nombre' => 'Estructura base consolidada',
                 'ejecutar' => 'migrar_esquema_v1',
+            ],
+            2 => [
+                'nombre' => 'Indices de rendimiento',
+                'ejecutar' => 'migrar_esquema_v2',
             ],
         ];
 
