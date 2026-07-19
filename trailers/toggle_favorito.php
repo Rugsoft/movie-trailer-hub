@@ -86,7 +86,10 @@ if ($isFavorito) {
 }
 
 require_once __DIR__ . '/../badges/gamificacion_helper.php';
+marcar_recalculo_badges_pendiente();
 procesar_y_obtener_badges($conexion, $id_usuario);
+$_SESSION['movie_app_badges_last_check_at'] = time();
+unset($_SESSION['movie_app_badges_force_check']);
 
 mysqli_close($conexion);
 

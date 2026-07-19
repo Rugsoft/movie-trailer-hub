@@ -1,6 +1,7 @@
 <?php
 require_once "../config/conexion.php";
 require_once __DIR__ . "/../includes/seguridad.php";
+require_once __DIR__ . "/../badges/gamificacion_helper.php";
 define('BASE_PATH', '../');
 
 csrf_token();
@@ -98,6 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if ($stmtSave) {
             mysqli_stmt_bind_param($stmtSave, "iidss", $id, $id_usuario, $valoracion, $comentario, $nuevoEstado);
             if (mysqli_stmt_execute($stmtSave)) {
+                marcar_recalculo_badges_pendiente();
                 // Recalcular promedio de la comunidad para la respuesta AJAX
                 $newAvg = 0;
                 $sqlNewAvg = "SELECT AVG(valoracion) as avg_val FROM resenas WHERE id_trailer = ?";
@@ -113,7 +115,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 }
 
                 if ($isAjax) {
-                    echo json_encode(['success' => true, 'avgRating' => $newAvg]);
+                    procesar_y_obtener_badges($conexion, $id_usuario);
+                    $_SESSION['movie_app_badges_last_check_at'] = time();
+                    unset($_SESSION['movie_app_badges_force_check']);
+                    $nuevosLogros = $_SESSION['nuevos_logros_desbloqueados'] ?? [];
+                    unset($_SESSION['nuevos_logros_desbloqueados']);
+                    echo json_encode([
+                        'success' => true,
+                        'avgRating' => $newAvg,
+                        'nuevos_logros' => $nuevosLogros
+                    ]);
                     exit;
                 }
                 $_SESSION['success'] = "¡Tu reseña ha sido guardada con éxito!";
@@ -238,11 +249,16 @@ $sqlRecs = "SELECT t.id_trailer, t.titulo, t.poster_url, t.valoracion, t.release
                    GROUP_CONCAT(DISTINCT g.nombre SEPARATOR ', ') as genero,
                    CONCAT(d.nombre, ' ', d.apellidos) as director,
                    ($scoreExpr) as recommendation_score,
-                   COALESCE((SELECT ROUND(AVG(valoracion), 1) FROM resenas WHERE id_trailer = t.id_trailer), 0) as promedio_resenas
+                   COALESCE(rr.promedio_resenas, 0) as promedio_resenas
             FROM trailers t
             LEFT JOIN directores d ON t.id_director = d.id_director
             LEFT JOIN trailers_generos tg ON t.id_trailer = tg.id_trailer
             LEFT JOIN generos g ON tg.id_genero = g.id_genero
+            LEFT JOIN (
+                SELECT id_trailer, ROUND(AVG(valoracion), 1) AS promedio_resenas
+                FROM resenas
+                GROUP BY id_trailer
+            ) rr ON rr.id_trailer = t.id_trailer
             $joinsSql
             WHERE t.id_trailer != ?
             GROUP BY t.id_trailer
@@ -274,7 +290,11 @@ $sqlView = "INSERT INTO visualizaciones (id_trailer, id_usuario, ip_direccion, d
 $stmtView = mysqli_prepare($conexion, $sqlView);
 if ($stmtView) {
     mysqli_stmt_bind_param($stmtView, "iiss", $id, $id_usuario_view, $ip_direccion, $dispositivo);
-    if (!mysqli_stmt_execute($stmtView)) {
+    if (mysqli_stmt_execute($stmtView)) {
+        if ($id_usuario_view !== null) {
+            marcar_recalculo_badges_pendiente();
+        }
+    } else {
         error_log(
             "Error al registrar la visualización del trailer $id: "
             . mysqli_stmt_error($stmtView)
@@ -331,18 +351,6 @@ if ($stmtReparto) {
     );
 }
 
-$isTrailerFavorito = false;
-if (isset($_SESSION['usuario_id'])) {
-    $id_usuario = $_SESSION['usuario_id'];
-    $sqlFav = "SELECT 1 FROM favoritos WHERE id_usuario = ? AND id_trailer = ? LIMIT 1";
-    $stmtFav = mysqli_prepare($conexion, $sqlFav);
-    mysqli_stmt_bind_param($stmtFav, "ii", $id_usuario, $id);
-    mysqli_stmt_execute($stmtFav);
-    $resFav = mysqli_stmt_get_result($stmtFav);
-    $isTrailerFavorito = mysqli_num_rows($resFav) > 0;
-    mysqli_stmt_close($stmtFav);
-}
-
 // Consultar todas las reseñas y valoraciones para este trailer
 $resenas = [];
 $sqlResenas = "SELECT r.*, u.username, u.avatar_url, u.nombre, u.apellidos 
@@ -363,6 +371,7 @@ if ($stmtResenas) {
 
 // Buscar si el usuario actual ya ha dejado una reseña
 $userReview = null;
+$isTrailerFavorito = false;
 $myListStatus = null; // 'por_ver', 'vista', o null
 $myPrivateComment = '';
 if (isset($_SESSION['usuario_id'])) {
@@ -374,30 +383,33 @@ if (isset($_SESSION['usuario_id'])) {
         }
     }
 
-    // Estado de la lista
-    $sqlStatus = "SELECT estado FROM listas_personales WHERE id_usuario = ? AND id_trailer = ? LIMIT 1";
-    $stmtStatus = mysqli_prepare($conexion, $sqlStatus);
-    if ($stmtStatus) {
-        mysqli_stmt_bind_param($stmtStatus, "ii", $id_usuario, $id);
-        mysqli_stmt_execute($stmtStatus);
-        $resStatus = mysqli_stmt_get_result($stmtStatus);
-        if ($rowStatus = mysqli_fetch_assoc($resStatus)) {
-            $myListStatus = $rowStatus['estado'];
+    // Estado personalizado del usuario para este trailer: favorito, lista y nota privada
+    $sqlUserState = "SELECT
+                        EXISTS(
+                            SELECT 1
+                            FROM favoritos f
+                            WHERE f.id_usuario = ? AND f.id_trailer = ?
+                        ) AS es_favorito,
+                        lp.estado,
+                        cp.comentario
+                     FROM trailers t
+                     LEFT JOIN listas_personales lp
+                        ON lp.id_usuario = ? AND lp.id_trailer = t.id_trailer
+                     LEFT JOIN comentarios_privados cp
+                        ON cp.id_usuario = ? AND cp.id_trailer = t.id_trailer
+                     WHERE t.id_trailer = ?
+                     LIMIT 1";
+    $stmtUserState = mysqli_prepare($conexion, $sqlUserState);
+    if ($stmtUserState) {
+        mysqli_stmt_bind_param($stmtUserState, "iiiii", $id_usuario, $id, $id_usuario, $id_usuario, $id);
+        mysqli_stmt_execute($stmtUserState);
+        $resUserState = mysqli_stmt_get_result($stmtUserState);
+        if ($rowUserState = mysqli_fetch_assoc($resUserState)) {
+            $isTrailerFavorito = (bool)$rowUserState['es_favorito'];
+            $myListStatus = $rowUserState['estado'] ?? null;
+            $myPrivateComment = $rowUserState['comentario'] ?? '';
         }
-        mysqli_stmt_close($stmtStatus);
-    }
-    
-    // Comentario privado
-    $sqlPrivComment = "SELECT comentario FROM comentarios_privados WHERE id_usuario = ? AND id_trailer = ? LIMIT 1";
-    $stmtPrivComment = mysqli_prepare($conexion, $sqlPrivComment);
-    if ($stmtPrivComment) {
-        mysqli_stmt_bind_param($stmtPrivComment, "ii", $id_usuario, $id);
-        mysqli_stmt_execute($stmtPrivComment);
-        $resPrivComment = mysqli_stmt_get_result($stmtPrivComment);
-        if ($rowPrivComment = mysqli_fetch_assoc($resPrivComment)) {
-            $myPrivateComment = $rowPrivComment['comentario'];
-        }
-        mysqli_stmt_close($stmtPrivComment);
+        mysqli_stmt_close($stmtUserState);
     }
 }
 
@@ -545,7 +557,7 @@ require_once $rootPath . 'includes/navbar.php';
                 <div class="cast-grid">
                     <?php foreach ($reparto as $actor): ?>
                         <a href="actor_peliculas.php?id=<?php echo $actor['id_reparto']; ?>" class="actor-card">
-                            <img src="<?php echo htmlspecialchars($actor['foto_url'] ?? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200'); ?>" alt="<?php echo htmlspecialchars($actor['nombre']); ?>">
+                            <img src="<?php echo htmlspecialchars($actor['foto_url'] ?? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200'); ?>" alt="<?php echo htmlspecialchars($actor['nombre']); ?>" loading="lazy" decoding="async">
                             <div class="actor-card-info">
                                 <span class="actor-card-name"><?php echo htmlspecialchars($actor['nombre'] . ' ' . $actor['apellidos']); ?></span>
                                 <span class="actor-card-role"><?php echo htmlspecialchars($actor['personaje'] !== '' ? $actor['personaje'] : 'N/A'); ?></span>
@@ -646,7 +658,7 @@ require_once $rootPath . 'includes/navbar.php';
                                 <!-- Avatar -->
                                 <div class="review-avatar-container">
                                     <?php if (!empty($resena['avatar_url'])): ?>
-                                        <img src="<?= htmlspecialchars($resena['avatar_url']) ?>" alt="Avatar">
+                                        <img src="<?= htmlspecialchars($resena['avatar_url']) ?>" alt="Avatar" loading="lazy" decoding="async">
                                     <?php else: ?>
                                         <div class="review-avatar-fallback">
                                             <i class="fa-solid fa-user"></i>
@@ -710,7 +722,7 @@ require_once $rootPath . 'includes/navbar.php';
                 <?php foreach ($recommendations as $rec): ?>
                     <article class="movie-card">
                         <a class="movie-poster-container" href="reproducir_trailer.php?id=<?= $rec['id_trailer'] ?>">
-                            <img src="<?= htmlspecialchars($rec['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=600') ?>" alt="<?= htmlspecialchars($rec['titulo']) ?>" class="movie-poster">
+                            <img src="<?= htmlspecialchars($rec['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=600') ?>" alt="<?= htmlspecialchars($rec['titulo']) ?>" class="movie-poster" loading="lazy" decoding="async">
 
                             <div class="card-play-overlay">
                                 <div class="play-icon-circle">
@@ -916,6 +928,12 @@ require_once $rootPath . 'includes/navbar.php';
                                 if (metaContainer && valueContainer) {
                                     valueContainer.textContent = data.avgRating;
                                     metaContainer.style.display = 'inline';
+                                }
+
+                                if (data.nuevos_logros && data.nuevos_logros.length > 0) {
+                                    data.nuevos_logros.forEach(logro => {
+                                        showToast(`ðŸ† Â¡Logro desbloqueado: ${logro.nombre}! - ${logro.descripcion}`, 'success');
+                                    });
                                 }
                             } else if (data && data.error) {
                                 showToast(data.error, 'error');

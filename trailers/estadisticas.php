@@ -7,12 +7,16 @@ $errorMsg = $_SESSION['error'] ?? null;
 unset($_SESSION['success'], $_SESSION['error']);
 
 // 1. Top 5 de Trailers Más Vistos
-$sqlVistas = "SELECT t.id_trailer, t.titulo, t.poster_url, COUNT(v.id_visualizacion) AS total_vistas
-              FROM trailers t
-              LEFT JOIN visualizaciones v ON t.id_trailer = v.id_trailer
-              GROUP BY t.id_trailer
-              ORDER BY total_vistas DESC, t.titulo ASC
-              LIMIT 5";
+$sqlVistas = "SELECT t.id_trailer, t.titulo, t.poster_url, top.total_vistas
+              FROM (
+                  SELECT id_trailer, COUNT(*) AS total_vistas
+                  FROM visualizaciones
+                  GROUP BY id_trailer
+                  ORDER BY total_vistas DESC
+                  LIMIT 5
+              ) top
+              JOIN trailers t ON top.id_trailer = t.id_trailer
+              ORDER BY top.total_vistas DESC, t.titulo ASC";
 $resVistas = mysqli_query($conexion, $sqlVistas);
 $topVistas = [];
 while ($row = mysqli_fetch_assoc($resVistas)) {
@@ -21,12 +25,16 @@ while ($row = mysqli_fetch_assoc($resVistas)) {
 mysqli_free_result($resVistas);
 
 // 2. Top 5 de Películas Más Favoritas
-$sqlFavoritos = "SELECT t.id_trailer, t.titulo, t.poster_url, COUNT(f.id_usuario) AS total_favoritos
-                 FROM trailers t
-                 LEFT JOIN favoritos f ON t.id_trailer = f.id_trailer
-                 GROUP BY t.id_trailer
-                 ORDER BY total_favoritos DESC, t.titulo ASC
-                 LIMIT 5";
+$sqlFavoritos = "SELECT t.id_trailer, t.titulo, t.poster_url, top.total_favoritos
+                 FROM (
+                     SELECT id_trailer, COUNT(*) AS total_favoritos
+                     FROM favoritos
+                     GROUP BY id_trailer
+                     ORDER BY total_favoritos DESC
+                     LIMIT 5
+                 ) top
+                 JOIN trailers t ON top.id_trailer = t.id_trailer
+                 ORDER BY top.total_favoritos DESC, t.titulo ASC";
 $resFavoritos = mysqli_query($conexion, $sqlFavoritos);
 $topFavoritos = [];
 while ($row = mysqli_fetch_assoc($resFavoritos)) {
@@ -35,13 +43,17 @@ while ($row = mysqli_fetch_assoc($resFavoritos)) {
 mysqli_free_result($resFavoritos);
 
 // 3. Top 5 de Actores Más Populares (Vistas Acumuladas)
-$sqlActores = "SELECT r.id_reparto, r.nombre, r.apellidos, r.foto_url, COUNT(v.id_visualizacion) AS total_vistas
-               FROM reparto r
-               JOIN reparto_trailers rt ON r.id_reparto = rt.id_reparto
-               JOIN visualizaciones v ON rt.id_trailer = v.id_trailer
-               GROUP BY r.id_reparto
-               ORDER BY total_vistas DESC, r.nombre ASC, r.apellidos ASC
-               LIMIT 5";
+$sqlActores = "SELECT r.id_reparto, r.nombre, r.apellidos, r.foto_url, top.total_vistas
+               FROM (
+                   SELECT rt.id_reparto, COUNT(*) AS total_vistas
+                   FROM visualizaciones v
+                   JOIN reparto_trailers rt ON v.id_trailer = rt.id_trailer
+                   GROUP BY rt.id_reparto
+                   ORDER BY total_vistas DESC
+                   LIMIT 5
+               ) top
+               JOIN reparto r ON top.id_reparto = r.id_reparto
+               ORDER BY top.total_vistas DESC, r.nombre ASC, r.apellidos ASC";
 $resActores = mysqli_query($conexion, $sqlActores);
 $topActores = [];
 while ($row = mysqli_fetch_assoc($resActores)) {
@@ -50,27 +62,37 @@ while ($row = mysqli_fetch_assoc($resActores)) {
 mysqli_free_result($resActores);
 
 // 4. Top 5 de Géneros Más Vistos
-$sqlGeneros = "SELECT g.id_genero, g.nombre, COUNT(v.id_visualizacion) AS total_vistas
-               FROM generos g
-               JOIN trailers_generos tg ON g.id_genero = tg.id_genero
-               JOIN visualizaciones v ON tg.id_trailer = v.id_trailer
-               GROUP BY g.id_genero
-               ORDER BY total_vistas DESC, g.nombre ASC
-               LIMIT 5";
+$sqlGeneros = "SELECT g.id_genero, g.nombre, top.total_vistas
+               FROM (
+                   SELECT tg.id_genero, COUNT(*) AS total_vistas
+                   FROM visualizaciones v
+                   JOIN trailers_generos tg ON v.id_trailer = tg.id_trailer
+                   GROUP BY tg.id_genero
+                   ORDER BY total_vistas DESC
+                   LIMIT 5
+               ) top
+               JOIN generos g ON top.id_genero = g.id_genero
+               ORDER BY top.total_vistas DESC, g.nombre ASC";
 $resGeneros = mysqli_query($conexion, $sqlGeneros);
 $topGeneros = [];
 while ($row = mysqli_fetch_assoc($resGeneros)) {
     $topGeneros[] = $row;
 }
 mysqli_free_result($resGeneros);
+$topGeneros = array_slice($topGeneros, 0, 5);
 
 // 5. Top 5 de Usuarios Más Activos
-$sqlUsuarios = "SELECT u.id_usuario, u.username, COUNT(v.id_visualizacion) AS total_vistas
-                FROM usuarios u
-                JOIN visualizaciones v ON u.id_usuario = v.id_usuario
-                GROUP BY u.id_usuario
-                ORDER BY total_vistas DESC, u.username ASC
-                LIMIT 5";
+$sqlUsuarios = "SELECT u.id_usuario, u.username, top.total_vistas
+                FROM (
+                    SELECT id_usuario, COUNT(*) AS total_vistas
+                    FROM visualizaciones
+                    WHERE id_usuario IS NOT NULL
+                    GROUP BY id_usuario
+                    ORDER BY total_vistas DESC
+                    LIMIT 5
+                ) top
+                JOIN usuarios u ON top.id_usuario = u.id_usuario
+                ORDER BY top.total_vistas DESC, u.username ASC";
 $resUsuarios = mysqli_query($conexion, $sqlUsuarios);
 $topUsuarios = [];
 while ($row = mysqli_fetch_assoc($resUsuarios)) {
@@ -104,7 +126,7 @@ require_once $rootPath . 'includes/navbar.php';
                         <?php foreach ($topVistas as $index => $item): ?>
                             <li class="stats-item">
                                 <span class="stats-rank stats-rank-<?= $index + 1 ?>"><?= $index + 1 ?></span>
-                                <img class="stats-poster" src="<?= htmlspecialchars($item['poster_url'] ?? 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=200') ?>" alt="Poster">
+                                <img class="stats-poster" src="<?= htmlspecialchars($item['poster_url'] ?? 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=200') ?>" alt="Poster" loading="lazy" decoding="async">
                                 <div class="stats-info">
                                     <span class="stats-name"><?= htmlspecialchars($item['titulo']) ?></span>
                                 </div>
@@ -128,7 +150,7 @@ require_once $rootPath . 'includes/navbar.php';
                         <?php foreach ($topFavoritos as $index => $item): ?>
                             <li class="stats-item">
                                 <span class="stats-rank stats-rank-<?= $index + 1 ?>"><?= $index + 1 ?></span>
-                                <img class="stats-poster" src="<?= htmlspecialchars($item['poster_url'] ?? 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=200') ?>" alt="Poster">
+                                <img class="stats-poster" src="<?= htmlspecialchars($item['poster_url'] ?? 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=200') ?>" alt="Poster" loading="lazy" decoding="async">
                                 <div class="stats-info">
                                     <span class="stats-name"><?= htmlspecialchars($item['titulo']) ?></span>
                                 </div>
@@ -145,11 +167,11 @@ require_once $rootPath . 'includes/navbar.php';
             <div class="stats-card">
                 <div class="stats-card-header">
                     <i class="fa-solid fa-masks-theater"></i>
-                    <h2 class="stats-card-title">Géneros Más Vistos</h2>
+                    <h2 class="stats-card-title">Top 5 Géneros Más Vistos</h2>
                 </div>
                 <ul class="stats-list">
                     <?php if (!empty($topGeneros)): ?>
-                        <?php 
+                        <?php
                         $maxVistasGenero = max(array_column($topGeneros, 'total_vistas'));
                         $maxVistasGenero = $maxVistasGenero > 0 ? $maxVistasGenero : 1;
                         ?>
@@ -185,7 +207,7 @@ require_once $rootPath . 'includes/navbar.php';
                         <?php foreach ($topActores as $index => $item): ?>
                             <li class="stats-item">
                                 <span class="stats-rank stats-rank-<?= $index + 1 ?>"><?= $index + 1 ?></span>
-                                <img class="stats-avatar" src="<?= htmlspecialchars($item['foto_url'] ?? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200') ?>" alt="Foto">
+                                <img class="stats-avatar" src="<?= htmlspecialchars($item['foto_url'] ?? 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200') ?>" alt="Foto" loading="lazy" decoding="async">
                                 <div class="stats-info">
                                     <span class="stats-name"><?= htmlspecialchars($item['nombre'] . ' ' . $item['apellidos']) ?></span>
                                     <span class="stats-subname">Vistas acumuladas</span>

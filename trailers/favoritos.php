@@ -52,7 +52,7 @@ require_once $rootPath . 'includes/navbar.php';
                     <article class="movie-card">
                         
                         <a class="movie-poster-container" href="reproducir_trailer.php?id=<?= $trailer['id_trailer'] ?>">
-                            <img src="<?= htmlspecialchars($trailer['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=600') ?>" alt="<?= htmlspecialchars($trailer['titulo']) ?>" class="movie-poster">
+                            <img src="<?= htmlspecialchars($trailer['poster_url'] ?? 'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=600') ?>" alt="<?= htmlspecialchars($trailer['titulo']) ?>" class="movie-poster" loading="lazy" decoding="async">
                             
                             <div class="card-play-overlay">
                                 <div class="play-icon-circle">
