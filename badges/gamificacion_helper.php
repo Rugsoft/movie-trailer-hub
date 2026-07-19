@@ -2,6 +2,7 @@
 // badges/gamificacion_helper.php
 
 const MOVIE_APP_BADGES_SEED_VERSION = 1;
+const MOVIE_APP_BADGES_CHECK_INTERVAL = 300;
 
 /**
  * Inserta únicamente las insignias que todavía no existen.
@@ -122,6 +123,27 @@ function sembrar_badges(mysqli $conexion): void {
     $_SESSION['movie_app_badges_seed_version'] = MOVIE_APP_BADGES_SEED_VERSION;
 }
 
+function marcar_recalculo_badges_pendiente(): void {
+    if (session_status() === PHP_SESSION_ACTIVE || session_status() === PHP_SESSION_NONE) {
+        $_SESSION['movie_app_badges_force_check'] = true;
+    }
+}
+
+function procesar_badges_si_corresponde(mysqli $conexion, int $id_usuario): void {
+    $ahora = time();
+    $ultimoChequeo = (int) ($_SESSION['movie_app_badges_last_check_at'] ?? 0);
+    $forzarChequeo = !empty($_SESSION['movie_app_badges_force_check']);
+
+    if (!$forzarChequeo && ($ahora - $ultimoChequeo) < MOVIE_APP_BADGES_CHECK_INTERVAL) {
+        return;
+    }
+
+    procesar_y_obtener_badges($conexion, $id_usuario);
+
+    $_SESSION['movie_app_badges_last_check_at'] = $ahora;
+    unset($_SESSION['movie_app_badges_force_check']);
+}
+
 // Actualizar la racha de logins consecutivos
 function actualizar_racha_login($conexion, $id_usuario) {
     $hoy = date('Y-m-d');
@@ -142,7 +164,9 @@ function actualizar_racha_login($conexion, $id_usuario) {
             $stmtIns = mysqli_prepare($conexion, $sqlIns);
             if ($stmtIns) {
                 mysqli_stmt_bind_param($stmtIns, "is", $id_usuario, $hoy);
-                mysqli_stmt_execute($stmtIns);
+                if (mysqli_stmt_execute($stmtIns)) {
+                    marcar_recalculo_badges_pendiente();
+                }
                 mysqli_stmt_close($stmtIns);
             }
         } else {
@@ -156,7 +180,9 @@ function actualizar_racha_login($conexion, $id_usuario) {
                 $stmtUpd = mysqli_prepare($conexion, $sqlUpd);
                 if ($stmtUpd) {
                     mysqli_stmt_bind_param($stmtUpd, "sii", $hoy, $nuevaRacha, $id_usuario);
-                    mysqli_stmt_execute($stmtUpd);
+                    if (mysqli_stmt_execute($stmtUpd)) {
+                        marcar_recalculo_badges_pendiente();
+                    }
                     mysqli_stmt_close($stmtUpd);
                 }
             } elseif ($ultimoLogin !== $hoy) {
@@ -165,7 +191,9 @@ function actualizar_racha_login($conexion, $id_usuario) {
                 $stmtUpd = mysqli_prepare($conexion, $sqlUpd);
                 if ($stmtUpd) {
                     mysqli_stmt_bind_param($stmtUpd, "si", $hoy, $id_usuario);
-                    mysqli_stmt_execute($stmtUpd);
+                    if (mysqli_stmt_execute($stmtUpd)) {
+                        marcar_recalculo_badges_pendiente();
+                    }
                     mysqli_stmt_close($stmtUpd);
                 }
             }

@@ -24,7 +24,10 @@ if ($action === 'modo_cine') {
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
         
+        marcar_recalculo_badges_pendiente();
         procesar_y_obtener_badges($conexion, $id_usuario);
+        $_SESSION['movie_app_badges_last_check_at'] = time();
+        unset($_SESSION['movie_app_badges_force_check']);
         $nuevosLogros = $_SESSION['nuevos_logros_desbloqueados'] ?? [];
         unset($_SESSION['nuevos_logros_desbloqueados']);
         
@@ -49,7 +52,10 @@ if ($action === 'leer_resenas') {
             mysqli_stmt_execute($stmt);
             mysqli_stmt_close($stmt);
             
+            marcar_recalculo_badges_pendiente();
             procesar_y_obtener_badges($conexion, $id_usuario);
+            $_SESSION['movie_app_badges_last_check_at'] = time();
+            unset($_SESSION['movie_app_badges_force_check']);
             $nuevosLogros = $_SESSION['nuevos_logros_desbloqueados'] ?? [];
             unset($_SESSION['nuevos_logros_desbloqueados']);
             
